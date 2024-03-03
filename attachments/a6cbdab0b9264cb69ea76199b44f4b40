@@ -1,0 +1,1586 @@
+diff -r c4acdacfddd2 d/dmd2/attrib.c
+--- a/d/dmd2/attrib.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/attrib.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -63,9 +63,9 @@
+     if (d)
+     {
+     	for (unsigned i = 0; i < d->dim; i++)
+-			{   Dsymbol *s = (Dsymbol *)d->data[i];
+-    	  	    m |= s->addMember(sc, sd, m | memnum);
+-    	  	}
++	{   Dsymbol *s = (Dsymbol *)d->data[i];
++	    m |= s->addMember(sc, sd, m | memnum);
++	}
+     }
+     return m;
+ }
+@@ -92,10 +92,10 @@
+ 
+     if (d)
+     {
+-    	for (unsigned i = 0; i < d->dim; i++)
+-			{   Dsymbol *s = (Dsymbol *)d->data[i];
+-    	  	    s->semantic2(sc);
+-    	  	}
++	for (unsigned i = 0; i < d->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)d->data[i];
++	    s->semantic2(sc);
++	}
+     }
+ }
+ 
+@@ -105,10 +105,10 @@
+ 
+     if (d)
+     {
+-    	for (unsigned i = 0; i < d->dim; i++)
+-		{   Dsymbol *s = (Dsymbol *)d->data[i];
+-    	  	    s->semantic3(sc);
+-    	}
++	for (unsigned i = 0; i < d->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)d->data[i];
++	    s->semantic3(sc);
++	}
+     }
+ }
+ 
+@@ -118,12 +118,12 @@
+ 
+     if (d)
+     {
+-    	for (unsigned i = 0; i < d->dim; i++)
+-		{   Dsymbol *s = (Dsymbol *)d->data[i];
++	for (unsigned i = 0; i < d->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)d->data[i];
+ 
+ 	    //printf("AttribDeclaration::inlineScan %s\n", s->toChars());
+-			s->inlineScan();
+-		}
++	    s->inlineScan();
++	}
+     }
+ }
+ 
+@@ -131,14 +131,14 @@
+ {
+     if (comment)
+     {
+-    	Array *d = include(NULL, NULL);
++	Array *d = include(NULL, NULL);
+ 
+ 	if (d)
+ 	{
+-		for (unsigned i = 0; i < d->dim; i++)
+-		{   Dsymbol *s = (Dsymbol *)d->data[i];
++	    for (unsigned i = 0; i < d->dim; i++)
++	    {   Dsymbol *s = (Dsymbol *)d->data[i];
+ 		//printf("AttribDeclaration::addComment %s\n", s->toChars());
+-			s->addComment(comment);
++		s->addComment(comment);
+ 	    }
+ 	}
+     }
+@@ -158,11 +158,11 @@
+ 
+     if (d)
+     {
+-    	for (unsigned i = 0; i < d->dim; i++)
+-    	{   Dsymbol *s = (Dsymbol *)d->data[i];
++	for (unsigned i = 0; i < d->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)d->data[i];
+ 	    //printf("AttribDeclaration::emitComment %s\n", s->toChars());
+-			s->emitComment(sc);
+-    	}
++	    s->emitComment(sc);
++	}
+     }
+ }
+ 
+@@ -174,7 +174,7 @@
+     {
+     	for (unsigned i = 0; i < d->dim; i++)
+     	{   Dsymbol *s = (Dsymbol *)d->data[i];
+-			s->toObjFile(multiobj);
++	    s->toObjFile(multiobj);
+     	}
+     }
+ }
+@@ -187,13 +187,13 @@
+ 
+     if (d)
+     {
+-    	for (unsigned i = 0; i < d->dim; i++)
+-    	{   Dsymbol *s = (Dsymbol *)d->data[i];
+-			n = s->cvMember(p);
+-			if (p)
+-			p += n;
+-			nwritten += n;
+-    	}
++	for (unsigned i = 0; i < d->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)d->data[i];
++	    n = s->cvMember(p);
++	    if (p)
++		p += n;
++	    nwritten += n;
++	}
+     }
+     return nwritten;
+ }
+@@ -232,10 +232,10 @@
+ 
+     if (d)
+     {
+-    	for (unsigned i = 0; i < d->dim; i++)
+-    	{   Dsymbol *s = (Dsymbol *)d->data[i];
+-			s->checkCtorConstInit();
+-    	}
++	for (unsigned i = 0; i < d->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)d->data[i];
++	    s->checkCtorConstInit();
++	}
+     }
+ }
+ 
+@@ -248,10 +248,10 @@
+ 
+     if (d)
+     {
+-    	for (unsigned i = 0; i < d->dim; i++)
+-    	{   Dsymbol *s = (Dsymbol *)d->data[i];
+-			s->addLocalClass(aclasses);
+-    	}
++	for (unsigned i = 0; i < d->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)d->data[i];
++	    s->addLocalClass(aclasses);
++	}
+     }
+ }
+ 
+@@ -336,7 +336,8 @@
+ 	{ STCstatic,       TOKstatic },
+ 	{ STCextern,       TOKextern },
+ 	{ STCconst,        TOKconst },
+-	{ STCinvariant,    TOKinvariant },
++	{ STCinvariant,    TOKimmutable },
++	{ STCshared,       TOKshared },
+ 	{ STCfinal,        TOKfinal },
+ 	{ STCabstract,     TOKabstract },
+ 	{ STCsynchronized, TOKsynchronized },
+@@ -344,6 +345,7 @@
+ 	{ STCoverride,     TOKoverride },
+ 	{ STCnothrow,      TOKnothrow },
+ 	{ STCpure,         TOKpure },
++	{ STCref,          TOKref },
+ 	{ STCtls,          TOKtls },
+     };
+ 
+diff -r c4acdacfddd2 d/dmd2/cast.c
+--- a/d/dmd2/cast.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/cast.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -370,8 +370,8 @@
+ MATCH NullExp::implicitConvTo(Type *t)
+ {
+ #if 0
+-    printf("NullExp::implicitConvTo(this=%s, type=%s, t=%s)\n",
+-	toChars(), type->toChars(), t->toChars());
++    printf("NullExp::implicitConvTo(this=%s, type=%s, t=%s, committed = %d)\n",
++	toChars(), type->toChars(), t->toChars(), committed);
+ #endif
+     if (this->type->equals(t))
+ 	return MATCHexact;
+diff -r c4acdacfddd2 d/dmd2/cond.c
+--- a/d/dmd2/cond.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/cond.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -129,7 +129,7 @@
+     {
+ 	"DigitalMars", "X86", "X86_64",
+ 	"Windows", "Win32", "Win64",
+-	"linux",
++	"linux", "Posix",
+ 	"LittleEndian", "BigEndian",
+ 	"all",
+ 	"none",
+diff -r c4acdacfddd2 d/dmd2/constfold.c
+--- a/d/dmd2/constfold.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/constfold.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -1556,6 +1556,31 @@
+ 	else
+ 	    e->type = type;
+     }
++    else if (e1->op == TOKarrayliteral && e2->op == TOKnull &&
++	t1->nextOf()->equals(t2->nextOf()))
++    {
++	e = e1;
++	goto L3;
++    }
++    else if (e1->op == TOKnull && e2->op == TOKarrayliteral &&
++	t1->nextOf()->equals(t2->nextOf()))
++    {
++	e = e2;
++     L3:
++	// Concatenate the array with null
++	ArrayLiteralExp *es = (ArrayLiteralExp *)e;
++
++	es = new ArrayLiteralExp(es->loc, (Expressions *)es->elements->copy());
++	e = es;
++
++	if (type->toBasetype()->ty == Tsarray)
++	{
++	    e->type = new TypeSArray(t1->nextOf(), new IntegerExp(loc, es->elements->dim, Type::tindex));
++	    e->type = e->type->semantic(loc, NULL);
++	}
++	else
++	    e->type = type;
++    }
+     else if ((e1->op == TOKarrayliteral || e1->op == TOKnull) &&
+ 	e1->type->toBasetype()->nextOf()->equals(e2->type))
+     {
+diff -r c4acdacfddd2 d/dmd2/declaration.c
+--- a/d/dmd2/declaration.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/declaration.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -869,6 +869,9 @@
+ 	}
+     }
+ 
++    if ((storage_class & (STCref | STCparameter | STCforeach)) == STCref)
++	error("only parameters or foreach declarations can be ref");
++
+     if (type->isauto() && !noauto)
+     {
+ 	if (storage_class & (STCfield | STCout | STCref | STCstatic | STCmanifest | STCtls) || !fd)
+@@ -939,7 +942,7 @@
+     if (init)
+     {
+ 	sc = sc->push();
+-	sc->stc &= ~(STCconst | STCinvariant | STCpure);
++	sc->stc &= ~(STCconst | STCinvariant | STCpure | STCnothrow | STCref | STCshared);
+ 
+ 	ArrayInitializer *ai = init->isArrayInitializer();
+ 	if (ai && tb->ty == Taarray)
+@@ -1217,8 +1220,10 @@
+ 
+ void VarDeclaration::checkCtorConstInit()
+ {
++#if 0 /* doesn't work if more than one static ctor */
+     if (ctorinit == 0 && isCtorinit() && !(storage_class & STCfield))
+ 	error("missing initializer in static constructor for const variable");
++#endif
+ }
+ 
+ /************************************
+diff -r c4acdacfddd2 d/dmd2/declaration.h
+--- a/d/dmd2/declaration.h	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/declaration.h	Sun Jul 18 01:10:36 2010 +0100
+@@ -76,6 +76,7 @@
+     STCpure	    = 0x4000000,	// pure function
+     STCtls	    = 0x8000000,	// thread local
+     STCalias	    = 0x10000000,	// alias parameter
++    STCshared       = 0x20000000,	// accessible from multiple threads
+ };
+ 
+ struct Match
+diff -r c4acdacfddd2 d/dmd2/e2ir.c
+--- a/d/dmd2/e2ir.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/e2ir.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -274,6 +274,15 @@
+ 	e->Ety = TYnptr;
+ 	e = el_una(OPind, tyret, e);
+     }
++
++#if V2
++    if (tf->isref)
++    {
++	e->Ety = TYnptr;
++	e = el_una(OPind, tyret, e);
++    }
++#endif
++
+     if (tybasic(tyret) == TYstruct)
+     {
+ 	e->Enumbytes = tret->size();
+@@ -4452,7 +4461,26 @@
+ 	    el = (Expression *)values->data[i];
+ 	}
+     }
+-    e = el_param(e, type->getTypeInfo(NULL)->toElem(irs));
++
++    Type *t = type->toBasetype()->mutableOf();
++    assert(t->ty == Taarray);
++    TypeAArray *ta = (TypeAArray *)t;
++
++    /* Unfortunately, the hash function for Aa (array of chars) is custom and
++     * different from Axa and Aya, which get the generic hash function.
++     * So, rewrite the type of the AArray so that if it's key type
++     * is an array of const or invariant, make it an array of mutable.
++     */
++    Type *tkey = ta->index->toBasetype();
++    if (tkey->ty == Tarray)
++    {
++	tkey = tkey->nextOf()->mutableOf()->arrayOf();
++	tkey = tkey->semantic(0, NULL);
++	ta = new TypeAArray(ta->nextOf(), tkey);
++	ta = (TypeAArray *)ta->merge();
++    }
++
++    e = el_param(e, ta->getTypeInfo(NULL)->toElem(irs));
+ 
+     // call _d_assocarrayliteralT(ti, dim, ...)
+     e = el_bin(OPcall,TYnptr,el_var(rtlsym[RTLSYM_ASSOCARRAYLITERALT]),e);
+@@ -4562,6 +4590,7 @@
+ 		    e1 = el_bin(OPadd, TYnptr, e1, el_long(TYsize_t, soffset));
+ 	    }
+ 	    e1 = el_bin(OPadd, TYnptr, e1, el_long(TYsize_t, v->offset));
++	    elem *ec = e1;			// pointer to destination
+ 
+ 	    elem *ep = el->toElem(irs);
+ 
+@@ -4570,9 +4599,41 @@
+ 	    if (t1b->ty == Tsarray)
+ 	    {
+ 		if (t2b->implicitConvTo(t1b))
+-		{   elem *esize = el_long(TYsize_t, t1b->size());
+-		    ep = array_toPtr(el->type, ep);
+-		    e1 = el_bin(OPmemcpy, TYnptr, e1, el_param(ep, esize));
++		{
++#if V2
++		    // Determine if postblit is needed
++		    int postblit = 0;
++		    Type *t = t1b;
++		    do
++		    {
++			t = t->nextOf()->toBasetype();
++		    } while (t->ty == Tsarray);
++		    if (t->ty == Tstruct)
++		    {	StructDeclaration *sd = ((TypeStruct *)t)->sym;
++			if (sd->postblit)
++			    postblit = 1;
++		    }
++
++		    if (postblit)
++		    {
++			/* Generate:
++			 *	_d_arrayctor(ti, From: ep, To: e1)
++			 */
++			Expression *ti = t1b->nextOf()->toBasetype()->getTypeInfo(NULL);
++			elem *esize = el_long(TYsize_t, ((TypeSArray *)t1b)->dim->toInteger());
++			e1 = el_pair(TYdarray, esize, e1);
++			ep = el_pair(TYdarray, el_copytree(esize), array_toPtr(el->type, ep));
++			ep = el_params(e1, ep, ti->toElem(irs), NULL);
++			int rtl = RTLSYM_ARRAYCTOR;
++			e1 = el_bin(OPcall, type->totym(), el_var(rtlsym[rtl]), ep);
++		    }
++		    else
++#endif
++		    {
++			elem *esize = el_long(TYsize_t, t1b->size());
++			ep = array_toPtr(el->type, ep);
++			e1 = el_bin(OPmemcpy, TYnptr, e1, el_param(ep, esize));
++		    }
+ 		}
+ 		else
+ 		{
+@@ -4591,6 +4652,20 @@
+ 		{   e1->Eoper = OPstreq;
+ 		    e1->Enumbytes = v->type->size();
+ 		}
++#if V2
++		/* Call postBlit() on e1
++		 */
++		Type *tb = v->type->toBasetype();
++		if (tb->ty == Tstruct)
++		{   StructDeclaration *sd = ((TypeStruct *)tb)->sym;
++		    if (sd->postblit)
++		    {	FuncDeclaration *fd = sd->postblit;
++			ec = el_copytree(ec);
++			ec = callfunc(loc, irs, 1, Type::tvoid, ec, tb->pointerTo(), fd, fd->type, NULL, NULL);
++			e1 = el_bin(OPcomma, ec->Ety, e1, ec);
++		    }
++		}
++#endif
+ 	    }
+ 	    e = el_combine(e, e1);
+ 	}
+diff -r c4acdacfddd2 d/dmd2/expression.c
+--- a/d/dmd2/expression.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/expression.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -4474,6 +4474,7 @@
+ 		break;
+ 
+ 	    case TOKinvariant:
++	    case TOKimmutable:
+ 		if (!targ->isInvariant())
+ 		    goto Lno;
+ 		tded = targ;
+@@ -4742,7 +4743,8 @@
+     printf("BinExp::semantic('%s')\n", toChars());
+ #endif
+     e1 = e1->semantic(sc);
+-    if (!e1->type)
++    if (!e1->type &&
++	!(op == TOKassign && e1->op == TOKdottd))	// a.template = e2
+     {
+ 	error("%s has no value", e1->toChars());
+ 	e1->type = Type::terror;
+@@ -4753,7 +4755,6 @@
+ 	error("%s has no value", e2->toChars());
+ 	e2->type = Type::terror;
+     }
+-    assert(e1->type);
+     return this;
+ }
+ 
+@@ -5183,6 +5184,8 @@
+ 	return e;
+     }
+ 
++    Type *t1b = e1->type->toBasetype();
++
+     if (eright->op == TOKimport)	// also used for template alias's
+     {
+ 	Dsymbol *s;
+@@ -5337,15 +5340,40 @@
+ 	type = Type::tvoid;
+ 	return this;
+     }
+-    else if (e1->type->ty == Tpointer &&
++    else if (t1b->ty == Tpointer &&
+ 	     ident != Id::init && ident != Id::__sizeof &&
+ 	     ident != Id::alignof && ident != Id::offsetof &&
+ 	     ident != Id::mangleof && ident != Id::stringof)
+-    {
++    {	/* Rewrite:
++         *   p.ident
++         * as:
++         *   (*p).ident
++         */
+ 	e = new PtrExp(loc, e1);
+-	e->type = ((TypePointer *)e1->type)->next;
++	e->type = ((TypePointer *)t1b)->next;
+ 	return e->type->dotExp(sc, e, ident);
+     }
++    else if (t1b->ty == Tarray ||
++             t1b->ty == Tsarray ||
++	     t1b->ty == Taarray)
++    {	/* If ident is not a valid property, rewrite:
++	 *   e1.ident
++         * as:
++         *   .ident(e1)
++         */
++	unsigned errors = global.errors;
++	global.gag++;
++	e = e1->type->dotExp(sc, e1, ident);
++	global.gag--;
++	if (errors != global.errors)	// if failed to find the property
++	{
++	    global.errors = errors;
++	    e = new DotIdExp(loc, new IdentifierExp(loc, Id::empty), ident);
++	    e = new CallExp(loc, e, e1);
++	}
++	e = e->semantic(sc);
++	return e;
++    }
+     else
+     {
+ 	e = e1->type->dotExp(sc, e1, ident);
+@@ -5822,7 +5850,7 @@
+     }
+ 
+     /* Transform:
+-     *	array.id(args) into id(array,args)
++     *	array.id(args) into .id(array,args)
+      *	aa.remove(arg) into delete aa[arg]
+      */
+     if (e1->op == TOKdot)
+@@ -5856,7 +5884,7 @@
+ 		if (!arguments)
+ 		    arguments = new Expressions();
+ 		arguments->shift(dotid->e1);
+-		e1 = new IdentifierExp(dotid->loc, dotid->ident);
++		e1 = new DotIdExp(dotid->loc, new IdentifierExp(dotid->loc, Id::empty), dotid->ident);
+ 	    }
+ 	}
+     }
+@@ -6386,18 +6414,19 @@
+ 
+ int CallExp::isLvalue()
+ {
+-	if (type->toBasetype()->ty == Tstruct)
+-		return 1;
+-	else
+-		return 0;
++    if (type->toBasetype()->ty == Tstruct)
++	return 1;
++    Type *tb = e1->type->toBasetype();
++    if (tb->ty == Tfunction && ((TypeFunction *)tb)->isref)
++	return 1;		// function returns a reference
++    return 0;
+ }
+ 
+ Expression *CallExp::toLvalue(Scope *sc, Expression *e)
+ {
+-    if (type->toBasetype()->ty == Tstruct)
++    if (isLvalue())
+ 	return this;
+-    else
+-	return Expression::toLvalue(sc, e);
++    return Expression::toLvalue(sc, e);
+ }
+ 
+ void CallExp::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+@@ -6876,7 +6905,7 @@
+ 	if (!to)
+ 	{   if (tok == TOKconst)
+ 		to = e1->type->constOf();
+-	    else if (tok == TOKinvariant)
++	    else if (tok == TOKinvariant || tok == TOKimmutable)
+ 		to = e1->type->invariantOf();
+ 	    else
+ 		assert(0);
+@@ -7704,6 +7733,14 @@
+     }
+ 
+     BinExp::semantic(sc);
++
++    if (e1->op == TOKdottd)
++    {	// Rewrite a.b=e2, when b is a template, as a.b(e2)
++	Expression *e = new CallExp(loc, e1, e2);
++	e = e->semantic(sc);
++	return e;
++    }
++
+     e2 = resolveProperties(sc, e2);
+     assert(e1->type);
+ 
+@@ -7820,6 +7857,7 @@
+ 	// before it got constant folded
+ 	if (e1->op != TOKvar)
+ 	    e1 = e1->optimize(WANTvalue);
++
+ 	if (op != TOKconstruct)
+ 	    e1 = e1->modifiableLvalue(sc, e1old);
+     }
+diff -r c4acdacfddd2 d/dmd2/func.c
+--- a/d/dmd2/func.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/func.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -123,7 +123,7 @@
+     printf("type: %p, %s\n", type, type->toChars());
+ #endif
+ 
+-    storage_class |= sc->stc;
++    storage_class |= sc->stc & ~STCref;
+     //printf("function storage_class = x%x\n", storage_class);
+ 
+     if (!originalType)
+diff -r c4acdacfddd2 d/dmd2/impcnvgen.c
+--- a/d/dmd2/impcnvgen.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/impcnvgen.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -356,6 +356,14 @@
+     Y(Tint64, Tuns8)
+     Y(Tuns64, Tuns8)
+ 
++    Y(Tint8, Tchar)
++    Y(Tint16, Tchar)
++    Y(Tuns16, Tchar)
++    Y(Tint32, Tchar)
++    Y(Tuns32, Tchar)
++    Y(Tint64, Tchar)
++    Y(Tuns64, Tchar)
++
+     Y(Tuns16, Tint16)
+     Y(Tint32, Tint16)
+     Y(Tuns32, Tint16)
+@@ -368,6 +376,12 @@
+     Y(Tint64, Tuns16)
+     Y(Tuns64, Tuns16)
+ 
++    Y(Tint16, Twchar)
++    Y(Tint32, Twchar)
++    Y(Tuns32, Twchar)
++    Y(Tint64, Twchar)
++    Y(Tuns64, Twchar)
++
+ //    Y(Tuns32, Tint32)
+     Y(Tint64, Tint32)
+     Y(Tuns64, Tint32)
+@@ -376,6 +390,9 @@
+     Y(Tint64, Tuns32)
+     Y(Tuns64, Tuns32)
+ 
++    Y(Tint64, Tdchar)
++    Y(Tuns64, Tdchar)
++
+     Y(Tint64, Tuns64)
+     Y(Tuns64, Tint64)
+ 
+diff -r c4acdacfddd2 d/dmd2/lexer.c
+--- a/d/dmd2/lexer.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/lexer.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -398,6 +398,15 @@
+     return t;
+ }
+ 
++/***********************
++ * Look ahead at next token's value.
++ */
++
++TOK Lexer::peekNext()
++{
++    return peek(&token)->value;
++}
++
+ /*********************************
+  * tk is on the opening (.
+  * Look ahead and return token that is past the closing ).
+@@ -2901,6 +2910,7 @@
+     {	"static",	TOKstatic	},
+     {	"final",	TOKfinal	},
+     {	"const",	TOKconst	},
++    {	"immutable",	TOKimmutable	},
+     {	"typedef",	TOKtypedef	},
+     {	"alias",	TOKalias	},
+     {	"override",	TOKoverride	},
+diff -r c4acdacfddd2 d/dmd2/lexer.h
+--- a/d/dmd2/lexer.h	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/lexer.h	Sun Jul 18 01:10:36 2010 +0100
+@@ -131,7 +131,7 @@
+ 	TOKalign, TOKextern, TOKprivate, TOKprotected, TOKpublic, TOKexport,
+ 	TOKstatic, /*TOKvirtual,*/ TOKfinal, TOKconst, TOKabstract, TOKvolatile,
+ 	TOKdebug, TOKdeprecated, TOKin, TOKout, TOKinout, TOKlazy,
+-	TOKauto, TOKpackage, TOKmanifest,
++	TOKauto, TOKpackage, TOKmanifest, TOKimmutable,
+ 
+ 	// Statements
+ 	TOKif, TOKelse, TOKwhile, TOKfor, TOKdo, TOKswitch,
+@@ -272,6 +272,7 @@
+     static Identifier *uniqueId(const char *s, int num);
+ 
+     TOK nextToken();
++    TOK peekNext();
+     void scan(Token *t);
+     Token *peek(Token *t);
+     Token *peekPastParen(Token *t);
+diff -r c4acdacfddd2 d/dmd2/link.c
+--- a/d/dmd2/link.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/link.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -284,6 +284,7 @@
+     strcpy(buf + 2, libname);
+     argv.push((void *)buf);		// turns into /usr/lib/libphobos2.a
+ 
++    argv.push((void *)"-ldruntime");
+     argv.push((void *)"-lpthread");
+     argv.push((void *)"-lm");
+ 
+diff -r c4acdacfddd2 d/dmd2/mars.c
+--- a/d/dmd2/mars.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/mars.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -89,7 +89,7 @@
+ 
+     copyright = "Copyright (c) 1999-2008 by Digital Mars";
+     written = "written by Walter Bright";
+-    version = "v2.019";
++    version = "v2.020";
+     global.structalign = 8;
+ 
+     memset(&params, 0, sizeof(Param));
+@@ -303,6 +303,7 @@
+     global.params.isWindows = 1;
+ #endif
+ #if linux
++    VersionCondition::addPredefinedGlobalIdent("Posix");
+     VersionCondition::addPredefinedGlobalIdent("linux");
+     global.params.isLinux = 1;
+ #endif /* linux */
+diff -r c4acdacfddd2 d/dmd2/mtype.c
+--- a/d/dmd2/mtype.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/mtype.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -541,13 +541,16 @@
+ {
+     if (flag != mod && flag != 0x100)
+     {
+-	switch (mod)
+-	{
+-	    case 0:		break;
+-	    case MODconst:	buf->writeByte('x');	break;
+-	    case MODinvariant:	buf->writeByte('y');	break;
+-	    default:		assert(0);
+-	}
++	if (mod & MODshared)
++	    buf->writeByte('O');
++
++	if (mod & MODconst)
++	    buf->writeByte('x');
++	else if (mod & MODinvariant)
++	    buf->writeByte('y');
++
++	// Cannot be both const and invariant
++	assert((mod & (MODconst | MODinvariant)) != (MODconst | MODinvariant));
+     }
+     buf->writeByte(mangleChar[ty]);
+ }
+@@ -588,7 +591,9 @@
+     if (mod != this->mod)
+     {	const char *p;
+ 
+-	switch (this->mod)
++	if (mod & MODshared)
++	    buf->writestring("shared(");
++	switch (this->mod & (MODconst | MODinvariant))
+ 	{
+ 	    case 0:
+ 		toCBuffer2(buf, hgs, this->mod);
+@@ -605,6 +610,8 @@
+ 	    default:
+ 		assert(0);
+ 	}
++	if (mod & MODshared)
++	    buf->writeByte(')');
+     }
+ }
+ 
+@@ -3006,6 +3013,7 @@
+     this->inuse = 0;
+     this->isnothrow = false;
+     this->ispure = false;
++    this->isref = false;
+ }
+ 
+ Type *TypeFunction::syntaxCopy()
+@@ -3016,6 +3024,7 @@
+     t->mod = mod;
+     t->isnothrow = isnothrow;
+     t->ispure = ispure;
++    t->isref = isref;
+     return t;
+ }
+ 
+@@ -3038,26 +3047,21 @@
+ 
+     int inoutmismatch = 0;
+ 
++    TypeFunction *t1;
++    TypeFunction *t2;
++
+     if (equals(t))
+-	goto Lcovariant;
++	return 1;			// covariant
++
+     if (ty != Tfunction || t->ty != Tfunction)
+ 	goto Ldistinct;
+ 
+-    {
+-    TypeFunction *t1 = (TypeFunction *)this;
+-    TypeFunction *t2 = (TypeFunction *)t;
++    t1 = (TypeFunction *)this;
++    t2 = (TypeFunction *)t;
+ 
+     if (t1->varargs != t2->varargs)
+ 	goto Ldistinct;
+ 
+-    /* Can convert pure to impure, and nothrow to throw
+-     */
+-    if (!t1->ispure && t2->ispure)
+-	goto Ldistinct;
+-
+-    if (!t1->isnothrow && t2->isnothrow)
+-	goto Ldistinct;
+-
+     if (t1->parameters && t2->parameters)
+     {
+ 	size_t dim = Argument::dim(t1->parameters);
+@@ -3083,6 +3087,7 @@
+     if (t1->linkage != t2->linkage)
+ 	goto Lnotcovariant;
+ 
++  {
+     // Return types
+     Type *t1n = t1->next;
+     Type *t2n = t2->next;
+@@ -3108,10 +3113,21 @@
+     }
+     if (t1n->implicitConvTo(t2n))
+ 	goto Lcovariant;
++  }
+     goto Lnotcovariant;
+-    }
+ 
+ Lcovariant:
++    /* Can convert pure to impure, and nothrow to throw
++     */
++    if (!t1->ispure && t2->ispure)
++	goto Lnotcovariant;
++
++    if (!t1->isnothrow && t2->isnothrow)
++	goto Lnotcovariant;
++
++    if (t1->isref != t2->isref)
++	goto Lnotcovariant;
++
+     //printf("\tcovaraint: 1\n");
+     return 1;
+ 
+@@ -3135,9 +3151,11 @@
+     }
+     inuse++;
+ #if 1
+-    if (mod == MODconst)
++    if (mod & MODshared)
++	buf->writeByte('O');
++    if (mod & MODconst)
+ 	buf->writeByte('x');
+-    else if (mod == MODinvariant)
++    else if (mod & MODinvariant)
+ 	buf->writeByte('y');
+ #endif
+     switch (linkage)
+@@ -3151,9 +3169,14 @@
+ 	    assert(0);
+     }
+     buf->writeByte(mc);
+-    if (ispure || isnothrow)
+-    {	buf->writeByte('N');
+-	buf->writeByte(ispure ? 'a' : 'b');
++    if (ispure || isnothrow || isref)
++    {
++	if (ispure)
++	    buf->writestring("Na");
++	if (isnothrow)
++	    buf->writestring("Nb");
++	if (isref)
++	    buf->writestring("Nc");
+     }
+     // Write argument types
+     Argument::argsToDecoBuffer(buf, parameters);
+@@ -3176,24 +3199,19 @@
+ 
+     /* Use 'storage class' style for attributes
+      */
+-    switch (mod)
+-    {
+-	case 0:
+-	    break;
+-	case MODconst:
+-	    buf->writestring("const ");
+-	    break;
+-	case MODinvariant:
+-	    buf->writestring("invariant ");
+-	    break;
+-	default:
+-	    assert(0);
+-	    break;
+-    }
++    if (mod & MODconst)
++	buf->writestring("const ");
++    if (mod & MODinvariant)
++	buf->writestring("invariant ");
++    if (mod & MODshared)
++	buf->writestring("shared ");
++
+     if (ispure)
+ 	buf->writestring("pure ");
+     if (isnothrow)
+-	buf->writestring("pure ");
++	buf->writestring("nothrow ");
++    if (isref)
++	buf->writestring("ref ");
+ 
+     if (next && (!ident || ident->toHChars2() == ident->toChars()))
+ 	next->toCBuffer2(buf, hgs, 0);
+@@ -3256,25 +3274,19 @@
+      */
+     if (mod != this->mod)
+     {
+-	switch (mod)
+-	{
+-	    case 0:
+-		break;
+-	    case MODconst:
+-		buf->writestring(" const");
+-		break;
+-	    case MODinvariant:
+-		buf->writestring(" invariant");
+-		break;
+-	    default:
+-		assert(0);
+-		break;
+-	}
++	if (mod & MODconst)
++	    buf->writestring(" const");
++	if (mod & MODinvariant)
++	    buf->writestring(" invariant");
++	if (mod & MODshared)
++	    buf->writestring(" shared");
+     }
+     if (ispure)
+ 	buf->writestring(" pure");
+     if (isnothrow)
+-	buf->writestring(" pure");
++	buf->writestring(" nothrow");
++    if (isref)
++	buf->writestring(" ref");
+ 
+     inuse--;
+ }
+@@ -3300,6 +3312,13 @@
+ 	}
+     }
+ 
++    if (sc->stc & STCpure)
++	tf->ispure = TRUE;
++    if (sc->stc & STCnothrow)
++	tf->isnothrow = TRUE;
++    if (sc->stc & STCref)
++	tf->isref = TRUE;
++
+     tf->linkage = sc->linkage;
+     if (!tf->next)
+     {
+diff -r c4acdacfddd2 d/dmd2/mtype.h
+--- a/d/dmd2/mtype.h	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/mtype.h	Sun Jul 18 01:10:36 2010 +0100
+@@ -123,9 +123,10 @@
+ struct Type : Object
+ {
+     TY ty;
+-    unsigned char mod;	// modifiers (MODconst, MODinvariant)
++    unsigned char mod;	// modifiers MODxxxx
+ 	#define MODconst     1	// type is const
+ 	#define MODinvariant 2	// type is invariant
++	#define MODshared    4	// type is shared
+     char *deco;
+     Type *cto;		// MODconst ? mutable version of this type : const version
+     Type *ito;		// MODinvariant ? mutable version of this type : invariant version
+@@ -478,6 +479,7 @@
+ 			// 2: T t ...) style for variable number of arguments
+     bool isnothrow;	// true: nothrow
+     bool ispure;	// true: pure
++    bool isref;		// true: returns a reference
+     enum LINK linkage;	// calling convention
+ 
+     int inuse;
+diff -r c4acdacfddd2 d/dmd2/parse.c
+--- a/d/dmd2/parse.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/parse.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -291,6 +291,12 @@
+ 		stc = STCconst;
+ 		goto Lstc;
+ 
++	    case TOKimmutable:
++		if (peek(&token)->value == TOKlparen)
++		    goto Ldeclaration;
++		stc = STCinvariant;
++		goto Lstc;
++
+ 	    case TOKfinal:	  stc = STCfinal;	 goto Lstc;
+ 	    case TOKauto:	  stc = STCauto;	 goto Lstc;
+ 	    case TOKscope:	  stc = STCscope;	 goto Lstc;
+@@ -300,6 +306,7 @@
+ 	    case TOKdeprecated:   stc = STCdeprecated;	 goto Lstc;
+ 	    case TOKnothrow:      stc = STCnothrow;	 goto Lstc;
+ 	    case TOKpure:         stc = STCpure;	 goto Lstc;
++	    case TOKref:          stc = STCref;          goto Lstc;
+ 	    case TOKtls:          stc = STCtls;		 goto Lstc;
+ 	    //case TOKmanifest:	  stc = STCmanifest;	 goto Lstc;
+ 
+@@ -319,6 +326,7 @@
+ 		{
+ 		    case TOKconst:
+ 		    case TOKinvariant:
++		    case TOKimmutable:
+ 			// If followed by a (, it is not a storage class
+ 			if (peek(&token)->value == TOKlparen)
+ 			    break;
+@@ -336,6 +344,7 @@
+ 		    case TOKdeprecated:   stc = STCdeprecated;	 goto Lstc;
+ 		    case TOKnothrow:      stc = STCnothrow;	 goto Lstc;
+ 		    case TOKpure:         stc = STCpure;	 goto Lstc;
++		    case TOKref:          stc = STCref;          goto Lstc;
+ 		    case TOKtls:          stc = STCtls;		 goto Lstc;
+ 		    //case TOKmanifest:	  stc = STCmanifest;	 goto Lstc;
+ 		    default:
+@@ -1013,6 +1022,7 @@
+ 		    goto L2;
+ 
+ 		case TOKinvariant:
++		case TOKimmutable:
+ 		    if (peek(&token)->value == TOKlparen)
+ 			goto Ldefault;
+ 		    stc = STCinvariant;
+@@ -1220,6 +1230,10 @@
+     return e;
+ }
+ 
++/********************************
++ * Parse struct, union, interface, class.
++ */
++
+ Dsymbol *Parser::parseAggregate()
+ {   AggregateDeclaration *a = NULL;
+     int anon = 0;
+@@ -1649,7 +1663,10 @@
+ 	if (token.value == TOKnot)
+ 	{
+ 	    nextToken();
+-	    tiargs = parseTemplateArgumentList();
++	    if (token.value == TOKlparen)
++		tiargs = parseTemplateArgumentList();
++	    else
++		tiargs = parseTemplateArgument();
+ 	}
+ 
+ 	if (token.value != TOKdot)
+@@ -1700,7 +1717,7 @@
+ Objects *Parser::parseTemplateArgumentList()
+ {
+     //printf("Parser::parseTemplateArgumentList()\n");
+-    if (token.value != TOKlparen)
++    if (token.value != TOKlparen && token.value != TOKlcurly)
+     {   error("!(TemplateArgumentList) expected following TemplateIdentifier");
+ 	return new Objects();
+     }
+@@ -1710,10 +1727,11 @@
+ Objects *Parser::parseTemplateArgumentList2()
+ {
+     Objects *tiargs = new Objects();
++    enum TOK endtok = TOKrparen;
+     nextToken();
+ 
+     // Get TemplateArgumentList
+-    if (token.value != TOKrparen)
++    if (token.value != endtok)
+     {
+ 	while (1)
+ 	{
+@@ -1733,7 +1751,64 @@
+ 	    nextToken();
+ 	}
+     }
+-    check(TOKrparen, "template argument list");
++    check(endtok, "template argument list");
++    return tiargs;
++}
++
++/*****************************
++ * Parse single template argument, to support the syntax:
++ *	foo!arg
++ * Input:
++ *	current token is the arg
++ */
++
++Objects *Parser::parseTemplateArgument()
++{
++    //printf("parseTemplateArgument()\n");
++    Objects *tiargs = new Objects();
++    Type *ta;
++    switch (token.value)
++    {
++	case TOKidentifier:
++	    ta = new TypeIdentifier(loc, token.ident);
++	    goto LabelX;
++
++	CASE_BASIC_TYPES_X(ta):
++	    tiargs->push(ta);
++	    nextToken();
++	    break;
++
++	case TOKint32v:
++	case TOKuns32v:
++	case TOKint64v:
++	case TOKuns64v:
++	case TOKfloat32v:
++	case TOKfloat64v:
++	case TOKfloat80v:
++	case TOKimaginary32v:
++	case TOKimaginary64v:
++	case TOKimaginary80v:
++	case TOKnull:
++	case TOKtrue:
++	case TOKfalse:
++	case TOKcharv:
++	case TOKwcharv:
++	case TOKdcharv:
++	case TOKstring:
++	case TOKfile:
++	case TOKline:
++	{   // Template argument is an expression
++	    Expression *ea = parsePrimaryExp();
++	    tiargs->push(ea);
++	    break;
++	}
++
++	default:
++	    error("template argument expected following !");
++	    break;
++    }
++    if (token.value == TOKnot)
++	error("multiple ! arguments are not allowed");
+     return tiargs;
+ }
+ 
+@@ -1842,7 +1917,8 @@
+ 	t = t->makeConst();
+ 	return t;
+     }
+-    else if (token.value == TOKinvariant && peek(&token)->value != TOKlparen)
++    else if ((token.value == TOKinvariant || token.value == TOKimmutable) &&
++             peek(&token)->value != TOKlparen)
+     {
+ 	nextToken();
+ 	/* invariant type
+@@ -1874,9 +1950,14 @@
+ 	    nextToken();
+ 	    if (token.value == TOKnot)
+ 	    {	// ident!(template_arguments)
++		TemplateInstance *tempinst = new TemplateInstance(loc, id);
+ 		nextToken();
+-		TemplateInstance *tempinst = new TemplateInstance(loc, id);
+-		tempinst->tiargs = parseTemplateArgumentList();
++		if (token.value == TOKlparen)
++		    // ident!(template_arguments)
++		    tempinst->tiargs = parseTemplateArgumentList();
++		else
++		    // ident!template_argument
++		    tempinst->tiargs = parseTemplateArgument();
+ 		tid = new TypeInstance(loc, tempinst);
+ 		goto Lident2;
+ 	    }
+@@ -1893,9 +1974,14 @@
+ 		nextToken();
+ 		if (token.value == TOKnot)
+ 		{
++		    TemplateInstance *tempinst = new TemplateInstance(loc, id);
+ 		    nextToken();
+-		    TemplateInstance *tempinst = new TemplateInstance(loc, id);
+-		    tempinst->tiargs = parseTemplateArgumentList();
++		    if (token.value == TOKlparen)
++			// ident!(template_arguments)
++			tempinst->tiargs = parseTemplateArgumentList();
++		    else
++			// ident!template_argument
++			tempinst->tiargs = parseTemplateArgument();
+ 		    tid->addIdent((Identifier *)tempinst);
+ 		}
+ 		else
+@@ -1924,6 +2010,7 @@
+ 	    break;
+ 
+ 	case TOKinvariant:
++	case TOKimmutable:
+ 	    // invariant(type)
+ 	    nextToken();
+ 	    check(TOKlparen);
+@@ -2002,8 +2089,8 @@
+ 	    case TOKdelegate:
+ 	    case TOKfunction:
+ 	    {	// Handle delegate declaration:
+-		//	t delegate(parameter list)
+-		//	t function(parameter list)
++		//	t delegate(parameter list) nothrow pure
++		//	t function(parameter list) nothrow pure
+ 		Arguments *arguments;
+ 		int varargs;
+ 		bool ispure = false;
+@@ -2075,6 +2162,7 @@
+ 	    break;
+     }
+ 
++    // parse DeclaratorSuffixes
+     while (1)
+     {
+ 	switch (token.value)
+@@ -2142,7 +2230,7 @@
+ 		Arguments *arguments = parseParameters(&varargs);
+ 		Type *tf = new TypeFunction(arguments, t, varargs, linkage);
+ 
+-		/* Parse const/invariant/nothrow postfix
++		/* Parse const/invariant/nothrow/pure postfix
+ 		 */
+ 		while (1)
+ 		{
+@@ -2154,6 +2242,7 @@
+ 			    continue;
+ 
+ 			case TOKinvariant:
++			case TOKimmutable:
+ 			    tf = tf->makeInvariant();
+ 			    nextToken();
+ 			    continue;
+@@ -2237,11 +2326,18 @@
+ 		goto L1;
+ 
+ 	    case TOKinvariant:
++	    case TOKimmutable:
+ 		if (peek(&token)->value == TOKlparen)
+ 		    break;
+ 		stc = STCinvariant;
+ 		goto L1;
+ 
++	    case TOKshared:
++		if (peek(&token)->value == TOKlparen)
++		    break;
++		stc = STCshared;
++		goto L1;
++
+ 	    case TOKstatic:	stc = STCstatic;	 goto L1;
+ 	    case TOKfinal:	stc = STCfinal;		 goto L1;
+ 	    case TOKauto:	stc = STCauto;		 goto L1;
+@@ -2252,6 +2348,7 @@
+ 	    case TOKdeprecated: stc = STCdeprecated;	 goto L1;
+ 	    case TOKnothrow:    stc = STCnothrow;	 goto L1;
+ 	    case TOKpure:       stc = STCpure;		 goto L1;
++	    case TOKref:        stc = STCref;            goto L1;
+ 	    case TOKtls:        stc = STCtls;		 goto L1;
+ 	    case TOKenum:	stc = STCmanifest;	 goto L1;
+ 	    L1:
+@@ -2608,6 +2705,7 @@
+ }
+ 
+ /*****************************************
++ * Parse initializer for variable declaration.
+  */
+ 
+ Initializer *Parser::parseInitializer()
+@@ -2865,13 +2963,14 @@
+     switch (token.value)
+     {
+ 	case TOKidentifier:
+-	    // Need to look ahead to see if it is a declaration, label, or expression
++	    /* A leading identifier can be a declaration, label, or expression.
++	     * The easiest case to check first is label:
++	     */
+ 	    t = peek(&token);
+ 	    if (t->value == TOKcolon)
+ 	    {	// It's a label
+-		Identifier *ident;
+-
+-		ident = token.ident;
++
++		Identifier *ident = token.ident;
+ 		nextToken();
+ 		nextToken();
+ 		s = parseStatement(PSsemi);
+@@ -2963,6 +3062,7 @@
+ 	case TOKextern:
+ 	case TOKfinal:
+ 	case TOKinvariant:
++	case TOKimmutable:
+ //	case TOKtypeof:
+ 	Ldeclaration:
+ 	{   Array *a;
+@@ -3857,10 +3957,11 @@
+ 
+ int Parser::isDeclaration(Token *t, int needId, enum TOK endtok, Token **pt)
+ {
++    //printf("isDeclaration(needId = %d)\n", needId);
+     int haveId = 0;
+ 
+ #if V2
+-    if ((t->value == TOKconst || t->value == TOKinvariant) &&
++    if ((t->value == TOKconst || t->value == TOKinvariant || token.value == TOKimmutable) &&
+ 	peek(t)->value != TOKlparen)
+     {	/* const type
+ 	 * invariant type
+@@ -3870,18 +3971,26 @@
+ #endif
+ 
+     if (!isBasicType(&t))
+-	return FALSE;
++	goto Lisnot;
+     if (!isDeclarator(&t, &haveId, endtok))
+-	return FALSE;
++	goto Lisnot;
+     if ( needId == 1 ||
+ 	(needId == 0 && !haveId) ||
+ 	(needId == 2 &&  haveId))
+     {	if (pt)
+ 	    *pt = t;
+-	return TRUE;
++	goto Lis;
+     }
+     else
+-	return FALSE;
++	goto Lisnot;
++
++Lis:
++    //printf("\tis declaration\n");
++    return TRUE;
++
++Lisnot:
++    //printf("\tis not declaration\n");
++    return FALSE;
+ }
+ 
+ int Parser::isBasicType(Token **pt)
+@@ -3899,6 +4008,7 @@
+ 	    break;
+ 
+ 	case TOKidentifier:
++	L5:
+ 	    t = peek(t);
+ 	    if (t->value == TOKnot)
+ 	    {
+@@ -3920,11 +4030,42 @@
+ 		    if (t->value != TOKnot)
+ 			goto L3;
+ 	L4:
++		    /* Seen a !
++		     * Look for:
++		     * !( args ), !identifier, etc.
++		     */
+ 		    t = peek(t);
+-		    if (t->value != TOKlparen)
+-			goto Lfalse;
+-		    if (!skipParens(t, &t))
+-			goto Lfalse;
++		    switch (t->value)
++		    {	case TOKidentifier:
++			    goto L5;
++			case TOKlparen:
++			    if (!skipParens(t, &t))
++				goto Lfalse;
++			    break;
++			CASE_BASIC_TYPES:
++			case TOKint32v:
++			case TOKuns32v:
++			case TOKint64v:
++			case TOKuns64v:
++			case TOKfloat32v:
++			case TOKfloat64v:
++			case TOKfloat80v:
++			case TOKimaginary32v:
++			case TOKimaginary64v:
++			case TOKimaginary80v:
++			case TOKnull:
++			case TOKtrue:
++			case TOKfalse:
++			case TOKcharv:
++			case TOKwcharv:
++			case TOKdcharv:
++			case TOKstring:
++			case TOKfile:
++			case TOKline:
++			    goto L2;
++			default:
++			    goto Lfalse;
++		    }
+ 		}
+ 		else
+ 		    break;
+@@ -3946,6 +4087,7 @@
+ 
+ 	case TOKconst:
+ 	case TOKinvariant:
++	case TOKimmutable:
+ 	    // const(type)  or  invariant(type)
+ 	    t = peek(t);
+ 	    if (t->value != TOKlparen)
+@@ -3960,9 +4102,11 @@
+ 	    goto Lfalse;
+     }
+     *pt = t;
++    //printf("is\n");
+     return TRUE;
+ 
+ Lfalse:
++    //printf("is not\n");
+     return FALSE;
+ }
+ 
+@@ -3982,7 +4126,7 @@
+ 	switch (t->value)
+ 	{
+ 	    case TOKmul:
+-	    case TOKand:
++//	    case TOKand:
+ 		t = peek(t);
+ 		continue;
+ 
+@@ -4087,8 +4231,22 @@
+ 		parens = FALSE;
+ 		if (!isParameters(&t))
+ 		    return FALSE;
+-		if (t->value == TOKconst || t->value == TOKinvariant)
+-		    t = peek(t);
++		while (1)
++		{
++		    switch (t->value)
++		    {
++			case TOKconst:
++			case TOKinvariant:
++			case TOKimmutable:
++			case TOKpure:
++			case TOKnothrow:
++			    t = peek(t);
++			    continue;
++			default:
++			    break;
++		    }
++		    break;
++		}
+ 		continue;
+ 
+ 	    // Valid tokens that follow a declaration
+@@ -4141,6 +4299,7 @@
+ 	    case TOKlazy:
+ 	    case TOKconst:
+ 	    case TOKinvariant:
++	    case TOKimmutable:
+ 	    case TOKfinal:
+ 		continue;
+ 
+@@ -4396,13 +4555,18 @@
+ 	case TOKidentifier:
+ 	    id = token.ident;
+ 	    nextToken();
+-	    if (token.value == TOKnot && peek(&token)->value == TOKlparen)
++	    if (token.value == TOKnot && peekNext() != TOKis)
+ 	    {	// identifier!(template-argument-list)
+ 		TemplateInstance *tempinst;
+ 
+ 		tempinst = new TemplateInstance(loc, id);
+ 		nextToken();
+-		tempinst->tiargs = parseTemplateArgumentList();
++		if (token.value == TOKlparen)
++		    // ident!(template_arguments)
++		    tempinst->tiargs = parseTemplateArgumentList();
++		else
++		    // ident!template_argument
++		    tempinst->tiargs = parseTemplateArgument();
+ 		e = new ScopeExp(loc, tempinst);
+ 	    }
+ 	    else
+@@ -4646,6 +4810,7 @@
+ 			 token.value == TOKinterface ||
+ 			 token.value == TOKconst && peek(&token)->value == TOKrparen ||
+ 			 token.value == TOKinvariant && peek(&token)->value == TOKrparen ||
++			 token.value == TOKimmutable && peek(&token)->value == TOKrparen ||
+ 			 token.value == TOKfunction ||
+ 			 token.value == TOKdelegate ||
+ 			 token.value == TOKreturn))
+@@ -4779,8 +4944,8 @@
+ 	    nextToken();
+ 	case_delegate:
+ 	{
+-	    /* function type(parameters) { body }
+-	     * delegate type(parameters) { body }
++	    /* function type(parameters) { body } pure nothrow
++	     * delegate type(parameters) { body } pure nothrow
+ 	     * (parameters) { body }
+ 	     * { body }
+ 	     */
+@@ -4835,7 +5000,7 @@
+ 	    nextToken();
+ 	    break;
+     }
+-    return parsePostExp(e);
++    return e;
+ }
+ 
+ Expression *Parser::parsePostExp(Expression *e)
+@@ -4853,13 +5018,16 @@
+ 		{   Identifier *id = token.ident;
+ 
+ 		    nextToken();
+-		    if (token.value == TOKnot && peek(&token)->value == TOKlparen)
++		    if (token.value == TOKnot && peekNext() != TOKis)
+ 		    {   // identifier!(template-argument-list)
+-			TemplateInstance *tempinst;
+-
+-			tempinst = new TemplateInstance(loc, id);
++			TemplateInstance *tempinst = new TemplateInstance(loc, id);
+ 			nextToken();
+-			tempinst->tiargs = parseTemplateArgumentList();
++			if (token.value == TOKlparen)
++			    // ident!(template_arguments)
++			    tempinst->tiargs = parseTemplateArgumentList();
++			else
++			    // ident!template_argument
++			    tempinst->tiargs = parseTemplateArgument();
+ 			e = new DotTemplateInstanceExp(loc, e, tempinst);
+ 		    }
+ 		    else
+@@ -5014,7 +5182,7 @@
+ 	    check(TOKlparen);
+ 	    /* Look for cast(const) and cast(invariant)
+ 	     */
+-	    if ((token.value == TOKconst || token.value == TOKinvariant) &&
++	    if ((token.value == TOKconst || token.value == TOKinvariant || token.value == TOKimmutable) &&
+ 		peek(&token)->value == TOKrparen)
+ 	    {	enum TOK tok = token.value;
+ 		nextToken();
+@@ -5119,10 +5287,12 @@
+ 	    }
+ #endif
+ 	    e = parsePrimaryExp();
++	    e = parsePostExp(e);
+ 	    break;
+ 	}
+ 	default:
+ 	    e = parsePrimaryExp();
++	    e = parsePostExp(e);
+ 	    break;
+     }
+     assert(e);
+diff -r c4acdacfddd2 d/dmd2/parse.h
+--- a/d/dmd2/parse.h	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/parse.h	Sun Jul 18 01:10:36 2010 +0100
+@@ -76,6 +76,7 @@
+     Dsymbol *parseMixin();
+     Objects *parseTemplateArgumentList();
+     Objects *parseTemplateArgumentList2();
++    Objects *parseTemplateArgument();
+     StaticAssert *parseStaticAssert();
+     TypeQualified *parseTypeof();
+     enum LINK parseLinkage();
+diff -r c4acdacfddd2 d/dmd2/statement.c
+--- a/d/dmd2/statement.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/statement.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -2947,7 +2947,10 @@
+ 	{   VarExp *ve = (VarExp *)exp;
+ 	    VarDeclaration *v = ve->var->isVarDeclaration();
+ 
+-	    if (!v || v->isOut() || v->isRef())
++	    if (((TypeFunction *)fd->type)->isref)
++		// Function returns a reference
++		fd->nrvo_can = 0;
++	    else if (!v || v->isOut() || v->isRef())
+ 		fd->nrvo_can = 0;
+ 	    else if (tbret->ty == Tstruct && ((TypeStruct *)tbret)->sym->dtor)
+ 		// Struct being returned has destructors
+@@ -3077,6 +3080,22 @@
+ 	    exp = new AssignExp(loc, v, exp);
+ 	    exp = exp->semantic(sc);
+ 	}
++
++	if (((TypeFunction *)fd->type)->isref)
++	{   // Function returns a reference
++	    if (tbret->isMutable())
++		exp = exp->modifiableLvalue(sc, exp);
++	    else
++		exp = exp->toLvalue(sc, exp);
++
++	    if (exp->op == TOKvar)
++	    {	VarExp *ve = (VarExp *)exp;
++		VarDeclaration *v = ve->var->isVarDeclaration();
++		if (v && !v->isDataseg() && !(v->storage_class & (STCref | STCout)))
++		    error("escaping reference to local variable %s", v->toChars());
++	    }
++	}
++
+ 	//exp->dump(0);
+ 	//exp->print();
+ 	exp->checkEscape();
+diff -r c4acdacfddd2 d/dmd2/toir.c
+--- a/d/dmd2/toir.c	Sat Jul 17 19:27:40 2010 +0100
++++ b/d/dmd2/toir.c	Sun Jul 18 01:10:36 2010 +0100
+@@ -532,6 +532,11 @@
+ enum RET TypeFunction::retStyle()
+ {
+     //printf("TypeFunction::retStyle() %s\n", toChars());
++#if V2
++    if (isref)
++	return RETregs;			// returns a pointer
++#endif
++
+     Type *tn = next->toBasetype();
+ 
+     if (tn->ty == Tstruct)

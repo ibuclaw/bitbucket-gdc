@@ -1,0 +1,13 @@
+diff -r 355a482e2fc9 d/d-codegen.cc
+--- a/d/d-codegen.cc	Fri Jun 04 19:54:55 2010 -0400
++++ b/d/d-codegen.cc	Sat Jun 05 19:16:24 2010 -0400
+@@ -81,6 +81,9 @@
+ 	    Expression * ie = exp_init->toExpression();
+ 	    if ( ! (init_val = assignValue(ie, v)) )
+ 		init_exp = ie->toElem(this);
++        if (init_val && v->storage_class & (STCref | STCout))
++            init_val = addressOf( init_val );
++
+ 	}
+ 	else
+ 	    no_init = true;

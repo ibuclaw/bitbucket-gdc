@@ -1,0 +1,253 @@
+diff -r b0a9ef534877 d/d-spec.c
+--- a/d/d-spec.c	Sat Sep 10 23:33:07 2011 +0100
++++ b/d/d-spec.c	Sun Sep 11 17:47:02 2011 -0400
+@@ -60,6 +60,14 @@
+ #define LIBPHOBOS_PROFILE LIBPHOBOS
+ #endif
+ 
++#ifndef LIBPHOBOS_DMAIN
++#define LIBPHOBOS_DMAIN ":dmain.o"
++#endif
++#ifndef LIBPHOBOS_DMAIN_PROFILE
++#define LIBPHOBOS_DMAIN_PROFILE LIBPHOBOS_DMAIN
++#endif
++
++
+ #else
+ 
+ #ifndef MATH_LIBRARY
+@@ -76,6 +84,13 @@
+ #define LIBPHOBOS_PROFILE LIBPHOBOS
+ #endif
+ 
++#ifndef LIBPHOBOS_DMAIN
++#define LIBPHOBOS_DMAIN "-l:dmain.o"
++#endif
++#ifndef LIBPHOBOS_DMAIN_PROFILE
++#define LIBPHOBOS_DMAIN_PROFILE LIBPHOBOS_DMAIN
++#endif
++
+ #endif
+ 
+ /* This macro allows casting away const-ness to pass -Wcast-qual
+@@ -105,7 +120,11 @@ lang_specific_driver (struct cl_decoded_
+ 
+     /* Used by -debuglib */
+     int saw_debug_flag = 0;
+-
++    
++    /* Determines if 'dmain.o' should be linked.  This should be set to 0 if
++       an entrypoint other than 'main' is used. */
++    int include_dmain = 1;
++    
+     /* This is a tristate:
+        -1 means we should not link in libphobos
+        0  means we should link in libphobos if it is needed
+@@ -352,6 +371,16 @@ lang_specific_driver (struct cl_decoded_
+ 
+                 break;
+             }
++            
++            /* Options that signify a non main entry point. */
++            case OPT_fno_dmain:
++            case OPT_shared:
++#if __MINGW32__
++            case OPT_mwindows:
++            case OPT_mdll:
++#endif
++                include_dmain = 0;
++                break;
+         }
+     }
+ 
+@@ -470,6 +499,15 @@ lang_specific_driver (struct cl_decoded_
+                          CL_DRIVER, &new_decoded_options[j]);
+         added_libraries++;
+         j++;
++        
++        /* Add dmain.o as well */
++        if (include_dmain)
++        {
++            generate_option (OPT_l, saw_profile_flag ? LIBPHOBOS_DMAIN_PROFILE : LIBPHOBOS_DMAIN, 1,
++                            CL_DRIVER, &new_decoded_options[j]);
++            added_libraries++;
++            j++;
++        }
+     }
+     else if (saw_debug_flag && debuglib)
+     {
+@@ -547,6 +585,10 @@ lang_specific_driver (int *in_argc, cons
+     /* Used by -debuglib */
+     int saw_debug_flag = 0;
+ 
++    /* Determines if 'dmain.o' should be linked.  This should be set to 0 if
++       an entrypoint other than 'main' is used. */
++    int include_dmain = 1;
++
+     /* This is a tristate:
+        -1 means we should not link in libphobos
+        0  means we should link in libphobos if it is needed
+@@ -717,6 +759,17 @@ lang_specific_driver (int *in_argc, cons
+                   /* Unrecognised libraries (e.g. -ltango) may require libphobos.  */
+                   library = (library == 0) ? 1 : library;
+             }
++            
++            /* Options that signify a non main entry point. */
++            else if (strcmp (argv[i], "-fno-dmain") == 0)
++                include_dmain = 0;
++            else if (strcmp (argv[i], "-mdll") == 0)
++                include_dmain = 0;
++            else if (strcmp (argv[i], "-mwindows") == 0)
++                include_dmain = 0;            
++            else if (strcmp (argv[i], "-shared") == 0)
++                include_dmain = 0;            
++                
+             else if (strcmp (argv[i], "-pg") == 0 || strcmp (argv[i], "-p") == 0)
+                 saw_profile_flag++;
+             else if (strcmp (argv[i], "-g") == 0)
+@@ -891,6 +944,13 @@ lang_specific_driver (int *in_argc, cons
+     {
+         arglist[j++] = saw_profile_flag ? LIBPHOBOS_PROFILE : LIBPHOBOS;
+         added_libraries++;
++
++        /* Add '-l:dmain.o' for phobos entry point. */
++        if (include_dmain)
++        {
++            arglist[j++] = saw_profile_flag ? LIBPHOBOS_DMAIN_PROFILE : LIBPHOBOS_DMAIN;
++            added_libraries++;        
++        }
+     }
+     else if (saw_debug_flag && debuglib)
+     {
+diff -r b0a9ef534877 d/druntime/rt/dmain.d
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/d/druntime/rt/dmain.d	Sun Sep 11 17:47:02 2011 -0400
+@@ -0,0 +1,6 @@
++private extern (C) int _d_run_main(int argc, char **argv);
++
++extern (C) int main(int argc, char **argv)
++{
++    return _d_run_main(argc, argv);
++}
+diff -r b0a9ef534877 d/druntime/rt/dmain2.d
+--- a/d/druntime/rt/dmain2.d	Sat Sep 10 23:33:07 2011 +0100
++++ b/d/druntime/rt/dmain2.d	Sun Sep 11 17:47:02 2011 -0400
+@@ -356,7 +356,7 @@ int main(char[][] args);
+  * function and catch any unhandled exceptions.
+  */
+ 
+-extern (C) int main(int argc, char** argv)
++extern (C) int _d_run_main(int argc, char** argv)
+ {
+     char[][] args;
+     int result;
+diff -r b0a9ef534877 d/lang.opt
+--- a/d/lang.opt	Sat Sep 10 23:33:07 2011 +0100
++++ b/d/lang.opt	Sun Sep 11 17:47:02 2011 -0400
+@@ -213,3 +213,7 @@ Driver
+ 
+ static_libphobos
+ Driver
++
++fno-dmain
++Driver
++Do not link phobos dmain.o.
+diff -r b0a9ef534877 d/phobos2/Makefile.am
+--- a/d/phobos2/Makefile.am	Sat Sep 10 23:33:07 2011 +0100
++++ b/d/phobos2/Makefile.am	Sun Sep 11 17:47:02 2011 -0400
+@@ -172,7 +172,7 @@ RT_WINDOWS_OBJS=core/sys/windows/dbghelp
+ 		core/sys/windows/windows.o
+ 
+ # This should not be linked into a shared library.
+-CMAIN_OBJS= #rt/cmain.o
++CMAIN_OBJS=rt/dmain.o
+ 
+ D_GC_MODULES=@D_GC_MODULES@
+ 
+@@ -221,7 +221,7 @@ CORE_IMPORTS=core/atomic.di core/bitop.d
+ ALL_DRUNTIME_OBJS = $(DRUNTIME_OBJS) $(CORE_OBJS) $(D_GC_MODULES) $(GCC_OBJS)
+ 
+ libgdruntime.a : $(ALL_DRUNTIME_OBJS) $(CMAIN_OBJS) $(subst core/,$(IMPORT)/core/,$(CORE_IMPORTS))
+-	$(AR) -r $@ $(ALL_DRUNTIME_OBJS) $(CMAIN_OBJS)
++	$(AR) -r $@ $(ALL_DRUNTIME_OBJS)
+ 	$(RANLIB) $@
+ 
+ 
+@@ -292,9 +292,9 @@ ALL_PHOBOS_OBJS = $(D_EXTRA_OBJS) $(MAIN
+ 
+ 
+ libgphobos2.a : libgdruntime.a $(ALL_PHOBOS_OBJS)
+-	$(AR) -r $@ $(ALL_DRUNTIME_OBJS) $(CMAIN_OBJS) $(ALL_PHOBOS_OBJS)
++	$(AR) -r $@ $(ALL_DRUNTIME_OBJS) $(ALL_PHOBOS_OBJS)
+ 	$(RANLIB) $@
+-
++	
+ libgphobos2_t.a : $(ALL_PHOBOS_OBJS:.o=.t.o)
+ 	$(AR) -r $@ $(ALL_PHOBOS_OBJS:.o=.t.o)
+ 	$(RANLIB) $@
+@@ -303,12 +303,13 @@ check-local: unittest testgc
+ 	./unittest
+ 	./testgc
+ 
+-install-exec-local: $(D_PREREQ_SRCS) libgphobos2.a libgdruntime.a
++install-exec-local: $(D_PREREQ_SRCS) libgphobos2.a libgdruntime.a 
+ 	$(mkinstalldirs) $(DESTDIR)$(toolexeclibdir)
+ 	$(INSTALL) libgphobos2.a $(DESTDIR)$(toolexeclibdir)
+ 	$(RANLIB) $(DESTDIR)$(toolexeclibdir)/libgphobos2.a
+ 	$(INSTALL) libgdruntime.a $(DESTDIR)$(toolexeclibdir)
+ 	$(RANLIB) $(DESTDIR)$(toolexeclibdir)/libgdruntime.a
++	$(INSTALL) $(CMAIN_OBJS) $(DESTDIR)$(toolexeclibdir)
+ 
+ install-data-local: $(D_PREREQ_SRCS) libgphobos2.a libgdruntime.a
+ 	for i in etc/c \
+@@ -345,6 +346,7 @@ clean-local:
+ 	rm -f $(config_unix_d_src)
+ 	rm -f libgdruntime.a
+ 	rm -f libgphobos2.a
++	rm -f libgphobos2_main.a
+ 	rm -f libgphobos2_t.a
+ 
+ 
+diff -r b0a9ef534877 d/phobos2/Makefile.in
+--- a/d/phobos2/Makefile.in	Sat Sep 10 23:33:07 2011 +0100
++++ b/d/phobos2/Makefile.in	Sun Sep 11 17:47:02 2011 -0400
+@@ -291,7 +291,7 @@ RT_WINDOWS_OBJS = core/sys/windows/dbghe
+ 
+ 
+ # This should not be linked into a shared library.
+-CMAIN_OBJS = #rt/cmain.o
++CMAIN_OBJS = rt/dmain.o
+ 
+ # Regardless of OS, all import headers are generated.
+ CORE_IMPORTS = core/atomic.di core/bitop.di core/cpuid.di core/demangle.di \
+@@ -805,7 +805,7 @@ gcc/cbridge_math.o: gcc/cbridge_math.c
+ 	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -fno-strict-aliasing -c $<
+ 
+ libgdruntime.a : $(ALL_DRUNTIME_OBJS) $(CMAIN_OBJS) $(subst core/,$(IMPORT)/core/,$(CORE_IMPORTS))
+-	$(AR) -r $@ $(ALL_DRUNTIME_OBJS) $(CMAIN_OBJS)
++	$(AR) -r $@ $(ALL_DRUNTIME_OBJS)
+ 	$(RANLIB) $@
+ 
+ #--------------------------------------#
+@@ -826,11 +826,12 @@ std/stream.t.o: std/stream.d $(D_PREREQ_
+ 	$(GDC) -o $@ $(ALL_DFLAGS) -fdeprecated -c $<
+ 
+ libgphobos2.a : libgdruntime.a $(ALL_PHOBOS_OBJS)
+-	$(AR) -r $@ $(ALL_DRUNTIME_OBJS) $(CMAIN_OBJS) $(ALL_PHOBOS_OBJS)
++	$(AR) -r $@ $(ALL_DRUNTIME_OBJS) $(ALL_PHOBOS_OBJS)
+ 	$(RANLIB) $@
+ 
+ libgphobos2_t.a : $(ALL_PHOBOS_OBJS:.o=.t.o)
+ 	$(AR) -r $@ $(ALL_PHOBOS_OBJS:.o=.t.o)
++	$(AR) -d $@ dmain.t.o	
+ 	$(RANLIB) $@
+ 
+ check-local: unittest testgc
+@@ -843,6 +844,7 @@ install-exec-local: $(D_PREREQ_SRCS) lib
+ 	$(RANLIB) $(DESTDIR)$(toolexeclibdir)/libgphobos2.a
+ 	$(INSTALL) libgdruntime.a $(DESTDIR)$(toolexeclibdir)
+ 	$(RANLIB) $(DESTDIR)$(toolexeclibdir)/libgdruntime.a
++	$(INSTALL) $(CMAIN_OBJS) $(DESTDIR)$(toolexeclibdir)
+ 
+ install-data-local: $(D_PREREQ_SRCS) libgphobos2.a libgdruntime.a
+ 	for i in etc/c \

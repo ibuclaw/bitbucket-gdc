@@ -1,0 +1,21 @@
+PROG = test_xml
+OBJS = main.o
+
+DC  = gdc
+
+DFLAGS  = -I.
+LDFLAGS = 
+LIBS =
+
+all: $(PROG)
+
+%.o: %.d
+	$(DC) $(DFLAGS) -c $< -o $@
+
+$(PROG): $(OBJS)
+	$(DC) $(LDFLAGS) $^ -o $@ $(LIBS)
+	rm -f */*.o
+
+clean:
+	rm -f $(PROG)
+	rm -f */*.o

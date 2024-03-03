@@ -1,0 +1,100 @@
+diff -r efb1b1ed90d8 d/d-spec.c
+--- a/d/d-spec.c	Sat Apr 16 20:43:47 2011 +0100
++++ b/d/d-spec.c	Sat Apr 23 12:45:20 2011 -0400
+@@ -56,6 +56,9 @@
+ #ifndef LIBPHOBOS
+ #define LIBPHOBOS "-lgphobos"
+ #endif
++#ifndef LIBPHOBOS2
++#define LIBPHOBOS2 "-lgphobos2"
++#endif
+ #ifndef LIBPHOBOS_PROFILE
+ #define LIBPHOBOS_PROFILE LIBPHOBOS
+ #endif
+@@ -94,6 +97,9 @@
+     /* Used by -debuglib */
+     int saw_debug_flag = 0;
+ 
++    /* If nonzero, the user gave "-v2" flag. */
++    int saw_d2_flag = 0;
++
+     /* This is a tristate:
+        -1 means we should not link in libphobos
+        0  means we should link in libphobos if it is needed
+@@ -103,6 +109,7 @@
+     /* If nonzero, use the standard D runtime library when linking with
+        standard libraries. */
+     int phobos = 1;
++    
+ 
+     /* The number of arguments being added to what's in argv, other than
+        libraries.  We use this to track the number of times we've inserted
+@@ -271,6 +278,8 @@
+                 saw_verbose_flag = 1;
+             else if (strcmp (argv[i], "-g") == 0)
+                 saw_debug_flag = 1;
++            else if (strcmp (argv[i], "-v2") == 0)
++                saw_d2_flag = 1;
+             else if (strncmp (argv[i], "-x", 2) == 0)
+             {
+                 const char * arg;
+@@ -459,7 +468,7 @@
+     /* Add `-lgphobos' if we haven't already done so.  */
+     if (library > 0 && phobos)
+     {
+-        arglist[j++] = saw_profile_flag ? LIBPHOBOS_PROFILE : LIBPHOBOS;
++        arglist[j++] = saw_profile_flag ? LIBPHOBOS_PROFILE : saw_d2_flag ? LIBPHOBOS2 : LIBPHOBOS;
+         added_libraries++;
+     }
+     else if (saw_debug_flag && debuglib)
+diff -r efb1b1ed90d8 d/druntime/core/thread.d
+--- a/d/druntime/core/thread.d	Sat Apr 16 20:43:47 2011 +0100
++++ b/d/druntime/core/thread.d	Sat Apr 23 12:45:20 2011 -0400
+@@ -147,7 +147,7 @@
+             {
+                 extern int _tlsstart;
+                 extern int _tlsend;
+-                __gshared int _tls_index;   // %% Find somewhere to put this.
++                extern int _tls_index;
+             }
+         }
+         else
+diff -r efb1b1ed90d8 d/lang-specs.h
+--- a/d/lang-specs.h	Sat Apr 16 20:43:47 2011 +0100
++++ b/d/lang-specs.h	Sat Apr 23 12:45:20 2011 -0400
+@@ -39,7 +39,7 @@
+ {".di", "@d", 0, 1, 0 },
+ {".DI", "@d", 0, 1, 0 },
+ {"@d",
+-     "%{!E:cc1d %i %(cc1_options) %(cc1d) %I %N %{nostdinc*} %{+e*} %{I*} %{J*}\
++     "%{!E:%{v2:cc1d2; v1:cc1d; :cc1d} %i %(cc1_options) %(cc1d) %I %N %{nostdinc*} %{+e*} %{I*} %{J*}\
+       %{M} %{MM} %{!fsyntax-only:%(invoke_as)}}", D_D_SPEC, 1, 0 },
+ #else
+ {".d", "@d", 0, 1, 0 },
+@@ -47,7 +47,7 @@
+ {".di", "@d", 0, 1, 0 },
+ {".DI", "@d", 0, 1, 0 },
+ {"@d",
+-     "%{!E:cc1d %i %(cc1_options) %(cc1d) %I %N %{nostdinc*} %{+e*} %{I*} %{J*}\
++     "%{!E:%{v2:cc1d2; v1:cc1d; :cc1d} %i %(cc1_options) %(cc1d) %I %N %{nostdinc*} %{+e*} %{I*} %{J*}\
+       %{M} %{MM} %{!fsyntax-only:%(invoke_as)}}", D_D_SPEC, 1, 0 },
+ #endif
+ 
+diff -r efb1b1ed90d8 d/phobos2/Makefile.in
+--- a/d/phobos2/Makefile.in	Sat Apr 16 20:43:47 2011 +0100
++++ b/d/phobos2/Makefile.in	Sat Apr 23 12:45:20 2011 -0400
+@@ -367,10 +367,10 @@
+ FREEBSD_OBJS = std/c/freebsd/socket.o
+ 
+ # std.c.linux.linux, std.loader, gcc.cbridge*
+-WINDOWS_OBJS = std/c/windows/com.o std/c/windows/stat.o std/c/windows/windows.o \
+-             std/c/windows/winsock.o std/windows/charset.o \
+-             std/windows/iunknown.o std/windows/registry.o \
+-             std/windows/syserror.o std/__fileinit.o
++WINDOWS_OBJS = std/c/windows/com.o std/c/windows/stat.o std/c/wcharh.o \
++             std/c/windows/windows.o std/c/windows/winsock.o \
++             std/windows/charset.o std/windows/iunknown.o std/windows/registry.o \
++             std/windows/syserror.o std/__fileinit.o 
+ 
+ ALL_PHOBOS_OBJS = $(D_EXTRA_OBJS) $(MAIN_OBJS) $(ZLIB_OBJS)
+ 

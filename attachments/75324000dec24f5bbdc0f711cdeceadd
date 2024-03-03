@@ -1,0 +1,22 @@
+../../../libphobos/std/file.d:1158: Error: no property 'st_ctimespec' for type 'struct_stat'
+../../../libphobos/std/file.d:1158: Error: no property 'tv_sec' for type 'int'
+../../../libphobos/std/file.d:1159: Error: no property 'st_atimespec' for type 'struct_stat'
+../../../libphobos/std/file.d:1159: Error: no property 'tv_sec' for type 'int'
+../../../libphobos/std/file.d:1160: Error: no property 'st_mtimespec' for type 'struct_stat'
+../../../libphobos/std/file.d:1160: Error: no property 'tv_sec' for type 'int'
+../../../libphobos/std/file.d:1393: Error: no property 'st_ctimespec' for type 'struct_stat'
+../../../libphobos/std/file.d:1393: Error: no property 'tv_sec' for type 'int'
+../../../libphobos/std/file.d:1394: Error: no property 'st_atimespec' for type 'struct_stat'
+../../../libphobos/std/file.d:1394: Error: no property 'tv_sec' for type 'int'
+../../../libphobos/std/file.d:1395: Error: no property 'st_mtimespec' for type 'struct_stat'
+../../../libphobos/std/file.d:1395: Error: no property 'tv_sec' for type 'int'
+../../../libphobos/std/file.d:1593: Error: no property 'st_atimespec' for type 'struct_stat'
+../../../libphobos/std/file.d:1593: Error: no property 'tv_sec' for type 'int'
+../../../libphobos/std/file.d:1593: Error: identifier '__time_t' is not defined
+../../../libphobos/std/file.d:1593: Error: __time_t is used as a type
+../../../libphobos/std/file.d:1593: Error: expression cast(void)1 is void and has no value
+../../../libphobos/std/file.d:1594: Error: no property 'st_mtimespec' for type 'struct_stat'
+../../../libphobos/std/file.d:1594: Error: no property 'tv_sec' for type 'int'
+../../../libphobos/std/file.d:1594: Error: identifier '__time_t' is not defined
+../../../libphobos/std/file.d:1594: Error: __time_t is used as a type
+../../../libphobos/std/file.d:1594: Error: expression cast(void)1 is void and has no value

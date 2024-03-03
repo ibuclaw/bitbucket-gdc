@@ -1,0 +1,304 @@
+diff -r 584a5f3a7dce d/phobos2/std/datetime.d
+--- a/d/phobos2/std/datetime.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/phobos2/std/datetime.d	Sun May 08 01:53:16 2011 -0400
+@@ -30771,7 +30771,7 @@
+             scope(exit) RegCloseKey(baseKey);
+ 
+             char[1024] keyName;
+-            auto nameLen = keyName.length;
++            uint nameLen = keyName.length;
+             int result;
+             for(DWORD index = 0;
+                 (result = RegEnumKeyExA(baseKey, index, keyName.ptr, &nameLen, null, null, null, null)) != ERROR_NO_MORE_ITEMS;
+@@ -30784,7 +30784,7 @@
+                     {
+                         scope(exit) RegCloseKey(tzKey);
+                         char[1024] strVal;
+-                        auto strValLen = strVal.length;
++                        uint strValLen = strVal.length;
+ 
+                         bool queryStringValue(string name, size_t lineNum = __LINE__)
+                         {
+@@ -30825,7 +30825,7 @@
+ 
+                                     enum tzi = "TZI\0";
+                                     REG_TZI_FORMAT binVal;
+-                                    auto binValLen = REG_TZI_FORMAT.sizeof;
++                                    uint binValLen = REG_TZI_FORMAT.sizeof;
+ 
+                                     if(RegQueryValueExA(tzKey, tzi.ptr, null, null, cast(ubyte*)&binVal, &binValLen) == ERROR_SUCCESS)
+                                     {
+@@ -30881,7 +30881,7 @@
+             scope(exit) RegCloseKey(baseKey);
+ 
+             char[1024] keyName;
+-            auto nameLen = keyName.length;
++            uint nameLen = keyName.length;
+             int result;
+             for(DWORD index = 0;
+                 (result = RegEnumKeyExA(baseKey, index, keyName.ptr, &nameLen, null, null, null, null)) != ERROR_NO_MORE_ITEMS;
+diff -r 584a5f3a7dce d/phobos2/std/file.d
+--- a/d/phobos2/std/file.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/phobos2/std/file.d	Sun May 08 01:53:16 2011 -0400
+@@ -432,7 +432,8 @@
+     cenforce(h != INVALID_HANDLE_VALUE, name);
+     scope(exit) cenforce(CloseHandle(h), name);
+     DWORD numwritten;
+-    cenforce(WriteFile(h, buffer.ptr, buffer.length, &numwritten, null) == 1
++    
++    cenforce(WriteFile(h, buffer.ptr, cast(DWORD)buffer.length, &numwritten, null) == 1
+             && buffer.length == numwritten,
+             name);
+ }
+@@ -475,7 +476,7 @@
+     scope(exit) cenforce(CloseHandle(h), name);
+     DWORD numwritten;
+     cenforce(SetFilePointer(h, 0, null, FILE_END) != INVALID_SET_FILE_POINTER
+-            && WriteFile(h,buffer.ptr,buffer.length,&numwritten,null) == 1
++            && WriteFile(h,buffer.ptr,cast(DWORD)buffer.length,&numwritten,null) == 1
+             && buffer.length == numwritten,
+             name);
+ }
+@@ -1695,7 +1696,7 @@
+     {
+         auto dir =
+             new wchar[enforce(GetCurrentDirectoryW(0, null), "getcwd")];
+-        dir = dir[0 .. GetCurrentDirectoryW(dir.length, dir.ptr)];
++        dir = dir[0 .. GetCurrentDirectoryW(cast(DWORD)dir.length, dir.ptr)];
+         cenforce(dir.length, "getcwd");
+         return to!string(dir);
+     }
+@@ -1703,7 +1704,7 @@
+     {
+         auto dir =
+             new char[enforce(GetCurrentDirectoryA(0, null), "getcwd")];
+-        dir = dir[0 .. GetCurrentDirectoryA(dir.length, dir.ptr)];
++        dir = dir[0 .. GetCurrentDirectoryA(cast(DWORD)dir.length, dir.ptr)];
+         cenforce(dir.length, "getcwd");
+         return assumeUnique(dir);
+     }
+@@ -2066,7 +2067,7 @@
+ 
+         void _init(in char[] path, in WIN32_FIND_DATA* fd)
+         {
+-            auto clength = std.c.string.strlen(fd.cFileName.ptr);
++            int clength = cast(int) std.c.string.strlen(fd.cFileName.ptr);
+ 
+             // Convert cFileName[] to unicode
+             const wlength = MultiByteToWideChar(0, 0, fd.cFileName.ptr, clength, null, 0);
+diff -r 584a5f3a7dce d/phobos2/std/process.d
+--- a/d/phobos2/std/process.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/phobos2/std/process.d	Sun May 08 01:53:16 2011 -0400
+@@ -518,7 +518,7 @@
+             if (len == 1) return true;
+ 
+             auto buf = new WCHAR[len];
+-            GetEnvironmentVariableW(namez, buf.ptr, buf.length);
++            GetEnvironmentVariableW(namez, buf.ptr, cast(DWORD) buf.length);
+             value = toUTF8(buf[0 .. $-1]);
+             return true;
+         }
+diff -r 584a5f3a7dce d/phobos2/std/socket.d
+--- a/d/phobos2/std/socket.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/phobos2/std/socket.d	Sun May 08 01:53:16 2011 -0400
+@@ -1424,8 +1424,10 @@
+     send(const(void)[] buf, SocketFlags flags)
+         {
+         flags |= SocketFlags.NOSIGNAL;
+-        auto sent = .send(sock, buf.ptr, buf.length, cast(int)flags);
+-                return sent;
++        version(Win32) // Does not use size_t.
++			return .send(sock, buf.ptr, cast(int)buf.length, cast(int)flags);        
++        else
++			return .send(sock, buf.ptr, buf.length, cast(int)flags);
+         }
+ 
+         /// ditto
+@@ -1441,7 +1443,10 @@
+     sendTo(const(void)[] buf, SocketFlags flags, Address to)
+         {
+         flags |= SocketFlags.NOSIGNAL;
+-        return .sendto(sock, buf.ptr, buf.length, cast(int)flags, to.name(), to.nameLen());
++        version(Win32) // Does not use size_t
++			return .sendto(sock, buf.ptr, cast(int)buf.length, cast(int)flags, to.name(), to.nameLen());
++        else
++			return .sendto(sock, buf.ptr, buf.length, cast(int)flags, to.name(), to.nameLen());
+         }
+ 
+         /// ditto
+@@ -1456,7 +1461,10 @@
+         Select!(size_t.sizeof > 4, long, int) sendTo(const(void)[] buf, SocketFlags flags)
+         {
+         flags |= SocketFlags.NOSIGNAL;
+-        return .sendto(sock, buf.ptr, buf.length, cast(int)flags, null, 0);
++        version(Win32) // Does not use size_t
++			return .sendto(sock, buf.ptr, cast(int)buf.length, cast(int)flags, null, 0);
++        else
++			return .sendto(sock, buf.ptr, buf.length, cast(int)flags, null, 0);
+         }
+ 
+ 
+@@ -1477,9 +1485,17 @@
+         //returns number of bytes actually received, 0 on connection closure, or -1 on error
+     ptrdiff_t receive(void[] buf, SocketFlags flags)
+         {
++        version(Win32) // Does not use size_t
++        {
++        return buf.length
++            ? .recv(sock, buf.ptr, cast(int)buf.length, cast(int)flags)
++            : 0;
++		} else {
+         return buf.length
+             ? .recv(sock, buf.ptr, buf.length, cast(int)flags)
+             : 0;
++		
++		}
+         }
+ 
+         /// ditto
+@@ -1502,10 +1518,18 @@
+                         return 0;
+                 from = newFamilyObject();
+                 socklen_t nameLen = cast(socklen_t) from.nameLen();
++                version(Win32)
++                {
++                auto read = .recvfrom(sock, buf.ptr, cast(int)buf.length, cast(int)flags, from.name(), &nameLen);
++                assert(from.addressFamily() == _family);
++                // if(!read) //connection closed
++                return read;
++                } else {
+                 auto read = .recvfrom(sock, buf.ptr, buf.length, cast(int)flags, from.name(), &nameLen);
+                 assert(from.addressFamily() == _family);
+                 // if(!read) //connection closed
+                 return read;
++                }
+         }
+ 
+ 
+@@ -1523,9 +1547,16 @@
+         {
+                 if(!buf.length) //return 0 and don't think the connection closed
+                         return 0;
++                version(Win32)
++                {
++                auto read = .recvfrom(sock, buf.ptr, cast(int)buf.length, cast(int)flags, null, null);
++                // if(!read) //connection closed
++                return read;
++                } else {
+                 auto read = .recvfrom(sock, buf.ptr, buf.length, cast(int)flags, null, null);
+                 // if(!read) //connection closed
+                 return read;
++                }
+         }
+ 
+ 
+diff -r 584a5f3a7dce d/phobos2/std/stream.d
+--- a/d/phobos2/std/stream.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/phobos2/std/stream.d	Sun May 08 01:53:16 2011 -0400
+@@ -1959,7 +1959,9 @@
+   override size_t readBlock(void* buffer, size_t size) {
+     assertReadable();
+     version (Win32) {
+-      ReadFile(hFile, buffer, size, &size, null);
++	  DWORD dwSize = cast(DWORD) size;
++      ReadFile(hFile, buffer, dwSize, &dwSize, null);
++	  size = dwSize;
+     } else version (Posix) {
+       size = core.sys.posix.unistd.read(hFile, buffer, size);
+       if (size == -1)
+@@ -1972,7 +1974,9 @@
+   override size_t writeBlock(const void* buffer, size_t size) {
+     assertWriteable();
+     version (Win32) {
+-      WriteFile(hFile, buffer, size, &size, null);
++	  DWORD dwSize = cast(DWORD) size;
++      WriteFile(hFile, buffer, dwSize, &dwSize, null);
++	  size = dwSize;
+     } else version (Posix) {
+       size = core.sys.posix.unistd.write(hFile, buffer, size);
+       if (size == -1)
+diff -r 584a5f3a7dce d/phobos2/std/windows/charset.d
+--- a/d/phobos2/std/windows/charset.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/phobos2/std/windows/charset.d	Sun May 08 01:53:16 2011 -0400
+@@ -53,7 +53,7 @@
+             if (result.length)
+             {
+                 readLen = WideCharToMultiByte(codePage, 0, ws, -1, result.ptr,
+-                        result.length, null, null);
++                        cast(int)result.length, null, null);
+             }
+ 
+             if (!readLen || readLen != result.length)
+@@ -98,7 +98,7 @@
+             if (result.length)
+             {
+                 readLen = MultiByteToWideChar(codePage, 0, s, -1, result.ptr,
+-                        result.length);
++                        cast(int)result.length);
+             }
+ 
+             if (!readLen || readLen != result.length)
+diff -r 584a5f3a7dce d/phobos2/std/windows/registry.d
+--- a/d/phobos2/std/windows/registry.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/phobos2/std/windows/registry.d	Sun May 08 01:53:16 2011 -0400
+@@ -553,7 +553,7 @@
+     // more if it does.
+     for(;;)
+     {
+-        cchName = name.length;
++        cchName = cast(DWORD)name.length;
+ 
+         res = RegEnumKeyExA(hkey, index, name.ptr, cchName, RESERVED, null, null, null);
+ 
+@@ -1284,7 +1284,7 @@
+         Reg_SetValueExA_(m_hkey, name, asEXPAND_SZ
+                                             ? REG_VALUE_TYPE.REG_EXPAND_SZ
+                                             : REG_VALUE_TYPE.REG_SZ, value.ptr
+-                        , value.length);
++                        , cast(DWORD)value.length);
+     }
+ 
+     /// Sets the named value with the given multiple-strings value
+@@ -1306,13 +1306,13 @@
+         // Allocate
+ 
+         char[]  cs      =   new char[total];
+-        int     base    =   0;
++        size_t  base    =   0;
+ 
+         // Slice the individual strings into the new array
+ 
+         foreach(string s; value)
+         {
+-            int top = base + s.length;
++            size_t top = base + s.length;
+ 
+             cs[base .. top] = s;
+             cs[top] = 0;
+@@ -1320,7 +1320,7 @@
+             base = 1 + top;
+         }
+ 
+-        Reg_SetValueExA_(m_hkey, name, REG_VALUE_TYPE.REG_MULTI_SZ, cs.ptr, cs.length);
++        Reg_SetValueExA_(m_hkey, name, REG_VALUE_TYPE.REG_MULTI_SZ, cs.ptr, cast(DWORD)cs.length);
+     }
+ 
+     /// Sets the named value with the given binary value
+@@ -1330,7 +1330,7 @@
+     /// \note If a value corresponding to the requested name is not found, a RegistryException is thrown
+     void setValue(string name, byte[] value)
+     {
+-        Reg_SetValueExA_(m_hkey, name, REG_VALUE_TYPE.REG_BINARY, value.ptr, value.length);
++        Reg_SetValueExA_(m_hkey, name, REG_VALUE_TYPE.REG_BINARY, value.ptr, cast(DWORD)value.length);
+     }
+ 
+     /// Deletes the named value
+@@ -1453,7 +1453,7 @@
+         DWORD   cchRequired =   ExpandEnvironmentStringsA(lpSrc, null, 0);
+         char[]  newValue    =   new char[cchRequired];
+ 
+-        if(!ExpandEnvironmentStringsA(lpSrc, newValue.ptr, newValue.length))
++        if(!ExpandEnvironmentStringsA(lpSrc, newValue.ptr, cast(DWORD)newValue.length))
+         {
+             throw new Win32Exception("Failed to expand environment variables");
+         }

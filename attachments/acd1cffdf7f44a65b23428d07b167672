@@ -1,0 +1,723 @@
+diff -r 61c81c98d80c d/d-asm-i386.h
+--- a/d/d-asm-i386.h	Tue Jul 05 22:38:05 2011 +0100
++++ b/d/d-asm-i386.h	Thu Jul 07 22:14:30 2011 +0100
+@@ -1502,21 +1502,26 @@
+             case TOKalign:
+                 nextToken();
+                 return Op_Align;
++
+             case TOKin:
+                 nextToken();
+                 opIdent = Id::___in;
+                 return Op_in;
++
+             case TOKint32: // "int"
+                 nextToken();
+                 opIdent = Id::__int;
+                 return Op_SrcImm;
++
+             case TOKout:
+                 nextToken();
+                 opIdent = Id::___out;
+                 return Op_out;
++
+             case TOKidentifier:
+                 // search for mnemonic below
+                 break;
++
+             default:
+                 stmt->error("expected opcode");
+                 return Op_Invalid;
+@@ -1750,6 +1755,7 @@
+             case Op_CBranch:
+             case Op_Loop:
+                 return true;
++
+             default:
+                 return false;
+         }
+@@ -1761,39 +1767,86 @@
+         {
+             case Byte_NoType:
+                 return ptrtype == Byte_Ptr;
++
+             case Word_Types:
+                 if (ptrtype == Byte_Ptr)
++                {
+                     return false;
+-                // drop through
++                }
++            // Drop through... 
++            
+             case Int_Types:
+                 switch (ptrtype)
+                 {
+-                    case Byte_Ptr:  type_char = 'b'; break;
+-                    case Short_Ptr: type_char = 'w'; break;
+-                    case Int_Ptr:   type_char = 'l'; break;
+-                    case Long_Ptr: type_char = 'q'; break;
+-                    // %% these may be too strict
+-                    default:        return false;
++                    case Byte_Ptr:
++                        type_char = 'b';
++                        break;
++
++                    case Short_Ptr:
++                        type_char = 'w';
++                        break;
++
++                    case Int_Ptr:
++                        type_char = 'l';
++                        break;
++
++                    case Long_Ptr:
++                        if (global.params.isX86_64)
++                        {
++                            type_char = 'q';
++                            break;
++                        }
++                    // Drop through...
++
++                    default:
++                        return false;
+                 }
+                 break;
++
+             case FPInt_Types:
+                 switch (ptrtype)
+                 {
+-                    case Short_Ptr: type_char = 0;   break;
+-                    case Int_Ptr:   type_char = 'l'; break;
+-                    case Long_Ptr: type_char = 'q'; break;
+-                    default:        return false;
++                    case Short_Ptr:
++                        type_char = 0;
++                        break;
++
++                    case Int_Ptr:
++                        type_char = 'l';
++                        break;
++
++                    case Long_Ptr:
++                        if (global.params.isX86_64)
++                        {
++                            type_char = 'q';
++                            break;
++                        }
++                    // Drop through...
++
++                    default:
++                        return false;
+                 }
+                 break;
++
+             case FP_Types:
+                 switch (ptrtype)
+                 {
+-                    case Float_Ptr:     type_char = 's'; break;
+-                    case Double_Ptr:    type_char = 'l'; break;
+-                    case Extended_Ptr:  type_char = 't'; break;
+-                    default:            return false;
++                    case Float_Ptr:
++                        type_char = 's';
++                        break;
++
++                    case Double_Ptr:
++                        type_char = 'l';
++                        break;
++
++                    case Extended_Ptr:
++                        type_char = 't';
++                        break;
++
++                    default:
++                        return false;
+                 }
+                 break;
++
+             default:
+                 return false;
+         }
+@@ -1805,9 +1858,11 @@
+     {
+         const char *fmt;
+         const char *mnemonic;
++        size_t mlen;
+         char type_char = 0;
+         bool use_star;
+         AsmArgMode mode;
++        PtrType op1_size;
+ 
+         const bool isX86_64 = global.params.isX86_64;
+ 
+@@ -1839,15 +1894,18 @@
+                 case Int_Types:
+                     min_type = Byte_Ptr;
+                     break;
++
+                 case Word_Types:
+                     min_type = Short_Ptr;
+                     break;
++
+                 case FPInt_Types:
+                     if (op == Op_Fis_ST) // integer math instructions
+                         min_type = Int_Ptr;
+                     else // compare, load, store
+                         min_type = Short_Ptr;
+                     break;
++
+                 case FP_Types:
+                     min_type = Float_Ptr;
+                     break;
+@@ -1930,8 +1988,7 @@
+         switch (op)
+         {
+             case Op_SizedStack:
+-            {
+-                int mlen = strlen(mnemonic);
++                mlen = strlen(mnemonic);
+                 if (mnemonic[mlen-1] == 'd')
+                     insnTemplate->write(mnemonic, mlen-1);
+                 else
+@@ -1940,7 +1997,7 @@
+                     insnTemplate->writebyte('w');
+                 }
+                 break;
+-            }
++
+             case Op_cmpsd:
+             case Op_insX:
+             case Op_lodsX:
+@@ -1948,8 +2005,7 @@
+             case Op_outsX:
+             case Op_scasX:
+             case Op_stosX:
+-            {
+-                int mlen = strlen(mnemonic);
++                mlen = strlen(mnemonic);
+                 if (mnemonic[mlen-1] == 'd')
+                 {
+                     insnTemplate->write(mnemonic, mlen-1);
+@@ -1960,13 +2016,11 @@
+                     insnTemplate->writestring(mnemonic);
+                 }
+                 break;
+-            }
++
+             case Op_movsx:
+             case Op_movzx:
+-            {
+-                char tc_1;
+-                int mlen = strlen(mnemonic);
+-                PtrType op1_size = operands[1].dataSize;
++                mlen = strlen(mnemonic);
++                op1_size = operands[1].dataSize;
+                 if (op1_size == Default_Ptr)
+                     op1_size = operands[1].dataSizeHint;
+                 // Need type char for source arg
+@@ -1974,23 +2028,20 @@
+                 {
+                     case Byte_Ptr:
+                     case Default_Ptr:
+-                        tc_1 = 'b';
++                    case Short_Ptr:
+                         break;
+-                    case Short_Ptr:
+-                        tc_1 = 'w';
+-                        break;
++
+                     default:
+                         stmt->error("invalid operand size/type");
+                         return false;
+                 }
+                 gcc_assert(type_char != 0);
+                 insnTemplate->write(mnemonic, mlen-1);
+-                insnTemplate->writebyte(tc_1);
++                insnTemplate->writebyte(op1_size == Short_Ptr ? 'w' : 'b');
+                 insnTemplate->writebyte(type_char);
+                 break;
+-            }
++
+             default:
+-            {
+                 // special case for fdiv, fsub
+                 if ((strncmp(mnemonic, "fsub", 4) == 0 ||
+                      strncmp(mnemonic, "fdiv", 4) == 0) &&
+@@ -2020,7 +2071,6 @@
+                 if (type_char)
+                     insnTemplate->writebyte(type_char);
+                 break;
+-            }
+         }
+ 
+         switch (opInfo->implicitClobbers & Clb_DXAX_Mask)
+@@ -2029,14 +2079,15 @@
+             case Clb_EAX:
+                 asmcode->clbregs[isX86_64 ? Reg_RAX : Reg_EAX] = 1;
+                 break;
++
+             case Clb_SizeDXAX:
+                 asmcode->clbregs[isX86_64 ? Reg_RAX : Reg_EAX] = 1;
+                 if (type_char != 'b')
+                     asmcode->clbregs[isX86_64 ? Reg_RDX : Reg_EDX] = 1;
+                 break;
++
+             default:
+-                // nothing
+-                break;
++                break;  // nothing
+         }
+ 
+         if (opInfo->implicitClobbers & Clb_DI)
+@@ -2087,10 +2138,12 @@
+                     // gas won't accept the two-operand form; skip to the source operand
+                     n = 1;
+                     // drop through
++                
+                 case Op_bound:
+                 case Op_enter:
+                     i = n;
+                     break;
++
+                 default:
+                     i = nOperands - 1 - n; // operand = & operands[ nOperands - 1 - i ];
+                     break;
+@@ -2100,7 +2153,7 @@
+             switch (operand->cls)
+             {
+                 case Opr_Immediate:
+-                {   // for implementing offset:
++                    // for implementing offset:
+                     // $var + $7 // fails
+                     // $var + 7  // ok
+                     // $7 + $var // ok
+@@ -2143,9 +2196,8 @@
+                     }
+                     addOperand(fmt, Arg_Integer, newIntExp(operand->constDisplacement), asmcode);
+                     break;
+-                }
++
+                 case Opr_Reg:
+-                {
+                     if (opInfo->operands[i] & Opr_Dest)
+                     {
+                         Reg clbr_reg = (Reg) regInfo[operand->reg].baseReg;
+@@ -2160,9 +2212,9 @@
+                        insnTemplate->writestring(regInfo[operand->reg].name);
+                      */
+                     break;
+-                }
++
+                 case Opr_Mem:
+-                {   // better: use output operands for simple variable references
++                    // better: use output operands for simple variable references
+                     if (opInfo->operands[i] & Opr_Update)
+                         mode = Mode_Update;
+                     else if (opInfo->operands[i] & Opr_Dest)
+@@ -2177,14 +2229,9 @@
+                         writeReg(operand->segmentPrefix);
+                         insnTemplate->writebyte(':');
+                     }
+-                    if ((operand->segmentPrefix != Reg_Invalid && operand->symbolDisplacement.dim == 0) ||
+-                        operand->constDisplacement)
++                    if (operand->segmentPrefix != Reg_Invalid && operand->symbolDisplacement.dim == 0)
+                     {
+                         addOperand("%a", Arg_Integer, newIntExp(operand->constDisplacement), asmcode);
+-                        if (operand->symbolDisplacement.dim)
+-                        {
+-                            insnTemplate->writebyte('+');
+-                        }
+                         operand->constDisplacement = 0;
+                         if (opInfo->operands[i] & Opr_Dest)
+                             asmcode->clobbersMemory = 1;
+@@ -2297,12 +2344,32 @@
+                             }
+                             else
+                             {
++                                Expression * offset = newIntExp(operand->constDisplacement);
++
+                                 if (use_star)
+                                 {
+                                     insnTemplate->writebyte('*');
+                                     use_star = false;
+                                 }
+-                                addOperand(fmt, Arg_Memory, e, asmcode, mode);
++
++                                if (decl->isDataseg())
++                                {   // Displacement can only come after symbol
++                                    addOperand(fmt, Arg_Memory, e, asmcode, mode);
++                                    insnTemplate->writebyte('+');
++                                    addOperand("%a", Arg_Integer, offset, asmcode);
++                                }
++                                else
++                                {   // Displacement cannot come after symbol.
++                                    addOperand("%a", Arg_Integer, offset, asmcode);
++                                    addOperand(fmt, Arg_Memory, e, asmcode, mode);
++                                }
++                            }
++                            if (operand->constDisplacement)
++                            {   // If a memory reference was displaced, tell GCC to not keep
++                                // memory values cached in registers across the instruction.
++                                if (opInfo->operands[i] & Opr_Dest)
++                                    asmcode->clobbersMemory = 1;
++                                operand->constDisplacement = 0;
+                             }
+                         }
+                     }
+@@ -2327,7 +2394,7 @@
+                             asmcode->clobbersMemory = 1;
+                     }
+                     break;
+-                }
++
+                 case Opr_Invalid:
+                     return false;
+             }
+@@ -2522,36 +2589,46 @@
+                     else
+                         e = e1;
+                     break;
++
+                 case TOKmin:
+                     if (e2)
+                         e = new MinExp(stmt->loc, e1, e2);
+                     else
+                         e = new NegExp(stmt->loc, e1);
+                     break;
++
+                 case TOKmul:
+                     e = new MulExp(stmt->loc, e1, e2);
+                     break;
++
+                 case TOKdiv:
+                     e = new DivExp(stmt->loc, e1, e2);
+                     break;
++
+                 case TOKmod:
+                     e = new ModExp(stmt->loc, e1, e2);
+                     break;
++
+                 case TOKshl:
+                     e = new ShlExp(stmt->loc, e1, e2);
+                     break;
++
+                 case TOKshr:
+                     e = new ShrExp(stmt->loc, e1, e2);
+                     break;
++
+                 case TOKushr:
+                     e = new UshrExp(stmt->loc, e1, e2);
+                     break;
++
+                 case TOKnot:
+                     e = new NotExp(stmt->loc, e1);
+                     break;
++
+                 case TOKtilde:
+                     e = new ComExp(stmt->loc, e1);
+                     break;
++
+                 default:
+                     gcc_unreachable();
+             }
+@@ -2595,6 +2672,7 @@
+                     e2 = parseAddExp();
+                     e1 = intOp(tv, e1, e2);
+                     continue;
++
+                 default:
+                     break;
+             }
+@@ -2627,6 +2705,7 @@
+                         e1 = Handled;
+                     }
+                     continue;
++
+                 case TOKmin:
+                     // Note: no support for symbol address difference
+                     nextToken();
+@@ -2643,6 +2722,7 @@
+                         e1 = Handled;
+                     }
+                     continue;
++
+                 default:
+                     break;
+             }
+@@ -2653,17 +2733,15 @@
+ 
+     bool tryScale(Expression * e1, Expression * e2)
+     {
+-        Expression * et;
+         if (isIntExp(e1) && isRegExp(e2))
+-        {
+-            et = e1;
++        {   // swap reg and int expressions.
++            Expression * et = e1;
+             e1 = e2;
+             e2 = et;
+-            goto do_scale;
+         }
+-        else if (isRegExp(e1) && isIntExp(e2))
++
++        if (isRegExp(e1) && isIntExp(e2))
+         {
+-    do_scale:
+             if (! operand->inBracket)
+             {
+                 invalidExpression(); // maybe should allow, e.g. DS:EBX+EAX*4
+@@ -2675,17 +2753,11 @@
+             }
+             operand->indexReg = (Reg) e1->toInteger();
+             operand->scale = e2->toInteger();
+-            switch (operand->scale)
++            if (operand->scale != 1 && operand->scale != 2 &&
++                operand->scale != 4 && operand->scale != 8)
+             {
+-                case 1:
+-                case 2:
+-                case 4:
+-                case 8:
+-                    // ok; do nothing
+-                    break;
+-                default:
+-                    stmt->error("invalid index register scale '%d'", operand->scale);
+-                    return true;
++                stmt->error("invalid index register scale '%d'", operand->scale);
++                return true;
+             }
+             return true;
+         }
+@@ -2712,12 +2784,14 @@
+                     else
+                         invalidExpression();
+                     continue;
++
+                 case TOKdiv:
+                 case TOKmod:
+                     nextToken();
+                     e2 = parseMultExp();
+                     e1 = intOp(tv, e1, e2);
+                     continue;
++
+                 default:
+                     break;
+             }
+@@ -2763,19 +2837,26 @@
+         {
+             case TOKint8:
+                 return Byte_Ptr;
++
+             case TOKint16:
+                 return Short_Ptr;
++
+             case TOKint32:
+                 return Int_Ptr;
++
+             case TOKint64:
+                 // 'long ptr' isn't accepted? (it is now - qword)
+                 return Long_Ptr;
++
+             case TOKfloat32:
+                 return Float_Ptr;
++
+             case TOKfloat64:
+                 return Double_Ptr;
++
+             case TOKfloat80:
+                 return Extended_Ptr;
++
+             case TOKidentifier:
+                 for (int i = 0; i < N_PtrNames; i++)
+                 {
+@@ -2783,6 +2864,7 @@
+                         return ptrTypeValueTable[i];
+                 }
+                 break;
++
+             default:
+                 break;
+         }
+@@ -2839,6 +2921,7 @@
+                     break;
+                 }
+                 return e;
++
+             case TOKadd:
+             case TOKmin:
+             case TOKnot:
+@@ -2846,6 +2929,7 @@
+                 nextToken();
+                 e = parseUnaExp();
+                 return intOp(tv, e, NULL);
++
+             default:
+                 // primary exp
+                 break;
+@@ -2868,22 +2952,21 @@
+             case TOKuns32v:
+             case TOKint64v:
+             case TOKuns64v:
+-            {   // semantic here?
++                // semantic here?
+                 // %% for tok64 really should use 64bit type
+                 e = new IntegerExp(stmt->loc, token->uns64value, Type::tptrdiff_t);
+                 nextToken();
+                 break;
+-            }
++
+             case TOKfloat32v:
+             case TOKfloat64v:
+             case TOKfloat80v:
+-            {   // %% need different types?
++                // %% need different types?
+                 e = new RealExp(stmt->loc, token->float80value, Type::tfloat80);
+                 nextToken();
+                 break;
+-            }
++
+             case TOKidentifier:
+-            {
+                 ident = token->ident;
+                 nextToken();
+ 
+@@ -2893,7 +2976,6 @@
+                 }
+                 else if (ident == Id::__dollar)
+                 {
+-            do_dollar:
+                     return new IdentifierExp(stmt->loc, ident);
+                 }
+                 else
+@@ -2952,6 +3034,7 @@
+                                     else
+                                         stmt->error("expected ')'");
+                                     return e;
++
+                                 default:
+                                     break;
+                             }
+@@ -3008,23 +3091,18 @@
+                     }
+                 }
+                 return e;
+-            }
++
+             case TOKdollar:
+-            {
+                 nextToken();
+-                ident = Id::__dollar;
+-                goto do_dollar;
+-                break;
+-            }
++                return new IdentifierExp(stmt->loc, Id::__dollar);
++
+             default:
+-            {
+                 if (op == Op_FMath0 || op == Op_FdST0ST1 || op == Op_FMath)
+-                {
+                     return Handled;
+-                }
++
+                 invalidExpression();
+                 return Handled;
+-            }
++
+         }
+         return e;
+     }
+@@ -3106,18 +3184,21 @@
+                         stmt->error("expected integer constant");
+                     }
+                     break;
++
+                 case Op_df:
+                     mode = SFmode;
+                     goto do_float;
++
+                 case Op_dd:
+                     mode = DFmode;
+                     goto do_float;
++
+                 case Op_de:
+ #ifndef TARGET_80387
+ #define XFmode TFmode
+ #endif
+                     mode = XFmode; // not TFmode
+-                    // drop through
++
+                 do_float:
+                     if (token->value == TOKfloat32v || token->value == TOKfloat64v ||
+                         token->value == TOKfloat80v)
+@@ -3137,6 +3218,7 @@
+                         stmt->error("expected float constant");
+                     }
+                     break;
++
+                 default:
+                     gcc_unreachable();
+             }
+diff -r 61c81c98d80c d/d-glue.cc
+--- a/d/d-glue.cc	Tue Jul 05 22:38:05 2011 +0100
++++ b/d/d-glue.cc	Thu Jul 07 22:14:30 2011 +0100
+@@ -3185,25 +3185,34 @@
+     /* This would apply to complex types as well, but GDC currently
+        returns complex types as a struct instead of in ST(0) and ST(1).
+      */
+-    if ((type->nextOf()->isreal() || type->nextOf()->isintegral())
+-            && inlineAsm && ! naked)
++    if (inlineAsm && ! naked)
+     {
+-        tree result_var = irs->localVar(TREE_TYPE(result_decl));
+-
+-        tree nop_str = build_string(0, "");
+-        tree cns_str;
++        tree cns_str = NULL_TREE;
++
+         if (type->nextOf()->isreal())
+             cns_str = build_string(2, "=t");
+         else
+-            cns_str = build_string(2, "=a");
+-
+-        tree out_arg = tree_cons(tree_cons(NULL_TREE, cns_str, NULL_TREE),
+-            result_var, NULL_TREE);
+-
+-        irs->expandDecl(result_var);
+-        irs->doAsm(nop_str, out_arg, NULL_TREE, NULL_TREE);
+-        irs->doReturn(build2(MODIFY_EXPR, TREE_TYPE(result_decl),
+-                           result_decl, result_var));
++        {   // On 32bit, can't return 'long' value in EAX.
++            if (type->nextOf()->isintegral() &&
++                type->nextOf()->size() <= Type::tsize_t->size())
++            {
++                cns_str = build_string(2, "=a");
++            }
++        }
++
++        if (cns_str != NULL_TREE)
++        {
++            tree result_var = irs->localVar(TREE_TYPE(result_decl));
++            tree nop_str = build_string(0, "");
++
++            tree out_arg = tree_cons(tree_cons(NULL_TREE, cns_str, NULL_TREE),
++                                     result_var, NULL_TREE);
++
++            irs->expandDecl(result_var);
++            irs->doAsm(nop_str, out_arg, NULL_TREE, NULL_TREE);
++            irs->doReturn(build2(MODIFY_EXPR, TREE_TYPE(result_decl),
++                          result_decl, result_var));
++        }
+     }
+ #endif
+ 
+diff -r 61c81c98d80c d/d-lang.cc
+--- a/d/d-lang.cc	Tue Jul 05 22:38:05 2011 +0100
++++ b/d/d-lang.cc	Thu Jul 07 22:14:30 2011 +0100
+@@ -182,6 +182,7 @@
+     // extra D-specific options
+     gen.splitDynArrayVarArgs = true;
+     gen.emitTemplates = TEnormal;
++    gen.useInlineAsm = true;
+     gen.useBuiltins = true;
+     std_inc = true;
+ }

@@ -1,0 +1,34 @@
+diff -r 4567e417c0b3 d/d-codegen.cc
+--- a/d/d-codegen.cc	Sun Aug 15 20:26:57 2010 +0100
++++ b/d/d-codegen.cc	Sun Aug 15 20:43:11 2010 +0100
+@@ -2459,21 +2459,23 @@
+     }
+ #else
+ # if HOST_BITS_PER_WIDE_INT == 32
++# if 0
++    /* VALUE may be given an incorrect representation for TYPE.  Example:
++       uint x = cast(uint) -3; // becomes "-3u" -- value=0xfffffffffffffd type=Tuns32
++       Constant folding will not work correctly unless some hacks are done.
++       
++       So perhaps this is  not the right way to do it...  */
+     tree tree_value = build_int_cst_wide(type,
+ 	value & 0xffffffff, (value >> 32) & 0xffffffff);
++# endif
++
++    tree tree_value = build_int_cst_type(type, value & 0xffffffff);
+ # elif HOST_BITS_PER_WIDE_INT == 64
+     tree tree_value = build_int_cst_type(type, value);
+ # else
+ #  error Fix This
+ # endif
+ 
+-# if D_GCC_VER < 43
+-    /* VALUE may be an incorrect representation for TYPE.  Example:
+-         uint x = cast(uint) -3; // becomes "-3u" -- value=0xfffffffffffffd type=Tuns32
+-       Constant folding will not work correctly unless this is done. */
+-    tree_value = force_fit_type(tree_value, 0, 0, 0);
+-# endif
+-
+ #endif
+     return tree_value;
+ }

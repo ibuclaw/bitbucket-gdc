@@ -1,0 +1,59 @@
+diff -r e37f9fae0867 d/druntime/compiler/gdc/object_.d
+--- a/d/druntime/compiler/gdc/object_.d	Mon Nov 01 13:40:19 2010 +0000
++++ b/d/druntime/compiler/gdc/object_.d	Mon Nov 01 13:58:54 2010 +0000
+@@ -1624,7 +1624,7 @@
+     extern (D) typedef int delegate(void *, void *) _dg2_t;
+     int _aaApply2(void* aa, size_t keysize, _dg2_t dg);
+ 
+-    void* _d_assocarrayliteralT(TypeInfo_AssociativeArray ti, size_t length, void* keys, void* values);
++    void* _d_assocarrayliteralTp(TypeInfo_AssociativeArray ti, size_t length, void* keys, void* values);
+ }
+ 
+ struct AssociativeArray(Key, Value)
+diff -r e37f9fae0867 d/druntime/compiler/gdc/rt/aaA.d
+--- a/d/druntime/compiler/gdc/rt/aaA.d	Mon Nov 01 13:40:19 2010 +0000
++++ b/d/druntime/compiler/gdc/rt/aaA.d	Mon Nov 01 13:58:54 2010 +0000
+@@ -789,7 +789,7 @@
+     auto keysize = keyti.tsize();               // key size
+     BB* result;
+ 
+-    //printf("_d_assocarrayliteralT(keysize = %d, valuesize = %d, length = %d)\n", keysize, valuesize, length);
++    //printf("_d_assocarrayliteralTp(keysize = %d, valuesize = %d, length = %d)\n", keysize, valuesize, length);
+     //printf("tivalue = %.*s\n", ti.next.classinfo.name);
+     if (length == 0 || valuesize == 0 || keysize == 0)
+     {
+diff -r e37f9fae0867 d/druntime/import/object.di
+--- a/d/druntime/import/object.di	Mon Nov 01 13:40:19 2010 +0000
++++ b/d/druntime/import/object.di	Mon Nov 01 13:58:54 2010 +0000
+@@ -270,16 +270,16 @@
+ 
+ extern (C)
+ {
+-    // from druntime/src/compiler/dmd/aaA.d
++    // from druntime/compiler/gdc/rt/aaA.d
+ 
+     size_t _aaLen(void* p);
+-    void*  _aaGet(void** pp, TypeInfo keyti, size_t valuesize, ...);
+-    void*  _aaGetRvalue(void* p, TypeInfo keyti, size_t valuesize, ...);
+-    void*  _aaIn(void* p, TypeInfo keyti);
+-    void   _aaDel(void* p, TypeInfo keyti, ...);
++    void* _aaGetp(void** pp, TypeInfo keyti, size_t valuesize, void* pkey);
++    void* _aaGetRvaluep(void* p, TypeInfo keyti, size_t valuesize, void* pkey);
++    void* _aaInp(void* p, TypeInfo keyti, void* pkey);
++    void _aaDelp(void* p, TypeInfo keyti, void* pkey);
+     void[] _aaValues(void* p, size_t keysize, size_t valuesize);
+     void[] _aaKeys(void* p, size_t keysize, size_t valuesize);
+-    void*  _aaRehash(void** pp, TypeInfo keyti);
++    void* _aaRehash(void** pp, TypeInfo keyti);
+ 
+     extern (D) typedef int delegate(void *) _dg_t;
+     int _aaApply(void* aa, size_t keysize, _dg_t dg);
+@@ -287,7 +287,7 @@
+     extern (D) typedef int delegate(void *, void *) _dg2_t;
+     int _aaApply2(void* aa, size_t keysize, _dg2_t dg);
+ 
+-    void* _d_assocarrayliteralT(TypeInfo_AssociativeArray ti, size_t length, ...);
++    void* _d_assocarrayliteralTp(TypeInfo_AssociativeArray ti, size_t length, void* keys, void* values);
+ }
+ 
+ struct AssociativeArray(Key, Value)

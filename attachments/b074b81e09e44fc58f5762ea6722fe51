@@ -1,0 +1,67 @@
+Z:\TEMP\ccc4x2Lm.o:test.d:(.text$_D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv[__D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv]+0x71): undefined reference to `_fputc_nlock'
+Z:\TEMP\ccc4x2Lm.o:test.d:(.text$_D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv[__D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv]+0x103): undefined reference to `_fputc_nlock'
+Z:\TEMP\ccc4x2Lm.o:test.d:(.text$_D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv[__D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv]+0x156): undefined reference to `_fputwc_nlock'
+Z:\TEMP\ccc4x2Lm.o:test.d:(.text$_D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv[__D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv]+0x180): undefined reference to `_fputwc_nlock'
+Z:\TEMP\ccc4x2Lm.o:test.d:(.text$_D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv[__D3std5stdio4File17LockingTextWriter10__T3putTwZ3putMFwZv]+0x1a0): undefined reference to `_fputwc_nlock'
+Z:\TEMP\ccc4x2Lm.o:test.d:(.text$_D3std5stdio4File17LockingTextWriter10__T3putTaZ3putMFaZv[__D3std5stdio4File17LockingTextWriter10__T3putTaZ3putMFaZv]+0x5e): undefined reference to `_fputc_nlock'
+Z:\TEMP\ccc4x2Lm.o:test.d:(.text$_D3std5stdio4File17LockingTextWriter10__T3putTaZ3putMFaZv[__D3std5stdio4File17LockingTextWriter10__T3putTaZ3putMFaZv]+0x76): undefined reference to `_fputwc_nlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(object_.o): In function `d_monitorenter':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/object_.d:2370: undefined reference to `_d_monitor_create'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(object_.o): In function `D6object12setSameMutexFOC6ObjectOC6ObjectZv':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/object_.d:2312: undefined reference to `_d_monitor_create'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(object_.o): In function `d_monitordelete':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/object_.d:2348: undefined reference to `_d_monitor_destroy'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(object_.o): In function `d_monitorenter':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/object_.d:2378: undefined reference to `_d_monitor_lock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(object_.o): In function `d_monitorexit':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/object_.d:2391: undefined reference to `_d_monitor_unlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o): In function `_dtor':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1134: undefined reference to `__fp_unlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o): In function `putcw':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1406: undefined reference to `_fputwc_nlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o): In function `putc':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1385: undefined reference to `_fputc_nlock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1379: undefined reference to `_fputc_nlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o): In function `_dtor':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1134: undefined reference to `__fp_unlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o): In function `D3std5stdio7writefxFPOS4core4stdc5stdio6_iobufAC8TypeInfoPaiZv':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1368: undefined reference to `__fp_lock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1369: undefined reference to `__fp_unlock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1426: undefined reference to `_fputwc_nlock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1391: undefined reference to `_fputc_nlock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1369: undefined reference to `__fp_unlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1128: undefined reference to `__fp_lock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1142: undefined reference to `__fp_lock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1286: undefined reference to `__fp_lock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1310: undefined reference to `_fgetc_nlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1333: undefined reference to `_fgetc_nlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o): In function `D3std5stdio10readlnImplFPOS4core4stdc5stdio6_iobufKAawZk':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:2214: undefined reference to `__fp_lock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:2222: undefined reference to `__fhnd_info'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:2229: undefined reference to `_fgetwc_nlock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:2215: undefined reference to `__fp_unlock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:2241: undefined reference to `_fgetwc_nlock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:2274: undefined reference to `_fgetc_nlock'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:2215: undefined reference to `__fp_unlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o): In function `putcw':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1408: undefined reference to `_fputwc_nlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1291: undefined reference to `__fp_lock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:1297: undefined reference to `__fp_unlock'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:481: undefined reference to `__fhnd_info'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:482: undefined reference to `__fhnd_info'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:483: undefined reference to `__fhnd_info'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(stdio.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:483: undefined reference to `__fhnd_info'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(dmain2.o): In function `D2rt6dmain215_d_criticalInitFZv':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/rt/dmain2.d:291: undefined reference to `_STI_monitor_staticctor'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(dmain2.o): In function `d_run_main':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/rt/dmain2.d:427: undefined reference to `_STI_monitor_staticctor'
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/rt/dmain2.d:565: undefined reference to `_STD_monitor_staticdtor'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(dmain2.o): In function `D2rt6dmain215_d_criticalTermFZv':
+E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/rt/dmain2.d:338: undefined reference to `_STD_monitor_staticdtor'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(datetime.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:481: undefined reference to `__fhnd_info'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(datetime.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:482: undefined reference to `__fhnd_info'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(datetime.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:483: undefined reference to `__fhnd_info'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(datetime.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:483: undefined reference to `__fhnd_info'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(datetime.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:481: undefined reference to `__fhnd_info'
+d:/mingw/bin/../lib/gcc/i686-pc-mingw32/4.5.2/../../../libgphobos2.a(datetime.o):E:\msys\home\Administrator\build\gcc\i686-pc-mingw32\libphobos/../../../../gcc-4.5.2/libphobos/std/stdio.d:482: more undefined references to `__fhnd_info' follow
+collect2: ld returned 1 exit status

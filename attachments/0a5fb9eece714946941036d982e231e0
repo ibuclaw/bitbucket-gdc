@@ -1,0 +1,42 @@
+diff -r 5701487dddb9 d/dmd/statement.c
+--- a/d/dmd/statement.c	Sat Jun 05 17:30:04 2010 +0100
++++ b/d/dmd/statement.c	Sat Jun 05 19:47:43 2010 +0100
+@@ -36,7 +36,19 @@
+ #include "template.h"
+ #include "attrib.h"
+ 
+-extern int os_critsecsize();
++#if _WIN32
++static inline int os_critsecsize()
++{
++    return sizeof(CRITICAL_SECTION);
++}
++#endif
++
++#if linux || __APPLE__ || __FreeBSD__ || __sun&&__SVR4
++static inline int os_critsecsize()
++{
++    return sizeof(pthread_mutex_t);
++}
++#endif
+ 
+ /******************************** Statement ***************************/
+ 
+@@ -3594,7 +3606,7 @@
+ 	    exp = exp->semantic(sc);
+ 	}
+ 
+-#if 0 // DMD v1.047 needs reviewing
++#if 1
+ 	/* Rewrite as:
+ 	 *  auto tmp = exp;
+ 	 *  _d_monitorenter(tmp);
+@@ -3623,7 +3635,7 @@
+ 	return s->semantic(sc);
+ #endif
+     }
+-#if 0 // DMD v1.047 needs reviewing
++#if 1
+     else
+     {	/* Generate our own critical section, then rewrite as:
+ 	 *  __gshared byte[CriticalSection.sizeof] critsec;

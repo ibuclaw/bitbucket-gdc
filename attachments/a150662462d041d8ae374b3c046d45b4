@@ -1,0 +1,124 @@
+diff -r 584a5f3a7dce d/druntime/core/dll_helper.d
+--- a/d/druntime/core/dll_helper.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/druntime/core/dll_helper.d	Sun May 08 01:53:23 2011 -0400
+@@ -14,6 +14,8 @@
+ 
+ module core.dll_helper;
+ 
++version( MinGW )
++{} else
+ version( Windows )
+ {
+     import core.sys.windows.windows;
+diff -r 584a5f3a7dce d/druntime/core/runtime.d
+--- a/d/druntime/core/runtime.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/druntime/core/runtime.d	Sun May 08 01:53:23 2011 -0400
+@@ -331,7 +331,7 @@
+             version( Windows )
+             {
+                 uint count = void;
+-                WriteFile( GetStdHandle( 0xfffffff5 ), val.ptr, val.length, &count, null );
++                WriteFile( GetStdHandle( 0xfffffff5 ), val.ptr, cast(uint)val.length, &count, null );
+             }
+             else version( Posix )
+             {
+diff -r 584a5f3a7dce d/druntime/core/sys/windows/windows.d
+--- a/d/druntime/core/sys/windows/windows.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/druntime/core/sys/windows/windows.d	Sun May 08 01:53:23 2011 -0400
+@@ -68,6 +68,8 @@
+     alias int INT;
+     alias uint UINT;
+     alias uint *PUINT;
++    
++    alias size_t SIZE_T;
+ 
+ // ULONG_PTR must be able to store a pointer as an integral type
+ version (Win64)
+@@ -786,13 +788,13 @@
+  UINT LocalShrink(HLOCAL hMem, UINT cbNewSize);
+  UINT LocalCompact(UINT uMinFree);
+  BOOL FlushInstructionCache(HANDLE hProcess, LPCVOID lpBaseAddress, DWORD dwSize);
+- LPVOID VirtualAlloc(LPVOID lpAddress, DWORD dwSize, DWORD flAllocationType, DWORD flProtect);
+- BOOL VirtualFree(LPVOID lpAddress, DWORD dwSize, DWORD dwFreeType);
+- BOOL VirtualProtect(LPVOID lpAddress, DWORD dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
++ LPVOID VirtualAlloc(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
++ BOOL VirtualFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
++ BOOL VirtualProtect(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
+  DWORD VirtualQuery(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, DWORD dwLength);
+- LPVOID VirtualAllocEx(HANDLE hProcess, LPVOID lpAddress, DWORD dwSize, DWORD flAllocationType, DWORD flProtect);
+- BOOL VirtualFreeEx(HANDLE hProcess, LPVOID lpAddress, DWORD dwSize, DWORD dwFreeType);
+- BOOL VirtualProtectEx(HANDLE hProcess, LPVOID lpAddress, DWORD dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
++ LPVOID VirtualAllocEx(HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
++ BOOL VirtualFreeEx(HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType);
++ BOOL VirtualProtectEx(HANDLE hProcess, LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
+  DWORD VirtualQueryEx(HANDLE hProcess, LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, DWORD dwLength);
+ }
+ 
+@@ -2370,8 +2372,8 @@
+ export BOOL GetMailslotInfo(HANDLE hMailslot, LPDWORD lpMaxMessageSize, LPDWORD lpNextSize, LPDWORD lpMessageCount, LPDWORD lpReadTimeout);
+ export BOOL SetMailslotInfo(HANDLE hMailslot, DWORD lReadTimeout);
+ export LPVOID MapViewOfFile(HANDLE hFileMappingObject, DWORD dwDesiredAccess, DWORD dwFileOffsetHigh, DWORD dwFileOffsetLow, DWORD dwNumberOfBytesToMap);
+-export LPVOID MapViewOfFileEx(HANDLE hFileMappingObject, DWORD dwDesiredAccess, DWORD dwFileOffsetHigh, DWORD dwFileOffsetLow, DWORD dwNumberOfBytesToMap, LPVOID lpBaseAddress);
+-export BOOL FlushViewOfFile(LPCVOID lpBaseAddress, DWORD dwNumberOfBytesToFlush);
++export LPVOID MapViewOfFileEx(HANDLE hFileMappingObject, DWORD dwDesiredAccess, DWORD dwFileOffsetHigh, DWORD dwFileOffsetLow, SIZE_T dwNumberOfBytesToMap, LPVOID lpBaseAddress);
++export BOOL FlushViewOfFile(LPCVOID lpBaseAddress, SIZE_T dwNumberOfBytesToFlush);
+ export BOOL UnmapViewOfFile(LPCVOID lpBaseAddress);
+ 
+ export  HGDIOBJ   GetStockObject(int);
+diff -r 584a5f3a7dce d/druntime/core/thread.d
+--- a/d/druntime/core/thread.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/druntime/core/thread.d	Sun May 08 01:53:23 2011 -0400
+@@ -814,7 +814,7 @@
+         {
+             version( Windows )
+             {
+-                m_hndl = cast(HANDLE) _beginthreadex( null, m_sz, &thread_entryPoint, cast(void*) this, 0, &m_addr );
++                m_hndl = cast(HANDLE) _beginthreadex( null, cast(uint)m_sz, &thread_entryPoint, cast(void*) this, 0, &m_addr );
+                 if( cast(size_t) m_hndl == 0 )
+                     throw new ThreadException( "Error creating thread" );
+             }
+diff -r 584a5f3a7dce d/druntime/rt/dmain2.d
+--- a/d/druntime/rt/dmain2.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/druntime/rt/dmain2.d	Sun May 08 01:53:23 2011 -0400
+@@ -431,7 +431,7 @@
+     version (Windows)
+     {
+         wchar_t*  wcbuf = GetCommandLineW();
+-        size_t    wclen = wcslen(wcbuf);
++        int 	  wclen = cast(int) wcslen(wcbuf);
+         int       wargc = 0;
+         wchar_t** wargs = CommandLineToArgvW(wcbuf, &wargc);
+         assert(wargc == argc);
+@@ -444,7 +444,7 @@
+ 
+         for (size_t i = 0, p = 0; i < wargc; i++)
+         {
+-            int wlen = wcslen(wargs[i]);
++            int wlen = cast(int) wcslen(wargs[i]);
+             int clen = WideCharToMultiByte(65001, 0, &wargs[i][0], wlen, null, 0, null, 0);
+             args[i]  = cargp[p .. p+clen];
+             p += clen; assert(p <= cargl);
+diff -r 584a5f3a7dce d/druntime/rt/memory.d
+--- a/d/druntime/rt/memory.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/druntime/rt/memory.d	Sun May 08 01:53:23 2011 -0400
+@@ -74,7 +74,7 @@
+         }
+         else version( D_InlineAsm_X86_64 )
+         {
+-            static assert( false, "is this right?" );
++            //static assert( false, "is this right?" );
+             asm
+             {
+                 naked;
+diff -r 584a5f3a7dce d/druntime/rt/util/console.d
+--- a/d/druntime/rt/util/console.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/druntime/rt/util/console.d	Sun May 08 01:53:23 2011 -0400
+@@ -35,7 +35,7 @@
+         version( Windows )
+         {
+             uint count = void;
+-            WriteFile( GetStdHandle( 0xfffffff5 ), val.ptr, val.length, &count, null );
++            WriteFile( GetStdHandle( 0xfffffff5 ), val.ptr, cast(uint)val.length, &count, null );
+         }
+         else version( Posix )
+         {

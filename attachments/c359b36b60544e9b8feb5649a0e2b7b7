@@ -1,0 +1,1259 @@
+diff -r e58b90640ec9 d/d-asm-i386.h
+--- a/d/d-asm-i386.h	Mon Jul 05 20:43:12 2010 +0100
++++ b/d/d-asm-i386.h	Tue Jul 06 18:53:59 2010 +0100
+@@ -913,6 +913,7 @@
+     { "pand",     Op_DstSrcMMX },
+     { "pandn",    Op_DstSrcMMX },
+     { "pavgb",    Op_DstSrcMMX },
++    { "pavgusb",  Op_DstSrcMMX },
+     { "pavgw",    Op_DstSrcMMX },
+     { "pcmpeqb",  Op_DstSrcMMX },
+     { "pcmpeqd",  Op_DstSrcMMX },
+@@ -921,6 +922,25 @@
+     { "pcmpgtd",  Op_DstSrcMMX },
+     { "pcmpgtw",  Op_DstSrcMMX },
+     { "pextrw",   Op_DstSrcImmM }, // gpr32 dest
++    { "pf2id",    Op_DstSrcMMX }, // 3dNow values are returned in MM0.
++    { "pfacc",    Op_DstSrcMMX }, // So treat the same as MMX?
++    { "pfadd",    Op_DstSrcMMX },
++    { "pfcmpeq",  Op_DstSrcMMX },
++    { "pfcmpge",  Op_DstSrcMMX },
++    { "pfcmpgt",  Op_DstSrcMMX },
++    { "pfmax",    Op_DstSrcMMX },
++    { "pfmin",    Op_DstSrcMMX },
++    { "pfmul",    Op_DstSrcMMX },
++    { "pfnacc",   Op_DstSrcMMX },
++    { "pfpnacc",  Op_DstSrcMMX },
++    { "pfrcp",    Op_DstSrcMMX },
++    { "pfrcpit1", Op_DstSrcMMX },
++    { "pfrcpit2", Op_DstSrcMMX },
++    { "pfrsqit1", Op_DstSrcMMX },
++    { "pfrsqrt",  Op_DstSrcMMX },
++    { "pfsub",    Op_DstSrcMMX },
++    { "pfsubr",   Op_DstSrcMMX },
++    { "pi2fd",    Op_DstSrcMMX },
+     { "pinsrw",   Op_DstSrcImmM }, // gpr32(16), mem16 src, sse too
+     { "pmaddwd",  Op_DstSrcMMX },
+     { "pmaxsw",   Op_DstSrcMMX },
+@@ -928,6 +948,7 @@
+     { "pminsw",   Op_DstSrcMMX },
+     { "pminub",   Op_DstSrcMMX },
+     { "pmovmskb", Op_DstSrcMMX },
++    { "pmulhrw",  Op_DstSrcMMX },
+     { "pmulhuw",  Op_DstSrcMMX },
+     { "pmulhw",   Op_DstSrcMMX },
+     { "pmullw",   Op_DstSrcMMX },
+@@ -965,6 +986,7 @@
+     { "psubusb",  Op_DstSrcMMX },
+     { "psubusw",  Op_DstSrcMMX },
+     { "psubw",    Op_DstSrcMMX },
++    { "pswapd",   Op_DstSrcMMX },
+     { "punpckhbw", Op_DstSrcMMX },
+     { "punpckhdq", Op_DstSrcMMX },
+     { "punpckhqdq",Op_DstSrcMMX },
+diff -r e58b90640ec9 d/d-lang.cc
+--- a/d/d-lang.cc	Mon Jul 05 20:43:12 2010 +0100
++++ b/d/d-lang.cc	Tue Jul 06 18:53:59 2010 +0100
+@@ -398,8 +398,15 @@
+     
+     if (d_have_inline_asm() && cpu_versym && strcmp(cpu_versym, "X86") == 0)
+     {
+-	VersionCondition::addPredefinedGlobalIdent("D_InlineAsm");
+-	VersionCondition::addPredefinedGlobalIdent("D_InlineAsm_X86");
++	/* For D_InlineAsm code to work in D internals, GCC backend must know about XMM and MM registers. */
++	if (TARGET_SSE && (TARGET_3DNOW || TARGET_MMX))
++	{
++	    VersionCondition::addPredefinedGlobalIdent("D_InlineAsm");
++	    VersionCondition::addPredefinedGlobalIdent("D_InlineAsm_X86");
++	}
++	/* We support i686-generic ASM, for usage in std/ part of library? */
++	VersionCondition::addPredefinedGlobalIdent("GNU_InlineAsm");
++	VersionCondition::addPredefinedGlobalIdent("GNU_InlineAsm_X86");
+     }
+ 
+     /* Setting global.params.cov forces module info generation which is
+diff -r e58b90640ec9 d/phobos/internal/arraybyte.d
+--- a/d/phobos/internal/arraybyte.d	Mon Jul 05 20:43:12 2010 +0100
++++ b/d/phobos/internal/arraybyte.d	Tue Jul 06 18:53:59 2010 +0100
+@@ -73,7 +73,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 1088% faster 
+ 	if (sse2() && a.length >= 64)
+@@ -228,7 +228,7 @@
+ 	    }
+ 	    
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(*bptr++ + value);
+@@ -308,7 +308,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 5739% faster 
+ 	if (sse2() && a.length >= 64)
+@@ -438,7 +438,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     version (log) if (aptr < aend) printf("\tbase\n");
+     while (aptr < aend)
+@@ -509,7 +509,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 1578% faster 
+ 	if (sse2() && a.length >= 64)
+@@ -620,7 +620,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ += value;
+@@ -698,7 +698,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 4727% faster 
+ 	if (sse2() && a.length >= 64)
+@@ -817,7 +817,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ += *bptr++;
+@@ -896,7 +896,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 1189% faster 
+ 	if (sse2() && a.length >= 64)
+@@ -1046,7 +1046,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(*bptr++ - value);
+@@ -1124,7 +1124,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 8748% faster 
+ 	if (sse2() && a.length >= 64)
+@@ -1256,7 +1256,7 @@
+ 	    }
+ 	}    
+ 		       
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(value - *bptr++);
+@@ -1336,7 +1336,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 5756% faster 
+ 	if (sse2() && a.length >= 64)
+@@ -1463,7 +1463,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(*bptr++ - *cptr++);
+@@ -1533,7 +1533,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 1577% faster 
+ 	if (sse2() && a.length >= 64)
+@@ -1644,7 +1644,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= value;
+@@ -1722,7 +1722,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 4800% faster 
+ 	if (sse2() && a.length >= 64)
+@@ -1841,7 +1841,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= *bptr++;
+diff -r e58b90640ec9 d/phobos/internal/arraydouble.d
+--- a/d/phobos/internal/arraydouble.d	Mon Jul 05 20:43:12 2010 +0100
++++ b/d/phobos/internal/arraydouble.d	Tue Jul 06 18:53:59 2010 +0100
+@@ -64,7 +64,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 333% faster 
+ 	if (sse2() && b.length >= 16)
+@@ -108,7 +108,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     // Handle remainder
+     while (aptr < aend)
+@@ -177,7 +177,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 324% faster 
+ 	if (sse2() && b.length >= 8)
+@@ -221,7 +221,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     // Handle remainder
+     while (aptr < aend)
+@@ -289,7 +289,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 305% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -328,7 +328,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ + value;
+@@ -386,7 +386,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 114% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -423,7 +423,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ += value;
+@@ -489,7 +489,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 183% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -530,7 +530,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ += *bptr++;
+@@ -596,7 +596,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 305% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -635,7 +635,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ - value;
+@@ -700,7 +700,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 66% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -743,7 +743,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = value - *bptr++;
+@@ -801,7 +801,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 115% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -838,7 +838,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= value;
+@@ -904,7 +904,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 183% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -945,7 +945,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= *bptr++;
+@@ -1011,7 +1011,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 304% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1050,7 +1050,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ * value;
+@@ -1118,7 +1118,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 329% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1162,7 +1162,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ * *cptr++;
+@@ -1220,7 +1220,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 109% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1257,7 +1257,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ *= value;
+@@ -1323,7 +1323,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 205% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1364,7 +1364,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ *= *bptr++;
+@@ -1435,7 +1435,7 @@
+      */
+     T recip = cast(T)1 / value;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 299% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1480,7 +1480,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+     {
+@@ -1547,7 +1547,7 @@
+      */
+     T recip = cast(T)1 / value;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 version is 65% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1589,7 +1589,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ *= recip;
+diff -r e58b90640ec9 d/phobos/internal/arrayfloat.d
+--- a/d/phobos/internal/arrayfloat.d	Mon Jul 05 20:43:12 2010 +0100
++++ b/d/phobos/internal/arrayfloat.d	Tue Jul 06 18:53:59 2010 +0100
+@@ -62,7 +62,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 834% faster 
+ 	if (sse() && b.length >= 16)
+@@ -147,7 +147,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     // Handle remainder
+     version (log) if (aptr < aend) printf("\tbase\n");
+@@ -217,7 +217,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 834% faster 
+ 	if (sse() && b.length >= 16)
+@@ -300,7 +300,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     // Handle remainder
+     while (aptr < aend)
+@@ -367,7 +367,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 665% faster 
+ 	if (sse() && a.length >= 16)
+@@ -446,7 +446,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ + value;
+@@ -504,7 +504,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 302% faster 
+ 	if (sse() && a.length >= 16)
+@@ -582,7 +582,7 @@
+ 		mov dword ptr [aptr], ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ += value;
+@@ -648,7 +648,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 468% faster 
+ 	if (sse() && a.length >= 16)
+@@ -725,7 +725,7 @@
+ 		mov dword ptr [bptr], ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ += *bptr++;
+@@ -791,7 +791,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 622% faster 
+ 	if (sse() && a.length >= 16)
+@@ -871,7 +871,7 @@
+ 		mov dword ptr [bptr], EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ - value;
+@@ -936,7 +936,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 690% faster 
+ 	if (sse() && a.length >= 16)
+@@ -1019,7 +1019,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = value - *bptr++;
+@@ -1077,7 +1077,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 304% faster 
+ 	if (sse() && a.length >= 16)
+@@ -1155,7 +1155,7 @@
+ 		mov dword ptr [aptr], ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= value;
+@@ -1221,7 +1221,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 468% faster 
+ 	if (sse() && a.length >= 16)
+@@ -1298,7 +1298,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}        
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= *bptr++;
+@@ -1364,7 +1364,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 607% faster 
+ 	if (sse() && a.length >= 16)
+@@ -1443,7 +1443,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ * value;
+@@ -1511,7 +1511,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 833% faster 
+ 	if (sse() && a.length >= 16)
+@@ -1594,7 +1594,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ * *cptr++;
+@@ -1652,7 +1652,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 303% faster 
+ 	if (sse() && a.length >= 16)
+@@ -1730,7 +1730,7 @@
+ 		mov dword ptr [aptr], ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ *= value;
+@@ -1796,7 +1796,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 525% faster 
+ 	if (sse() && a.length >= 16)
+@@ -1873,7 +1873,7 @@
+ 		mov dword ptr [bptr], ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ *= *bptr++;
+@@ -1944,7 +1944,7 @@
+      */
+     T recip = cast(T)1 / value;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 587% faster 
+ 	if (sse() && a.length >= 16)
+@@ -2031,7 +2031,7 @@
+ 		mov dword ptr [bptr], EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ * recip;
+@@ -2094,7 +2094,7 @@
+      */
+     T recip = cast(T)1 / value;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE version is 245% faster 
+ 	if (sse() && a.length >= 16)
+@@ -2179,7 +2179,7 @@
+ 		mov dword ptr [aptr], ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ *= recip;
+diff -r e58b90640ec9 d/phobos/internal/arrayint.d
+--- a/d/phobos/internal/arrayint.d	Mon Jul 05 20:43:12 2010 +0100
++++ b/d/phobos/internal/arrayint.d	Tue Jul 06 18:53:59 2010 +0100
+@@ -72,7 +72,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 380% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -198,7 +198,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ + value;
+@@ -278,7 +278,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 1710% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -381,7 +381,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+ normal:
+     while (aptr < aend)
+@@ -452,7 +452,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 83% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -566,7 +566,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ += value;
+@@ -644,7 +644,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 695% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -738,7 +738,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+ normal:
+     while (aptr < aend)
+@@ -817,7 +817,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 400% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -943,7 +943,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ - value;
+@@ -1020,7 +1020,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 1812% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1123,7 +1123,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = value - *bptr++;
+@@ -1202,7 +1202,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 1721% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1305,7 +1305,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = *bptr++ - *cptr++;
+@@ -1375,7 +1375,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 81% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1489,7 +1489,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= value;
+@@ -1567,7 +1567,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 731% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1661,7 +1661,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= *bptr++;
+@@ -1741,7 +1741,7 @@
+ 
+   version (none)	// multiplying a pair is not supported by MMX
+   {
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 1380% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -1840,7 +1840,7 @@
+ 	    }
+ 	}
+     }
+-	}+/
++	}
+   }
+ 
+     while (aptr < aend)
+@@ -1924,7 +1924,7 @@
+ 
+   version (none)
+   {
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 1407% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -2027,7 +2027,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+   }
+ 
+     while (aptr < aend)
+@@ -2100,7 +2100,7 @@
+ 
+   version (none)
+   {
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 400% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -2188,7 +2188,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+   }
+ 
+     while (aptr < aend)
+@@ -2269,7 +2269,7 @@
+ 
+   version (none)
+   {
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 873% faster 
+ 	if (sse2() && a.length >= 8)
+@@ -2377,7 +2377,7 @@
+ 	    }
+ 	}
+ +/
+-    }+/
++    }
+   }
+ 
+     while (aptr < aend)
+diff -r e58b90640ec9 d/phobos/internal/arrayshort.d
+--- a/d/phobos/internal/arrayshort.d	Mon Jul 05 20:43:12 2010 +0100
++++ b/d/phobos/internal/arrayshort.d	Tue Jul 06 18:53:59 2010 +0100
+@@ -72,7 +72,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 3343% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -171,7 +171,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(*bptr++ + value);
+@@ -251,7 +251,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 3777% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -354,7 +354,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(*bptr++ + *cptr++);
+@@ -424,7 +424,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 832% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -514,7 +514,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ += value;
+@@ -592,7 +592,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 2085% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -686,7 +686,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ += *bptr++;
+@@ -764,7 +764,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 3695% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -863,7 +863,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(*bptr++ - value);
+@@ -940,7 +940,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 4995% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -1045,7 +1045,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(value - *bptr++);
+@@ -1124,7 +1124,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 4129% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -1228,7 +1228,7 @@
+ 	    }
+ 	}
+     }
+-+/
++
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(*bptr++ - *cptr++);
+ 
+@@ -1297,7 +1297,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 835% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -1387,7 +1387,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= value;
+@@ -1465,7 +1465,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 2121% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -1559,7 +1559,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ -= *bptr++;
+@@ -1637,7 +1637,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 3733% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -1736,7 +1736,7 @@
+ 		mov bptr, EAX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(*bptr++ * value);
+@@ -1816,7 +1816,7 @@
+     auto bptr = b.ptr;
+     auto cptr = c.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 2515% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -1919,7 +1919,7 @@
+ 		mov cptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ = cast(T)(*bptr++ * *cptr++);
+@@ -1989,7 +1989,7 @@
+     auto aptr = a.ptr;
+     auto aend = aptr + a.length;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 2044% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -2079,7 +2079,7 @@
+ 		mov aptr, ESI;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ *= value;
+@@ -2157,7 +2157,7 @@
+     auto aend = aptr + a.length;
+     auto bptr = b.ptr;
+ 
+-    /+version (D_InlineAsm_X86)
++    version (D_InlineAsm_X86)
+     {
+ 	// SSE2 aligned version is 2519% faster 
+ 	if (sse2() && a.length >= 16)
+@@ -2251,7 +2251,7 @@
+ 		mov bptr, ECX;
+ 	    }
+ 	}
+-    }+/
++    }
+ 
+     while (aptr < aend)
+ 	*aptr++ *= *bptr++;

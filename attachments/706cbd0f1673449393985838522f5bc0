@@ -1,0 +1,208 @@
+diff -r 886b0a5af18a d/druntime/core/stdc/stdio.d
+--- a/d/druntime/core/stdc/stdio.d	Sat Mar 19 19:23:45 2011 +0000
++++ b/d/druntime/core/stdc/stdio.d	Sun Mar 27 22:46:17 2011 -0400
+@@ -264,11 +264,44 @@
+ 
+     private extern shared FILE[_NFILE] _iob;
+ 
+-    shared stdin  = &_iob[0];
+-    shared stdout = &_iob[1];
+-    shared stderr = &_iob[2];
+-    shared stdaux = &_iob[3];
+-    shared stdprn = &_iob[4];
++    // GDC can't seem to properly define globals that use are initialized with
++    // declspec(__dllimport__)) variables such as _iob.
++    // So this has been moved to a static constructor to resolve the issue and 
++    // to avoid the resulting auto-import warnings.
++    version (MinGW) 
++    {
++        shared FILE* stdin;
++        shared FILE* stdout;
++        shared FILE* stderr;
++        shared FILE* stdaux;
++        shared FILE* stdprn;
++    
++        pragma(set_attribute, _iob, __dllimport__);
++        extern (C) void mingw_std_stdio_static_this()
++        {
++            stdin  = &_iob[0];
++            stdout = &_iob[1];
++            stderr = &_iob[2];
++            stdaux = &_iob[3];
++            stdprn = &_iob[4];
++        }
++        
++        // Given there is the possibility this module could be included.  We
++        // have no real guarantee mingw_std_stdio_static_this has been ran.
++        // There should be no side effects from calling it twice.
++        static this()
++        {
++            mingw_std_stdio_static_this();
++        }
++    }
++    else 
++    {
++        shared stdin  = &_iob[0];
++        shared stdout = &_iob[1];
++        shared stderr = &_iob[2];
++        shared stdaux = &_iob[3];
++        shared stdprn = &_iob[4];
++    }
+ }
+ else version( linux )
+ {
+diff -r 886b0a5af18a d/phobos2/std/stdio.d
+--- a/d/phobos2/std/stdio.d	Sat Mar 19 19:23:45 2011 +0000
++++ b/d/phobos2/std/stdio.d	Sun Mar 27 22:46:17 2011 -0400
+@@ -64,8 +64,8 @@
+ 
+ version (MinGW)
+ {
+-    version = DIGITAL_MARS_STDIO;
+-    import std.c.stdio : __fhnd_info, FHND_WCHAR, FHND_TEXT;
++    version = MINGW_IO;
++    //import std.c.stdio : __fhnd_info, FHND_WCHAR, FHND_TEXT;
+ }
+ 
+ version(Windows)
+@@ -104,6 +104,41 @@
+     int _fileno(FILE* f) { return f._file; }
+     alias _fileno fileno;
+ }
++else version (MINGW_IO)
++{
++    extern (C)
++    {
++        int setmode(int, int);
++    }
++    
++    void flockfile(FILE*)
++    {
++    }
++    void funlockfile(FILE*)
++    {
++    }
++
++    int fputc_unlocked(int c, _iobuf* fp) { return fputc(c, cast(shared) fp); }
++    int fputwc_unlocked(int c, _iobuf* fp)
++    {
++        return fputwc(cast(wchar_t)c, cast(shared) fp);
++    }
++    int fgetc_unlocked(_iobuf* fp) { return fgetc(cast(shared) fp); }
++    int fgetwc_unlocked(_iobuf* fp) { return fgetwc(cast(shared) fp); }
++    
++    alias fputc_unlocked FPUTC;
++    alias fputwc_unlocked FPUTWC;
++    alias fgetc_unlocked FGETC;
++    alias fgetwc_unlocked FGETWC;
++
++    alias flockfile FLOCK;
++    alias funlockfile FUNLOCK;
++
++    alias setmode _setmode;
++    enum _O_BINARY = 0x8000;
++    int _fileno(FILE* f) { return f._file; }
++    alias _fileno fileno;
++}
+ else version (GCC_IO)
+ {
+     /* **
+@@ -2349,6 +2384,80 @@
+     }
+ }
+ 
++version (MINGW_IO)
++private size_t readlnImpl(FILE* fps, ref char[] buf, dchar terminator = '\n')
++{
++    FLOCK(fps);
++    scope(exit) FUNLOCK(fps);
++    auto fp = cast(_iobuf*)fps;
++    if (fwide(fps, 0) > 0)
++    {   /* Stream is in wide characters.
++         * Read them and convert to chars.
++         */
++        version (Windows)
++        {
++            buf.length = 0;
++            for (int c; (c = FGETWC(fp)) != -1; )
++            {
++                if ((c & ~0x7F) == 0)
++                {   buf ~= c;
++                    if (c == terminator)
++                        break;
++                }
++                else
++                {
++                    if (c >= 0xD800 && c <= 0xDBFF)
++                    {
++                        int c2 = void;
++                        if ((c2 = FGETWC(fp)) != -1 ||
++                                c2 < 0xDC00 && c2 > 0xDFFF)
++                        {
++                            StdioException("unpaired UTF-16 surrogate");
++                        }
++                        c = ((c - 0xD7C0) << 10) + (c2 - 0xDC00);
++                    }
++                    std.utf.encode(buf, c);
++                }
++            }
++            if (ferror(cast(shared)fp))
++                StdioException();
++            return buf.length;
++        }
++        else version (Posix)
++        {
++            buf.length = 0;
++            for (int c; (c = FGETWC(fp)) != -1; )
++            {
++                if ((c & ~0x7F) == 0)
++                    buf ~= cast(char)c;
++                else
++                    std.utf.encode(buf, cast(dchar)c);
++                if (c == terminator)
++                    break;
++            }
++            if (ferror(fps))
++                StdioException();
++            return buf.length;
++        }
++        else
++        {
++            static assert(0);
++        }
++    }
++
++    // Narrow stream
++    buf.length = 0;
++    for (int c; (c = FGETC(fp)) != -1; )
++    {
++        buf ~= cast(char)c;
++        if (c == terminator)
++            break;
++    }
++    if (ferror(fps))
++        StdioException();
++    return buf.length;
++}
++
+ version (GCC_IO)
+ private size_t readlnImpl(FILE* fps, ref char[] buf, dchar terminator = '\n')
+ {
+diff -r 886b0a5af18a d/phobos2/std/stdiobase.d
+--- a/d/phobos2/std/stdiobase.d	Sat Mar 19 19:23:45 2011 +0000
++++ b/d/phobos2/std/stdiobase.d	Sun Mar 27 22:46:17 2011 -0400
+@@ -17,8 +17,14 @@
+ module std.stdiobase;
+ 
+ extern(C) void std_stdio_static_this();
++extern(C) void mingw_std_stdio_static_this();
+ 
+ shared static this()
+ {
++    // Because this constructor gets called before core.std.c.stdio and MinGW
++    // currently has to set std{in,out...} inside a static constructor
++    version(MinGW)
++        mingw_std_stdio_static_this();
++    
+     std_stdio_static_this();
+ }

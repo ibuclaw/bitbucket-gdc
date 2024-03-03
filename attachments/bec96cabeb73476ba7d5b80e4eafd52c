@@ -1,0 +1,31 @@
+diff -r 6753cb13d45d d/phobos/acinclude.m4
+--- a/d/phobos/acinclude.m4	Sun Oct 25 10:21:18 2009 -0400
++++ b/d/phobos/acinclude.m4	Mon Oct 26 00:43:37 2009 +0100
+@@ -84,6 +84,7 @@
+ D_EXTRA_OBJS="std/c/linux/linux.o $D_EXTRA_OBJS"
+ D_PREREQ_SRCS="$D_PREREQ_SRCS "'$(config_unix_d_src)'
+ DCFG_UNIX="Unix"
++DCFG_POSIX="Posix"
+ 
+ ])
+ 
+diff -r 6753cb13d45d d/phobos/configure.in
+--- a/d/phobos/configure.in	Sun Oct 25 10:21:18 2009 -0400
++++ b/d/phobos/configure.in	Mon Oct 26 00:43:37 2009 +0100
+@@ -620,6 +620,7 @@
+ 
+ 
+ AC_SUBST(DCFG_UNIX)
++AC_SUBST(DCFG_POSIX)
+ 	
+ if test -z "$DFLAGS"; then
+     DFLAGS="-g -frelease -O2"
+diff -r 6753cb13d45d d/phobos/phobos-ver-syms.in
+--- a/d/phobos/phobos-ver-syms.in	Sun Oct 25 10:21:18 2009 -0400
++++ b/d/phobos/phobos-ver-syms.in	Mon Oct 26 00:43:37 2009 +0100
+@@ -1,4 +1,5 @@
+ @DCFG_UNIX@
++@DCFG_POSIX@
+ @DCFG_PTHREAD_SUSPEND@
+ @DCFG_SEMAPHORE_IMPL@
+ @DCFG_TRUNC@

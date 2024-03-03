@@ -1,0 +1,12 @@
+diff -r 556c52c844c0 d/d-decls.cc
+--- a/d/d-decls.cc	Wed Mar 17 20:25:20 2010 -0400
++++ b/d/d-decls.cc	Wed Mar 31 23:34:34 2010 +0100
+@@ -910,7 +910,7 @@
+ 
+ 	TREE_ADDRESSABLE( t ) = 1;
+ 	TREE_CONSTANT( t ) = 1;
+-	TREE_READONLY( t ) = 1;
++	TREE_INVARIANT( t ) = 1;
+ 	DECL_CONTEXT( t ) = 0; // These are always global
+     }
+     return sinit;

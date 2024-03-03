@@ -1,0 +1,6 @@
+PATH=/opt/gdc/bin:/usr/bin:/bin
+all: dmain
+	gdc -v
+	./dmain hello || true
+dmain: cmain.c main.d
+	gdc main.d cmain.c -o dmain

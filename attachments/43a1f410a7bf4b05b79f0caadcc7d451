@@ -1,0 +1,62 @@
+diff -r 522edd895220 d/d-glue.cc
+--- a/d/d-glue.cc	Mon Jul 19 12:37:17 2010 +0100
++++ b/d/d-glue.cc	Mon Jul 19 14:22:41 2010 +0100
+@@ -1145,6 +1145,9 @@
+     }
+     tree t1 = e1->toElem( irs );
+     tree t2 = e2->toElem( irs );
++
++    // Assume front end runs semantic on the CommaExp.
++    assert(type);
+     return build2(COMPOUND_EXPR, type->toCtype(), t1, t2);
+ }
+ 
+@@ -2197,11 +2200,31 @@
+ elem *
+ AssocArrayLiteralExp::toElem(IRState * irs)
+ {
++#if ! V2
+     TypeAArray * aa_type = (TypeAArray *)type->toBasetype();
+     assert(aa_type->ty == Taarray);
++#else
++    Type * a_type = type->toBasetype()->mutableOf();
++    assert(a_type->ty == Taarray);
++    TypeAArray * aa_type = (TypeAArray *)a_type;
++
++    /* Unfortunately, the hash function for Aa (array of chars) is custom and
++     * different from Axa and Aya, which get the generic hash function.
++     * So, rewrite the type of the AArray so that if it's key type
++     * is an array of const or invariant, make it an array of mutable.
++     */
++    Type * tkey = aa_type->index->toBasetype();
++    if (tkey->ty == Tarray)
++    {
++	tkey = tkey->nextOf()->mutableOf()->arrayOf();
++	tkey = tkey->semantic(0, NULL);
++	aa_type = new TypeAArray(aa_type->nextOf(), tkey);
++	aa_type = (TypeAArray *)aa_type->merge();
++    }
++#endif
+     assert(keys != NULL);
+     assert(values != NULL);
+-    
++
+     tree keys_var = irs->exprVar(irs->arrayType(aa_type->index, keys->dim)); //?
+     tree vals_var = irs->exprVar(irs->arrayType(aa_type->next, keys->dim));
+     tree keys_ptr = irs->nop(irs->addressOf(keys_var),
+diff -r 522edd895220 d/dmd2/declaration.c
+--- a/d/dmd2/declaration.c	Mon Jul 19 12:37:17 2010 +0100
++++ b/d/dmd2/declaration.c	Mon Jul 19 14:22:41 2010 +0100
+@@ -1042,6 +1042,12 @@
+ 				    e->op = TOKblit;
+ 				    e->type = t;
+ 				    ei->exp = new CommaExp(loc, e, ei->exp);
++#if IN_GCC
++				    /* We rely on exp->type being set here, else
++				     * causes problems later in CommaExp::toElem()
++				     */
++				    ei->exp = ei->exp->semantic(sc);
++#endif
+ 
+ 				    /* Replace __ctmp being constructed with e1
+ 				     */

@@ -1,0 +1,96 @@
+diff -r 0d65aed46422 d/d-codegen.cc
+--- a/d/d-codegen.cc	Wed Oct 26 00:39:46 2011 +0100
++++ b/d/d-codegen.cc	Wed Oct 26 17:09:22 2011 -0500
+@@ -4036,6 +4036,7 @@
+ }
+ 
+ 
++#define LAYOUT_DEBUG
+ void
+ AggLayout::doFields(VarDeclarations * fields, AggregateDeclaration * agg)
+ {
+@@ -4046,11 +4047,37 @@
+     if (POINTER_TYPE_P(fcontext))
+         fcontext = TREE_TYPE(fcontext);
+ 
++    record_layout_info rli = start_record_layout(aggType);
++#ifdef LAYOUT_DEBUG
++    printf("Laying out %s\n", agg->ident->string);
++#endif
++    if(agg->type->ty == Tclass)
++    {
++        int i;
++        // add vtable and monitor pointers?
++        for(i = 0; i < 2; i++) {
++            tree field_decl = d_build_decl(FIELD_DECL, NULL_TREE, build_pointer_type(void_type_node));
++            DECL_CONTEXT(field_decl) = aggType;
++            DECL_FCONTEXT(field_decl) = fcontext;
++            DECL_FIELD_OFFSET(field_decl) = size_zero_node;
++            DECL_FIELD_BIT_OFFSET(field_decl) = bitsize_zero_node;
++        
++            DECL_ARTIFICIAL(field_decl) = DECL_IGNORED_P(field_decl) = FALSE;
++        
++            SET_DECL_OFFSET_ALIGN(field_decl, 0);
++        
++            layout_decl(field_decl, 0);
++            fieldList.chain(field_decl);
++        
++            place_field(rli, field_decl);
++        }
++    }
+     // tree new_field_chain = NULL_TREE;
+     for (size_t i = 0; i < fields->dim; i++)
+     {   // %% D anonymous unions just put the fields into the outer struct...
+         // does this cause problems?
+         VarDeclaration * var_decl = fields->tdata()[i];
++
+         gcc_assert(var_decl && var_decl->storage_class & STCfield);
+ 
+         tree ident = var_decl->ident ? get_identifier(var_decl->ident->string) : NULL_TREE;
+@@ -4062,14 +4089,16 @@
+ 
+         DECL_CONTEXT(field_decl) = aggType;
+         DECL_FCONTEXT(field_decl) = fcontext;
+-        DECL_FIELD_OFFSET (field_decl) = size_int(var_decl->offset);
++//        DECL_FIELD_OFFSET (field_decl) = size_int(var_decl->offset);
++        DECL_FIELD_OFFSET (field_decl) = size_zero_node;
+         DECL_FIELD_BIT_OFFSET (field_decl) = bitsize_zero_node;
+ 
+         DECL_ARTIFICIAL(field_decl) = DECL_IGNORED_P(field_decl) = inherited;
+ 
+         // GCC 4.0 requires DECL_OFFSET_ALIGN to be set
+         // %% .. using TYPE_ALIGN may not be same as DMD..
+-        SET_DECL_OFFSET_ALIGN(field_decl, TYPE_ALIGN(TREE_TYPE(field_decl)));
++//        SET_DECL_OFFSET_ALIGN(field_decl, TYPE_ALIGN(TREE_TYPE(field_decl)));
++        SET_DECL_OFFSET_ALIGN(field_decl, 0);
+ 
+         //SET_DECL_OFFSET_ALIGN (field_decl, BIGGEST_ALIGNMENT); // ?
+         layout_decl(field_decl, 0);
+@@ -4082,7 +4111,27 @@
+             gcc_assert(DECL_SIZE(field_decl) != NULL_TREE);
+         }
+         fieldList.chain(field_decl);
++        place_field(rli, field_decl);
++        
++#ifdef LAYOUT_DEBUG
++        //make sure we match DMD - this should go away outside of
++        //x86 and x86_64
++        int gcc_offset = TREE_INT_CST_LOW(DECL_FIELD_OFFSET(field_decl))
++            + TREE_INT_CST_LOW(DECL_FIELD_BIT_OFFSET(field_decl)) / 8;
++        int dmd_offset = var_decl->offset;
++        if(gcc_offset != dmd_offset)
++        {
++            printf("mismatch, type is %s, GCC has %d and DMD has %d\n",
++                agg->type->ty == Tclass ? "class" :
++                agg->type->ty == Tstruct ? "struct" :
++                "other",
++                gcc_offset,
++                dmd_offset);
++                
++        }
+     }
++#endif
++    finish_record_layout(rli, true);
+ }
+ 
+ void

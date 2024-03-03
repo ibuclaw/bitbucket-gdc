@@ -1,0 +1,60 @@
+diff -r 9b6c008db646 d/d-codegen.cc
+--- a/d/d-codegen.cc	Sat Jul 30 13:26:36 2011 -0500
++++ b/d/d-codegen.cc	Wed Oct 26 07:52:59 2011 -0700
+@@ -3991,6 +3991,46 @@
+ #ifdef LAYOUT_DEBUG
+     printf("Laying out %s\n", agg->ident->string);
+ #endif
++    if(agg->type->ty == Tclass)
++    {
++        // add monitor and vtable pointer
++        tree field_decl = build_pointer_type(void_type_node);
++        DECL_CONTEXT(field_decl) = aggType;
++        DECL_FCONTEXT(field_decl) = fcontext;
++        DECL_FIELD_OFFSET (field_decl) = size_zero_node;
++        DECL_FIELD_BIT_OFFSET (field_decl) = bitsize_zero_node;
++
++        DECL_ARTIFICIAL(field_decl) = DECL_IGNORED_P(field_decl) = FALSE;
++
++        SET_DECL_OFFSET_ALIGN(field_decl, 0);
++
++#ifdef LAYOUT_DEBUG	
++	printf("size: %d, ", TREE_INT_CST_LOW(TYPE_SIZE(TREE_TYPE(field_decl))));
++        printf("offset align: %d, ", DECL_OFFSET_ALIGN(field_decl));
++        printf("offset: %d, ", TREE_INT_CST_LOW(DECL_FIELD_OFFSET(field_decl)));
++        printf("bit_offset: %d, ", TREE_INT_CST_LOW(DECL_FIELD_BIT_OFFSET(field_decl)));
++        printf("type_align: %d\n", TYPE_ALIGN(TREE_TYPE(field_decl)));
++#endif
++        layout_decl(field_decl, 0);
++        fieldList.chain(field_decl);
++
++#ifdef LAYOUT_DEBUG
++	printf("size: %d, ", TREE_INT_CST_LOW(TYPE_SIZE(TREE_TYPE(field_decl))));
++        printf("offset align: %d, ", DECL_OFFSET_ALIGN(field_decl));
++        printf("offset: %d, ", TREE_INT_CST_LOW(DECL_FIELD_OFFSET(field_decl)));
++        printf("bit_offset: %d, ", TREE_INT_CST_LOW(DECL_FIELD_BIT_OFFSET(field_decl)));
++        printf("type_align: %d\n", TYPE_ALIGN(TREE_TYPE(field_decl)));
++#endif
++	place_field(rli, field_decl);
++
++#ifdef LAYOUT_DEBUG
++	printf("size: %d, ", TREE_INT_CST_LOW(TYPE_SIZE(TREE_TYPE(field_decl))));
++        printf("offset align: %d, ", DECL_OFFSET_ALIGN(field_decl));
++        printf("offset: %d, ", TREE_INT_CST_LOW(DECL_FIELD_OFFSET(field_decl)));
++        printf("bit_offset: %d, ", TREE_INT_CST_LOW(DECL_FIELD_BIT_OFFSET(field_decl)));
++        printf("type_align: %d\n", TYPE_ALIGN(TREE_TYPE(field_decl)));
++#endif
++    }
+     // tree new_field_chain = NULL_TREE;
+     for (unsigned i = 0; i < fields->dim; i++)
+     {   // %% D anonymous unions just put the fields into the outer struct...
+@@ -4058,6 +4098,9 @@
+         printf("frontend offset: %d, ", var_decl->offset);
+         printf("type_align: %d\n", TYPE_ALIGN(TREE_TYPE(field_decl)));
+ #endif
++	gcc_assert(TREE_INT_CST_LOW(DECL_FIELD_OFFSET(field_decl))
++                + TREE_INT_CST_LOW(DECL_FIELD_BIT_OFFSET(field_decl)) / 8
++                == var_decl->offset);
+     }
+     finish_record_layout(rli, true);
+ #ifdef LAYOUT_DEBUG

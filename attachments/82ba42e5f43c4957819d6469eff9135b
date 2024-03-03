@@ -1,0 +1,47 @@
+diff -r 584a5f3a7dce d/d-asm-i386.h
+--- a/d/d-asm-i386.h	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/d-asm-i386.h	Mon Jun 20 11:12:31 2011 -0400
+@@ -2186,20 +2186,19 @@
+                         mode = Mode_Input;
+ 
+                     use_star = opTakesLabel();//opInfo->takesLabel();
++                    if (use_star && operand->symbolDisplacement.dim == 0)
++                        insnTemplate->writebyte('*');
++                    
+ 
+                     if (operand->segmentPrefix != Reg_Invalid)
+                     {
+                         writeReg(operand->segmentPrefix);
+                         insnTemplate->writebyte(':');
+                     }
+-                    if ((operand->segmentPrefix != Reg_Invalid && operand->symbolDisplacement.dim == 0) ||
++                    if ((operand->segmentPrefix != Reg_Invalid && operand->symbolDisplacement.dim == 0) &&
+                         operand->constDisplacement)
+                     {
+                         addOperand("%a", Arg_Integer, newIntExp(operand->constDisplacement), asmcode);
+-                        if (operand->symbolDisplacement.dim)
+-                        {
+-                            insnTemplate->writebyte('+');
+-                        }
+                         operand->constDisplacement = 0;
+                         if (opInfo->operands[i] & Opr_Dest)
+                             asmcode->clobbersMemory = 1;
+@@ -2321,8 +2320,16 @@
+                             }
+                         }
+                     }
+-                    if (use_star)
+-                        insnTemplate->writebyte('*');
++                    if (operand->constDisplacement)
++                    {
++                        if (operand->symbolDisplacement.dim)
++                            insnTemplate->writebyte('+');
++                        addOperand("%a", Arg_Integer, newIntExp(operand->constDisplacement), asmcode);
++                        operand->constDisplacement = 0;
++                        if (opInfo->operands[i] & Opr_Dest)
++                            asmcode->clobbersMemory = 1;                     
++                    }
++                    
+                     if (operand->baseReg != Reg_Invalid || operand->indexReg != Reg_Invalid)
+                     {
+                         insnTemplate->writebyte('(');

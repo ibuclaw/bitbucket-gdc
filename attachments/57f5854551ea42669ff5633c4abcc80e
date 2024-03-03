@@ -1,0 +1,363 @@
+diff -r ef3c725214ec d/d-lang.cc
+--- a/d/d-lang.cc	Thu Mar 10 12:32:00 2011 +0000
++++ b/d/d-lang.cc	Sat Mar 12 01:21:47 2011 -0500
+@@ -139,6 +139,10 @@
+ #endif
+ 
+ 
++#ifndef _
++# define _(msgid)	(msgid)
++#endif
++
+ ////static tree d_type_for_size PARAMS ((unsigned, int));
+ static tree d_signed_or_unsigned_type(int, tree);
+ ////tree d_unsigned_type(tree);
+@@ -271,6 +275,79 @@
+     return is_target_win32;
+ }
+ 
++
++static void register_imports_chains ();
++static void add_import_path (const char *, bool verbose=false);
++static void add_env_var_paths (const char *, bool verbose=false);
++static void add_standard_paths (bool verbose=false);
++static void free_path (char *path, int reason, bool verbose=false);
++static char* make_absolute(const char *path, bool verbose = false);
++
++enum { REASON_QUIET = 0, REASON_NOENT, REASON_DUP, REASON_DUP_SYS };
++
++
++/* Free an element of the include chain, possibly giving a reason.  */
++static void
++free_path (char *path, int reason, bool verbose)
++{
++  switch (reason)
++    {
++    case REASON_DUP:
++    case REASON_DUP_SYS:
++        if(verbose)
++        {
++            fprintf (stderr, _("ignoring duplicate directory \"%s\"\n"), path);
++            if (reason == REASON_DUP_SYS)
++                fprintf (stderr, 
++                    _("  as it is a non-system directory that duplicates a system directory\n"));
++        }
++      break;
++
++    case REASON_NOENT:
++//        if(verbose)
++          fprintf (stderr, _("ignoring nonexistent directory \"%s\"\n"),
++               path);
++      break;
++
++    case REASON_QUIET:
++    default:
++      break;
++    }
++
++  free (path);
++}
++
++/* Read ENV_VAR for a PATH_SEPARATOR-separated list of file names; and
++   append all the names to the search path CHAIN.  */
++static void
++add_env_var_paths (const char *env_var, bool verbose)
++{
++    char *p, *q, *path;
++
++    GET_ENVIRONMENT (q, env_var);
++
++    if (!q)
++        return;
++
++    for (p = q; *q; p = q + 1)
++    {
++        q = p;
++        while (*q != 0 && *q != PATH_SEPARATOR)
++            q++;
++
++        if (p == q)
++            path = xstrdup (".");
++        else
++        {
++            path = XNEWVEC (char, q - p + 1);
++            memcpy (path, p, q - p);
++            path[q - p] = '\0';
++        }
++
++        add_import_path (path, verbose);
++    }
++}
++
+ static char *
+ prefixed_path(const char * path)
+ {
+@@ -282,6 +359,217 @@
+     return xstrdup(path);
+ }
+ 
++
++/* Append the standard import chain defined in d-confdefs.h  */
++static void add_standard_paths(bool verbose)
++{
++    add_import_path(D_PHOBOS_TARGET_DIR, verbose);
++    add_import_path(D_PHOBOS_DIR, verbose);
++}
++
++
++static bool check_duplicates(const char *path)
++{
++    if(!global.path)
++        return false;
++
++    char *addedPath;
++
++    for (unsigned i = 0; i < global.path->dim; i++)
++    {
++        addedPath = (char *)global.path->data[i];
++        if(!FileName::compare(addedPath, path))
++            return true;
++    }
++
++    return false;
++}
++
++
++/*
++reorganize 
++    /mingw/lib/gcc/i686-pc-mingw32/4.5.2/../../../../include/d2/4.5.2
++to
++    /mingw/include/d2/4.5.2
++
++return null, if the path can't be handled;
++
++char* str = "/abc/../gcc-4.5.2/libphobos";        // ok
++char* str = "/abc/../../gcc-4.5.2/libphobos";     // error
++char* str = "/../gcc-4.5.2/libphobos";            // error
++char* str = "D:/../gcc-4.5.2/libphobos";          // error
++char* str = "D:/D/../gcc-4.5.2/libphobos";        // ok
++char* str = "A/../gcc-4.5.2/libphobos";           // ok
++char* str = "aa/bb/cc/../../gcc-4.5.2/libphobos"; // ok
++*/
++static char* make_absolute(const char *path, bool verbose)
++{
++    size_t pathLength = strlen(path);
++    char *result = NULL;
++
++    if(pathLength<3)
++    {
++        result = xstrdup(path);
++        return result;
++    }
++
++    char pathBuffer[MAX_PATH];
++    char splitters[MAX_PATH];
++
++    size_t i=0;
++    size_t splliterCount = 0;
++    size_t bufferLength = 0;
++
++    while( i<pathLength)
++    {
++        pathBuffer[bufferLength] = path[i];
++
++        if(IS_DIR_SEPARATOR(path[i]))
++        {
++            // convert '\\' to '/'
++            pathBuffer[bufferLength] = '/';
++            splitters[splliterCount] = i;
++            splliterCount++;
++        }
++        else if(i<pathLength-1 && path[i] == '.' && path[i+1] == '.')
++        {
++            if(splliterCount == 0 )
++            {
++                if(verbose)
++                    fprintf(stderr, "It's a relative path: %s\n", path);
++                return NULL;
++            }
++
++            if( i==pathLength-2 || (i<pathLength-2 && IS_DIR_SEPARATOR(path[i+2])))
++            {
++                splliterCount--;
++                if(splliterCount == 0)
++                {
++                    if(IS_DIR_SEPARATOR(pathBuffer[0]) || (pathBuffer[1] == ':' && IS_DIR_SEPARATOR(pathBuffer[2])))
++                    {
++//                        if(verbose)
++                            fprintf(stderr, "Warnning: can't handle path: %s\n", path);
++                        return NULL;
++                    }
++
++                    // backup to the root
++                    bufferLength = -1;
++                }
++                else
++                {
++                    // backup a level
++                    bufferLength = splitters[splliterCount-1];
++                }
++
++                // skip ../
++                i += 2;
++            }
++        }
++
++        bufferLength++;
++        i++;
++    }
++
++    pathBuffer[bufferLength] = '\0';
++    result = xstrdup(pathBuffer);
++
++    return result;
++}
++
++/* Add PATH to the include chain CHAIN. PATH must be malloc-ed and
++   NUL-terminated.  */
++static void add_import_path (const char *path, bool verbose)
++{
++    char *backup_dir = NULL;
++    char *target_dir = prefixed_path(path);
++
++
++#if defined (HAVE_DOS_BASED_FILE_SYSTEM)
++  /* Remove unnecessary trailing slashes.  On some versions of MS
++     Windows, trailing  _forward_ slashes cause no problems for stat().
++     On newer versions, stat() does not recognize a directory that ends
++     in a '\\' or '/', unless it is a drive root dir, such as "c:/",
++     where it is obligatory.  */
++    int pathlen = strlen (target_dir);
++    char* end = target_dir + pathlen - 1;
++    /* Preserve the lead '/' or lead "c:/".  */
++    char* start = target_dir + (pathlen > 2 && target_dir[1] == ':' ? 3 : 1);
++
++    for (; end > start && IS_DIR_SEPARATOR (*end); end--)
++    *end = 0;
++#endif
++
++    if (!global.path)
++        global.path = new Array();
++
++    backup_dir = target_dir;
++    target_dir = make_absolute(backup_dir, verbose);
++    if(target_dir)
++        free_path(backup_dir, REASON_QUIET, verbose);
++    else
++        target_dir = backup_dir;        
++
++    if(!FileName::exists(target_dir))
++    {
++        free_path(target_dir, REASON_NOENT, verbose);
++        return;
++    }
++
++
++    if(check_duplicates(target_dir))
++        free_path(target_dir, REASON_DUP, verbose);
++    else
++        global.path->push(target_dir);        
++}
++
++
++
++static void register_imports_chains()
++{
++    static const char *const lang_env_vars[] =
++        { "D_IMPORT_PATH" };
++
++    size_t idx = 0;
++    bool verbose = global.params.verbose;
++
++    /* CPATH and language-dependent environment variables may add to the
++     include chain.  */
++    add_env_var_paths ("CPATH");
++    add_env_var_paths (lang_env_vars[idx]);
++
++  
++    // %%TODO: front or back?
++    if (std_inc)
++        add_standard_paths(verbose);
++
++
++    if (global.params.imppath)
++    {
++        for (unsigned i = 0; i < global.params.imppath->dim; i++)
++        {
++            char *path = (char *)global.params.imppath->data[i];
++            // We would do this for D_INCLUDE_PATH env var, but not for '-I'
++            // command line args.
++            //Array *a = FileName::splitPath(path);
++
++            if (path)
++                add_import_path(path, verbose);
++        }
++    }
++
++    if (global.params.fileImppath)
++    {
++        for (unsigned i = 0; i < global.params.fileImppath->dim; i++)
++        {
++            char *path = (char *)global.params.fileImppath->data[i];
++            if (path)
++                add_import_path(path, verbose);
++        }
++    }
++}
++
++
++
+ static bool
+ d_init ()
+ {
+@@ -429,49 +717,7 @@
+ 
+     VersionCondition::addPredefinedGlobalIdent("all");
+ 
+-    // %%TODO: front or back?
+-    if (std_inc)
+-    {
+-        char * target_dir = prefixed_path(D_PHOBOS_TARGET_DIR);
+-        if (multilib_dir)
+-            target_dir = concat(target_dir, "/", multilib_dir, NULL);
+-
+-        global.params.imppath->insert(0, prefixed_path(D_PHOBOS_DIR));
+-        global.params.imppath->insert(0, target_dir);
+-    }
+-
+-    if (global.params.imppath)
+-    {
+-        for (unsigned i = 0; i < global.params.imppath->dim; i++)
+-        {
+-            char *path = (char *)global.params.imppath->data[i];
+-            // We would do this for D_INCLUDE_PATH env var, but not for '-I'
+-            // command line args.
+-            //Array *a = FileName::splitPath(path);
+-
+-            if (path)
+-            {
+-                if (!global.path)
+-                    global.path = new Array();
+-                //global.path->append(a);
+-                global.path->push(path);
+-            }
+-        }
+-    }
+-
+-    if (global.params.fileImppath)
+-    {
+-        for (unsigned i = 0; i < global.params.fileImppath->dim; i++)
+-        {
+-            char *path = (char *)global.params.fileImppath->data[i];
+-            if (path)
+-            {
+-                if (!global.filePath)
+-                    global.filePath = new Array();
+-                global.filePath->push(path);
+-            }
+-        }
+-    }
++    register_imports_chains();
+ 
+     {
+         char * path = FileName::searchPath(global.path, "phobos-ver-syms", 1);

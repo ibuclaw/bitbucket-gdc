@@ -1,0 +1,12 @@
+diff -r 22792e6a6253 d/dmd/func.c
+--- a/d/dmd/func.c	Tue Aug 17 11:45:59 2010 -0400
++++ b/d/dmd/func.c	Tue Aug 17 19:52:13 2010 -0400
+@@ -808,7 +808,7 @@
+                 v_arguments->parent = this;
+ #endif
+             }
+-            if (f->linkage == LINKd || (parameters && parameters->dim))
++            if (f->linkage == LINKd || (f->parameters && Parameter::dim(f->parameters)))
+             {   // Declare _argptr
+ #if IN_GCC
+                 t = d_gcc_builtin_va_list_d_type;

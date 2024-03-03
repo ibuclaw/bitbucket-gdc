@@ -1,0 +1,135 @@
+--- d/phobos/internal/dmain2.d	2010-03-01 17:18:06.000000000 +0000
++++ d/phobos/internal/dmain2.d	2010-03-13 01:33:18.000000000 +0000
+@@ -29,7 +29,7 @@
+     extern (C) void* __osx_stack_end = cast(void*)0xC0000000;
+ }
+ 
+-version (FreeBSD)
++version (freebsd)
+ {
+     // The bottom of the stack
+     extern (C) void* __libc_stack_end;
+@@ -69,7 +69,7 @@
+  	__osx_stack_end = cast(void*)&argv;
+      }
+      
+-     version (FreeBSD)
++     version (freebsd)
+     {	/* FreeBSD does not provide a way to get at the top of the
+  	 * stack.
+  	 * But as far as the gc is concerned, argv is at the top
+--- d/phobos/internal/gc/gclinux.d	2010-03-01 17:18:06.000000000 +0000
++++ d/phobos/internal/gc/gclinux.d	2010-03-13 01:32:51.000000000 +0000
+@@ -24,7 +24,7 @@
+     }
+ }
+ 
+-version (FreeBSD)
++version (freebsd)
+ {
+     extern (C)
+     {
+@@ -156,7 +156,7 @@
+  	*base = null;
+  	*nbytes = 0;
+      }
+-     else version (FreeBSD)
++     else version (freebsd)
+     {
+  	*base = cast(void *)&etext;
+  	*nbytes = cast(byte *)&_end - cast(byte *)&etext;
+--- d/phobos/std/c/fenv.d	2010-03-01 17:18:07.000000000 +0000
++++ d/phobos/std/c/fenv.d	2010-03-13 01:31:49.000000000 +0000
+@@ -132,7 +132,7 @@
+     int feholdexcept(fenv_t *envp);		///
+     int feupdateenv(fenv_t *envp);		///
+ }
+-else version (FreeBSD)
++else version (freebsd)
+ {
+     /// Entire floating point environment
+ 
+--- d/phobos/std/c/stddef.d	2010-03-01 17:18:07.000000000 +0000
++++ d/phobos/std/c/stddef.d	2010-03-13 01:30:17.000000000 +0000
+@@ -30,7 +30,7 @@
+ {
+     alias dchar wchar_t;
+ }
+-else version (FreeBSD)
++else version (freebsd)
+ {
+     alias dchar wchar_t;
+ }
+--- d/phobos/std/c/string.d	2010-03-01 17:18:07.000000000 +0000
++++ d/phobos/std/c/string.d	2010-03-13 01:29:58.000000000 +0000
+@@ -69,7 +69,7 @@
+     int strerror_r(int errnum, char* buf, size_t buflen);	///
+ }
+ 
+-version (FreeBSD)
++version (freebsd)
+ {
+     int strerror_r(int errnum, char* buf, size_t buflen);	///
+ }
+--- d/phobos/std/c/time.d	2010-03-01 17:18:07.000000000 +0000
++++ d/phobos/std/c/time.d	2010-03-13 01:29:42.000000000 +0000
+@@ -88,7 +88,7 @@
+                tm_isdst;
+     }
+ }
+-else version (FreeBSD)
++else version (freebsd)
+ {
+     const clock_t CLOCKS_PER_SEC = 128;
+     const clock_t CLK_TCK        = 128; // deprecated, use sysconf(_SC_CLK_TCK)
+--- d/phobos/std/file.d	2010-03-01 17:18:07.000000000 +0000
++++ d/phobos/std/file.d	2010-03-13 01:29:23.000000000 +0000
+@@ -1165,7 +1165,7 @@
+  	fta = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
+  	ftm = cast(d_time)statbuf.st_mtimespec.tv_sec * std.date.TicksPerSecond;
+      }
+-     else version (FreeBSD)
++     else version (freebsd)
+     {	// BUG: should add in tv_nsec field
+  	ftc = cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
+  	fta = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
+@@ -1416,7 +1416,7 @@
+  	    _lastAccessTime = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
+  	    _lastWriteTime =  cast(d_time)statbuf.st_mtimespec.tv_sec * std.date.TicksPerSecond;
+  	}
+- 	else version (FreeBSD)
++ 	else version (freebsd)
+  	{
+  	    _creationTime =   cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
+  	    _lastAccessTime = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
+@@ -1626,7 +1626,7 @@
+ 	utim.actime = cast(__time_t)statbuf.st_atimespec.tv_sec;
+ 	utim.modtime = cast(__time_t)statbuf.st_mtimespec.tv_sec;
+     }
+-    else version (FreeBSD)
++    else version (freebsd)
+     {
+  	utim.actime = cast(__time_t)statbuf.st_atimespec.tv_sec;
+  	utim.modtime = cast(__time_t)statbuf.st_mtimespec.tv_sec;
+--- d/phobos/std/mmfile.d	2010-03-01 17:18:07.000000000 +0000
++++ d/phobos/std/mmfile.d	2010-03-13 01:28:40.000000000 +0000
+@@ -331,7 +331,7 @@
+ 				fd = -1;
+ 				version (linux)			flags |= MAP_ANONYMOUS;
+ 				else version (OSX)		flags |= MAP_ANON;
+-				else version (FreeBSD)		flags |= MAP_ANON;
++				else version (freebsd)		flags |= MAP_ANON;
+ 				else version (Solaris)		flags |= MAP_ANON;
+  				else				static assert(0);
+ 			}
+--- d/phobos/std/system.d	2010-03-01 17:18:07.000000000 +0000
++++ d/phobos/std/system.d	2010-03-13 01:27:29.000000000 +0000
+@@ -48,7 +48,7 @@
+     else version (OSX)
+     {
+ 	Family family = Family.OSX;    }
+-    else version (FreeBSD)
++    else version (freebsd)
+      {
+  	Family family = Family.FreeBSD;
+     }

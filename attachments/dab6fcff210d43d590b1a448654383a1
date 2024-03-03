@@ -1,0 +1,13 @@
+diff -r e2092db74028 d/phobos2/std/stdio.d
+--- a/d/phobos2/std/stdio.d	Tue Nov 30 14:12:45 2010 +0000
++++ b/d/phobos2/std/stdio.d	Tue Nov 30 13:08:14 2010 -0500
+@@ -65,6 +65,9 @@
+ 
+ version(Windows)
+ {
++    version = DIGITAL_MARS_STDIO;
++    import std.c.stdio : __fhnd_info, FHND_WCHAR, FHND_TEXT;
++
+     alias core.stdc.stdio.fopen fopen64;
+ }
+ 

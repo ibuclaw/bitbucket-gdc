@@ -1,0 +1,24 @@
+diff -r f41ce1e8e5b2 d/dmd/expression.c
+--- a/d/dmd/expression.c	Sat Jul 31 23:29:35 2010 +0100
++++ b/d/dmd/expression.c	Mon Aug 02 00:00:58 2010 +0000
+@@ -8031,8 +8031,6 @@
+         goto Lerr;
+     }
+     e2 = resolveProperties(sc, e2);
+-    if (e2->type == Type::terror)
+-        goto Lerr;
+ 
+     if (t1->ty == Tsarray || t1->ty == Tarray || t1->ty == Ttuple)
+         sc = sc->pop();
+diff -r f41ce1e8e5b2 d/dmd/mtype.c
+--- a/d/dmd/mtype.c	Sat Jul 31 23:29:35 2010 +0100
++++ b/d/dmd/mtype.c	Mon Aug 02 00:00:58 2010 +0000
+@@ -261,7 +261,7 @@
+ 
+     for (i = 0; i < sizeof(basetab) / sizeof(basetab[0]); i++)
+         basic[basetab[i]] = new TypeBasic(basetab[i]);
+-    basic[Terror] = new TypeError();
++    basic[Terror] = basic[Tint32];
+ 
+     tvoidptr = tvoid->pointerTo();
+ 

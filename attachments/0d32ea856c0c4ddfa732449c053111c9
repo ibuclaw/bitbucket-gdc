@@ -1,0 +1,301 @@
+diff -r 224029a0567d d/d-codegen.cc
+--- a/d/d-codegen.cc	Fri Sep 10 10:00:19 2010 +0100
++++ b/d/d-codegen.cc	Fri Sep 10 15:28:43 2010 +0100
+@@ -3164,6 +3164,7 @@
+ {
+     Flow * f = beginFlow(stmt);
+     f->condition = t_cond;
++    f->kind = level_switch;
+ }
+ 
+ void
+@@ -3212,6 +3213,7 @@
+ IRState::startTry(Statement * stmt)
+ {
+     beginFlow(stmt);
++    currentFlow()->kind = level_try;
+ }
+ 
+ void
+@@ -3225,6 +3227,7 @@
+ IRState::startCatch(tree t_type)
+ {
+     currentFlow()->catchType = t_type;
++    currentFlow()->kind = level_catch;
+     pushStatementList();
+ }
+ 
+@@ -3253,6 +3256,7 @@
+ IRState::startFinally()
+ {
+     currentFlow()->tryBody = popStatementList();
++    currentFlow()->kind = level_finally;
+     pushStatementList();
+ }
+ 
+@@ -3309,6 +3313,49 @@
+ #endif
+ }
+ 
++void
++IRState::checkSwitchLevel(Statement * stmt, int default_flag)
++{
++    if (currentFlow()->kind != level_block &&
++	currentFlow()->kind != level_switch)
++    {
++	stmt->error("%s cannot be in different try block level from switch",
++		    default_flag ? "default" : "case");
++    }
++}
++
++void
++IRState::checkForwardReferences(Statement * stmt, Array * refs)
++{
++    for (unsigned i = 0; i < refs->dim; i++)
++    {
++	Flow * ref = (Flow *)refs->data[i];
++	//if (ref) printf("kind = %d\n", ref->kind);
++	for (int j = loops.dim - 1; j >= 0; j--)
++	{
++	    Flow * flow = (Flow *)loops.data[j];
++
++	    if (ref && ref == flow)
++		break;
++	    // No need checking for finally, should have already been handled.
++	    if (flow->kind == level_try)
++		goto Ltry;
++	    // %% doc: It is illegal for goto to be used to skip initializations. 
++	    if (flow->kind == level_catch)
++		goto Lcatch;
++	}
++    }
++    return;
++
++  Ltry:
++    stmt->error("cannot goto into try block");
++    return;
++
++  Lcatch:
++    stmt->error("cannot goto into catch block");
++    return;
++}
++
+ WrappedExp::WrappedExp(Loc loc, enum TOK op, tree exp_node, Type * type)
+     : Expression(loc, op, sizeof(WrappedExp))
+ {
+diff -r 224029a0567d d/d-codegen.h
+--- a/d/d-codegen.h	Fri Sep 10 10:00:19 2010 +0100
++++ b/d/d-codegen.h	Fri Sep 10 15:28:43 2010 +0100
+@@ -527,6 +527,9 @@
+     void doExp(Expression * e) { doExp(e->toElem(this)); } // %% should handle volatile...?
+     void doAsm(tree insn_tmpl, tree outputs, tree inputs, tree clobbers);
+ 
++    void checkSwitchLevel(Statement * stmt, int default_flag = 0);
++    void checkForwardReferences(Statement * stmt, Array * refs);
++
+     // ** Callback statement evalutation
+ 
+     static Array stmtExprList;
+diff -r 224029a0567d d/d-glue.cc
+--- a/d/d-glue.cc	Fri Sep 10 10:00:19 2010 +0100
++++ b/d/d-glue.cc	Fri Sep 10 15:28:43 2010 +0100
+@@ -3706,6 +3706,14 @@
+ #endif
+ 	if (statement)
+ 	    statement->toIR(irs);
++#if V1
++	if (fwdrefs)
++	{
++	    irs->checkForwardReferences(this, fwdrefs);
++	    delete fwdrefs;
++	    fwdrefs = NULL;
++	}
++#endif
+     }
+     // else, there was an error
+ }
+@@ -3995,9 +4003,7 @@
+ void
+ DefaultStatement::toIR(IRState * irs)
+ {
+-    if(! irs->currentFlow()->condition )
+-	error("default cannot be in different try block level from switch");
+-
++    irs->checkSwitchLevel(this, 1);
+     irs->doCase(NULL_TREE, cblock);
+     if (statement)
+ 	statement->toIR( irs );
+@@ -4007,13 +4013,13 @@
+ CaseStatement::toIR(IRState * irs)
+ {
+     tree case_value;
+-    if(! irs->currentFlow()->condition )
+-	error("case cannot be in different try block level from switch");
+ 
+     if ( exp->type->isscalar() )
+ 	case_value = exp->toElem(irs);
+     else
+ 	case_value = irs->integerConstant(index, Type::tint32);
++
++    irs->checkSwitchLevel(this);
+     irs->doCase(case_value, cblock);
+     if (statement)
+ 	statement->toIR( irs );
+diff -r 224029a0567d d/d-irstate.cc
+--- a/d/d-irstate.cc	Fri Sep 10 10:00:19 2010 +0100
++++ b/d/d-irstate.cc	Fri Sep 10 15:28:43 2010 +0100
+@@ -144,8 +144,6 @@
+ void
+ IRBase::addExp(tree e)
+ {
+-    enum tree_code code = TREE_CODE (e);
+-
+     /* Need to check that this is actually an expression; it
+        could be an integer constant (statement with no effect.)
+        Maybe should filter those out anyway... */
+@@ -207,7 +205,8 @@
+     if (! label->statement)
+ 	return NULL_TREE;
+ 
+-    if (! label->statement->lblock) {
++    if (! label->statement->lblock)
++    {
+ 	tree label_decl = build_decl (LABEL_DECL, get_identifier(label->ident->string), void_type_node);
+ 
+ 	assert(func != 0);
+@@ -217,15 +216,16 @@
+ 	if (label->statement->loc.filename)
+ 	    g.ofile->setDeclLoc( label_decl, label->statement->loc ); // %% label->loc okay?
+ 	label->statement->lblock = label_decl;
+-#if 0 /* V1 */
++#if V1
+ 	if (! label->statement->fwdrefs)
+ 	    label->statement->fwdrefs = new Array();
+-	label->statement->fwdrefs->push(label_decl); // %% what to push?
++	label->statement->fwdrefs->push( currentFlow() );
+ #endif
+     }
+     return label->statement->lblock;
+ }
+ 
++
+ IRBase::Flow *
+ IRBase::getLoopForLabel(Identifier * ident, bool want_continue)
+ {
+@@ -271,6 +271,7 @@
+     flow->loop = loop;
+     flow->exitLabel = NULL;
+     flow->overrideContinueLabel = NULL;
++    flow->kind = level_block;
+ 
+     loops.push(flow);
+ 
+@@ -305,8 +306,9 @@
+ 
+     flow->statement = stmt;
+     flow->exitLabel = NULL_TREE;
+-    flow->condition = NULL_TREE;
++    flow->continueLabel = NULL_TREE;
+     flow->trueBranch = NULL_TREE;
++    flow->kind = level_block;
+ 
+     loops.push(flow);
+ 
+@@ -361,7 +363,7 @@
+     unsigned * p_count;
+ 
+     assert(scopes.dim);
+-    p_count = (unsigned *) scopes.tos();
++    p_count = currentScope();
+ 
+     //endBindings();
+ 
+@@ -389,8 +391,8 @@
+ #endif
+ 
+     assert(scopes.dim);
+-    ++( * (unsigned *) scopes.tos() );
+-    //printf("%*s  start -> %d\n", scopes.dim, "", * (unsigned *) scopes.tos() );
++    ++( * currentScope() );
++    //printf("%*s  start -> %d\n", scopes.dim, "", * currentScope() );
+ 
+ }
+ 
+@@ -413,8 +415,8 @@
+     insert_block(block);
+ 
+     assert(scopes.dim);
+-    --( * (unsigned *) scopes.tos() );
+-    assert( * (int *) scopes.tos() >= 0 );
+-    //printf("%*s  end -> %d\n", scopes.dim, "", * (unsigned *) scopes.tos() );
++    --( * currentScope() );
++    assert( * (int *) currentScope() >= 0 );
++    //printf("%*s  end -> %d\n", scopes.dim, "", * currentScope() );
+ 
+ }
+diff -r 224029a0567d d/d-irstate.h
+--- a/d/d-irstate.h	Fri Sep 10 10:00:19 2010 +0100
++++ b/d/d-irstate.h	Fri Sep 10 15:28:43 2010 +0100
+@@ -83,25 +83,18 @@
+     typedef struct
+     {
+ 	Statement * statement;
++	LevelKind   kind;
+ 	// expand_start_case doesn't return a nesting structure, so
+ 	// we have to generate our own label for 'break'
+ 	nesting * loop;
+ 	tree      exitLabel;
+ 	tree      overrideContinueLabel;
+-	// Copied for information purposes. Not actually used.
+-	union {
+-	    struct {
+-		tree continueLabel;
+-	    };
+-	    struct {
+-		tree condition;
+-	    };
+-	};
+     } Flow;
+ #else
+     typedef struct
+     {
+ 	Statement * statement;
++	LevelKind   kind;
+ 	tree exitLabel;
+ 	union {
+ 	    struct {
+@@ -158,7 +151,6 @@
+     void       startBindings();
+     void       endBindings();
+ 
+-
+     // ** Volatile state
+ 
+     unsigned volatileDepth;
+diff -r 224029a0567d d/d-lang.h
+--- a/d/d-lang.h	Fri Sep 10 10:00:19 2010 +0100
++++ b/d/d-lang.h	Fri Sep 10 15:28:43 2010 +0100
+@@ -94,6 +94,15 @@
+ /* True if the label has been computed, or used by the frontend. */
+ #define D_LABEL_IS_USED(NODE) (DECL_LANG_FLAG_3(NODE))
+ 
++/* The kinds of levels we recognize. */
++typedef enum LevelKind {
++    level_block = 0,	/* An ordinary block scope. */
++    level_switch,	/* A switch-block */
++    level_try,		/* A try-block. */
++    level_catch,	/* A catch-block. */
++    level_finally,	/* A finally-block. */
++} LevelKind;
++
+ /* The D front-end does not use the 'binding level' system for a symbol table,
+    It is only needed to get debugging information for local variables and
+    otherwise support the backend. */
+@@ -117,7 +126,6 @@
+ 
+   /* The binding level this one is contained in. */
+   struct binding_level *level_chain;
+-
+ };
+ 
+ extern GTY(()) struct binding_level * current_binding_level;

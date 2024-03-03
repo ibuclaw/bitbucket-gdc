@@ -1,0 +1,75 @@
+diff -r 63e20381e289 d/d-decls.cc
+--- a/d/d-decls.cc	Mon Jun 07 20:50:15 2010 +0100
++++ b/d/d-decls.cc	Mon Jun 07 21:57:58 2010 +0100
+@@ -910,7 +910,7 @@
+ 
+ 	TREE_ADDRESSABLE( t ) = 1;
+ 	TREE_CONSTANT( t ) = 1;
+-	TREE_INVARIANT( t ) = 1;
++	TREE_READONLY( t ) = 1;
+ 	DECL_CONTEXT( t ) = 0; // These are always global
+     }
+     return sinit;
+diff -r 63e20381e289 d/patches/patch-gcc-4.3.x
+--- a/d/patches/patch-gcc-4.3.x	Mon Jun 07 20:50:15 2010 +0100
++++ b/d/patches/patch-gcc-4.3.x	Mon Jun 07 21:57:58 2010 +0100
+@@ -452,6 +452,37 @@
+ *** gcc-orig/gimplify.c	2008-05-07 04:00:36.000000000 -0400
+ --- gcc/gimplify.c	2008-07-24 14:40:20.000000000 -0400
+ ***************
++*** 3569,3580 ****
++  	/* If we're assigning from a read-only variable initialized with
++  	   a constructor, do the direct assignment from the constructor,
++  	   but only if neither source nor target are volatile since this
++! 	   latter assignment might end up being done on a per-field basis.  */
++  	if (DECL_INITIAL (*from_p)
++  	    && TREE_READONLY (*from_p)
++  	    && !TREE_THIS_VOLATILE (*from_p)
++  	    && !TREE_THIS_VOLATILE (*to_p)
++! 	    && TREE_CODE (DECL_INITIAL (*from_p)) == CONSTRUCTOR)
++  	  {
++  	    tree old_from = *from_p;
++  
++--- 3569,3584 ----
++  	/* If we're assigning from a read-only variable initialized with
++  	   a constructor, do the direct assignment from the constructor,
++  	   but only if neither source nor target are volatile since this
++! 	   latter assignment might end up being done on a per-field basis.
++! 
++! 	   In D, if the read-only variable is referencing a constructor
++! 	   do not attempt a direct assignment either.  */
++  	if (DECL_INITIAL (*from_p)
++  	    && TREE_READONLY (*from_p)
++  	    && !TREE_THIS_VOLATILE (*from_p)
++  	    && !TREE_THIS_VOLATILE (*to_p)
++! 	    && TREE_CODE (DECL_INITIAL (*from_p)) == CONSTRUCTOR
++! 	    && TREE_CODE (DECL_REFERENCE_TO (*from_p)) != CONSTRUCTOR)
++  	  {
++  	    tree old_from = *from_p;
++  
++***************
+ *** 5701,5706 ****
+ --- 5701,5712 ----
+   	    }
+@@ -466,6 +497,21 @@
+   	case TREE_LIST:
+   	  gcc_unreachable ();
+   
++diff -cr gcc-orig/tree.h gcc/tree.h
++*** gcc-orig/tree.h	2009-05-14 16:54:19.000000000 +0100
++--- gcc/tree.h	2010-06-07 21:45:31.715841002 +0100
++***************
++*** 2508,2513 ****
++--- 2508,2516 ----
++  /* Every ..._DECL node gets a unique number.  */
++  #define DECL_UID(NODE) (DECL_MINIMAL_CHECK (NODE)->decl_minimal.uid)
++  
+++ /* For GDC. Like TYPE_REFERENCE_TO, but for decls.  */
+++ #define DECL_REFERENCE_TO(NODE) (DECL_WRTL_CHECK (NODE)->type.reference_to)
+++ 
++  /* These two fields describe where in the source code the declaration
++     was.  If the declaration appears in several places (as for a C
++     function that is declared first and then defined later), this
+ diff -cr gcc-orig/tree-dump.c gcc/tree-dump.c
+ *** gcc-orig/tree-dump.c	2008-02-13 06:15:51.000000000 -0500
+ --- gcc/tree-dump.c	2008-07-24 12:44:35.000000000 -0400

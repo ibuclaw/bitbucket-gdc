@@ -1,0 +1,51 @@
+diff -r bdd1064f8d86 d/d-lang.cc
+--- a/d/d-lang.cc	Tue Jun 15 14:43:17 2010 +0100
++++ b/d/d-lang.cc	Wed Jun 16 08:54:29 2010 +0100
+@@ -610,6 +610,14 @@
+       case OPT_fdebug_c:
+ 	  strcpy(lang_name, value ? "GNU C" : "GNU D");
+ 	  break;
++#if ! V2
++      case OPT_fdeps_:
++	  global.params.moduleDepsFile = (char*)arg;
++	  if (!global.params.moduleDepsFile[0])
++	      error("bad argument for -fdeps");
++	  global.params.moduleDeps = new OutBuffer;
++	  break;
++#endif
+       case OPT_fignore_unknown_pragmas:
+ 	  global.params.ignoreUnsupportedPragmas = value;
+ 	  break;
+@@ -1067,6 +1075,18 @@
+     if (global.errors)
+ 	goto had_errors;
+ 
++#if ! V2
++    if (global.params.moduleDeps != NULL)
++    {
++	assert(global.params.moduleDepsFile != NULL);
++
++	File deps(global.params.moduleDepsFile);
++	OutBuffer* ob = global.params.moduleDeps;
++	deps.setbuffer((void*)ob->data, ob->offset);
++	deps.writev();
++    }
++#endif
++
+     // Scan for functions to inline
+     if (global.params.useInline)
+     {
+diff -r bdd1064f8d86 d/lang.opt
+--- a/d/lang.opt	Tue Jun 15 14:43:17 2010 +0100
++++ b/d/lang.opt	Wed Jun 16 08:54:29 2010 +0100
+@@ -60,6 +60,10 @@
+ D
+ With -g, generate C debug information for debugger compatibility
+ 
++fdeps=
++D Joined RejectNegative
++-fdeps=<filename> Write module dependencies to filename
++
+ fd-verbose
+ D
+ Print information about D language processing to stdout

@@ -1,0 +1,62 @@
+--- a/d/druntime/rt/dmain2.d	2011-08-31 08:00:55.695112268 +0100
++++ b/d/druntime/rt/dmain2.d	2011-09-03 10:54:59.893555123 +0100
+@@ -72,6 +72,8 @@ extern (C) void _STI_critical_init();
+ extern (C) void _STD_critical_term();
+ extern (C) void gc_init();
+ extern (C) void gc_term();
++extern (C) void lifetime_init();
++extern (C) void lifetime_term();
+ extern (C) void _minit();
+ extern (C) void _moduleCtor();
+ extern (C) void _moduleDtor();
+@@ -286,6 +288,7 @@ extern (C) bool rt_init(ExceptionHandler
+     {
+         gc_init();
+         initStaticDataGC();
++        lifetime_init();
+         version (Windows)
+         {
+             version (MinGW) {} else
+@@ -330,6 +333,7 @@ extern (C) bool rt_term(ExceptionHandler
+         thread_joinAll();
+         _d_isHalting = true;
+         _moduleDtor();
++        lifetime_term();
+         gc_term();
+         return true;
+     }
+@@ -547,6 +551,7 @@ extern (C) int main(int argc, char** arg
+     {
+         gc_init();
+         initStaticDataGC();
++        lifetime_init();
+         version (Windows)
+         {
+             version (MinGW) {} else
+@@ -562,6 +567,7 @@ extern (C) int main(int argc, char** arg
+         thread_joinAll();
+         _d_isHalting = true;
+         _moduleDtor();
++        lifetime_term();
+         gc_term();
+     }
+ 
+--- a/d/druntime/rt/lifetime.d	2011-08-31 08:00:55.711112349 +0100
++++ b/d/druntime/rt/lifetime.d	2011-09-03 10:59:21.594852827 +0100
+@@ -400,14 +400,14 @@ else
+ }
+ 
+ static __gshared size_t __blkcache_offset;
+-shared static this()
++extern(C) void lifetime_init()
+ {
+     void[] tls = thread_getTLSBlock();
+     __blkcache_offset = (cast(void *)&__blkcache_storage) - tls.ptr;
+ }
+ 
+ // called when thread is exiting.
+-static ~this()
++extern(C) void lifetime_term()
+ {
+     // free the blkcache
+     if(__blkcache_storage)

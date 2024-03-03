@@ -1,0 +1,42 @@
+diff -r 7e1a98da2769 d/dmd2/attrib.c
+--- a/d/dmd2/attrib.c	Fri Jan 27 13:46:59 2012 -0500
++++ b/d/dmd2/attrib.c	Sun Jan 29 10:53:32 2012 -0500
+@@ -720,8 +720,10 @@ void AlignDeclaration::setScope(Scope *s
+ {
+     //printf("\tAlignDeclaration::setScope '%s'\n",toChars());
+     if (decl)
+-    {
+-        setScopeNewSc(sc, sc->stc, sc->linkage, sc->protection, sc->explicitProtection, salign);
++    {   
++        // 0 indicates default alignment.
++        unsigned sa = salign ? salign : global.structalign;
++        setScopeNewSc(sc, sc->stc, sc->linkage, sc->protection, sc->explicitProtection, sa);
+     }
+ }
+ 
+@@ -736,9 +738,11 @@ void AlignDeclaration::semantic(Scope *s
+             VarDeclaration * v = s->isVarDeclaration();
+             if (v)
+                 v->salign = salign;
+-        }
++        }        
+ #endif
+-        semanticNewSc(sc, sc->stc, sc->linkage, sc->protection, sc->explicitProtection, salign);
++        // 0 indicates default alignment.
++        unsigned sa = salign ? salign : global.structalign;
++        semanticNewSc(sc, sc->stc, sc->linkage, sc->protection, sc->explicitProtection, sa);
+     }
+ }
+ 
+diff -r 7e1a98da2769 d/dmd2/parse.c
+--- a/d/dmd2/parse.c	Fri Jan 27 13:46:59 2012 -0500
++++ b/d/dmd2/parse.c	Sun Jan 29 10:53:32 2012 -0500
+@@ -527,7 +527,7 @@ Dsymbols *Parser::parseDeclDefs(int once
+                     check(TOKrparen);
+                 }
+                 else
+-                    n = global.structalign;             // default
++                    n = 0; // 0 indicates default alignment.
+ 
+                 a = parseBlock();
+                 s = new AlignDeclaration(n, a);

@@ -1,0 +1,84 @@
+diff -r 479098d70613 d/dmd/todt.c
+--- a/d/dmd/todt.c	Mon Oct 03 22:09:09 2011 +0100
++++ b/d/dmd/todt.c	Wed Oct 05 07:05:37 2011 +0100
+@@ -269,6 +269,8 @@
+         dt = val->toDt();
+         if (dts.data[length])
+             error(loc, "duplicate initializations for index %d", length);
++        if (tn->ty == Tsarray)
++            dt = createTsarrayDt(dt, tb->nextOf());
+         dts.data[length] = (void *)dt;
+         length++;
+     }
+@@ -316,21 +318,24 @@
+             tadim = ta->dim->toInteger();
+             if (dim < tadim)
+             {
++#ifdef IN_GCC
++                // Pad out the rest of the array with single elements.
++                // Issue #120 - breaks -fsection-anchors on ARM when
++                // backend calculates field positions for array members.
++                for (size_t i = dim; i < tadim; i++)
++                    pdtend = dtcontainer(pdtend, NULL, sadefault);
++#else
+                 if (edefault->isBool(FALSE))
+                     // pad out end of array
+-                    // (ok for GDC as well)
+                     pdtend = dtnzeros(pdtend, size * (tadim - dim));
+                 else
+                 {
+                     for (size_t i = dim; i < tadim; i++)
+-#ifdef IN_GCC
+-                        pdtend = dtcontainer(pdtend, NULL, sadefault);
+-#else
+                     {   for (size_t j = 0; j < n; j++)
+                             pdtend = edefault->toDt(pdtend);
+                     }
++                }
+ #endif
+-                }
+             }
+             else if (dim > tadim)
+             {
+diff -r 479098d70613 d/dmd2/todt.c
+--- a/d/dmd2/todt.c	Mon Oct 03 22:09:09 2011 +0100
++++ b/d/dmd2/todt.c	Wed Oct 05 07:05:37 2011 +0100
+@@ -268,6 +268,8 @@
+         dt = val->toDt();
+         if (dts.tdata()[length])
+             error(loc, "duplicate initializations for index %d", length);
++        if (tn->ty == Tsarray)
++            dt = createTsarrayDt(dt, tb->nextOf());
+         dts.tdata()[length] = dt;
+         length++;
+     }
+@@ -315,21 +317,24 @@
+             tadim = ta->dim->toInteger();
+             if (dim < tadim)
+             {
++#ifdef IN_GCC
++                // Pad out the rest of the array with single elements.
++                // Issue #120 - breaks -fsection-anchors on ARM when
++                // backend calculates field positions for array members.
++                for (size_t i = dim; i < tadim; i++)
++                    pdtend = dtcontainer(pdtend, NULL, sadefault);
++#else
+                 if (edefault->isBool(FALSE))
+                     // pad out end of array
+-                    // (ok for GDC as well)
+                     pdtend = dtnzeros(pdtend, size * (tadim - dim));
+                 else
+                 {
+                     for (size_t i = dim; i < tadim; i++)
+-#ifdef IN_GCC
+-                        pdtend = dtcontainer(pdtend, NULL, sadefault);
+-#else
+                     {   for (size_t j = 0; j < n; j++)
+                             pdtend = edefault->toDt(pdtend);
+                     }
++                }
+ #endif
+-                }
+             }
+             else if (dim > tadim)
+             {

@@ -1,0 +1,19 @@
+diff -r 0df70ecaf5e5 d/d-codegen.cc
+--- a/d/d-codegen.cc	Sun Jun 06 18:39:39 2010 +0100
++++ b/d/d-codegen.cc	Mon Jun 07 20:05:09 2010 +0100
+@@ -2053,7 +2053,14 @@
+     {
+ 	AssignExp * a_exp = (AssignExp *) e;
+ 	if (a_exp->e1->op == TOKvar && ((VarExp *) a_exp->e1)->var == v)
+-	    return convertForAssignment(a_exp->e2, v->type);
++	{
++	    tree a_val = convertForAssignment(a_exp->e2, v->type);
++	    // Look for reference initializations
++	    if ( e->op == TOKconstruct && v->isRef() )
++		return addressOf(a_val);
++	    else
++		return a_val;
++	}
+ 	//else
+ 	    //return e->toElem(this);
+     }

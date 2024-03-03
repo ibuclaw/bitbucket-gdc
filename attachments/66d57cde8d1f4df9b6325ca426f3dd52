@@ -1,0 +1,12 @@
+diff -r d53a8be7c0ed d/phobos/gcc/deh.d
+--- a/d/phobos/gcc/deh.d	Sat Jul 24 21:14:54 2010 +0100
++++ b/d/phobos/gcc/deh.d	Sun Aug 01 20:05:31 2010 -0400
+@@ -310,6 +310,8 @@
+ 	    return _URC_CONTINUE_UNWIND;
+ 	else if (ip == 0)
+ 	    {
++        // GDC seems to not set IP to -1 when your supposed to unwind the context.
++	    return _URC_CONTINUE_UNWIND;
+ 		// Fall through to set found_terminate.
+ 	    }
+ 	else

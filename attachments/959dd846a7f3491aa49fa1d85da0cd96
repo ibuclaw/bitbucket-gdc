@@ -1,0 +1,137 @@
+D_DMD_OBJS = \
+    d/access.dmd.o d/aliasthis.dmd.o d/array.dmd.o d/arrayop.dmd.o d/async.dmd.o d/attrib.dmd.o d/cast.dmd.o d/class.dmd.o d/clone.dmd.o d/cond.dmd.o \
+    d/constfold.dmd.o d/dchar.dmd.o d/declaration.dmd.o d/delegatize.dmd.o d/doc.dmd.o \
+    d/dsymbol.dmd.o d/dump.dmd.o d/entity.dmd.o d/enum.dmd.o d/expression.dmd.o d/func.dmd.o d/gnuc.dmd.o d/hdrgen.dmd.o d/html.dmd.o \
+    d/identifier.dmd.o d/import.dmd.o d/init.dmd.o d/inline.dmd.o d/interpret.dmd.o d/json.dmd.o \
+    d/lexer.dmd.o d/lstring.dmd.o d/machobj.dmd.o d/macro.dmd.o d/mangle.dmd.o d/mars.dmd.o d/mtype.dmd.o \
+    d/module.dmd.o d/opover.dmd.o d/optimize.dmd.o d/parse.dmd.o d/rmem.dmd.o \
+    d/root.dmd.o d/scope.dmd.o d/statement.dmd.o d/staticassert.dmd.o d/stringtable.dmd.o d/struct.dmd.o d/template.dmd.o  \
+    d/todt.dmd.o d/toobj.dmd.o d/typinf.dmd.o d/unialpha.dmd.o d/utf.dmd.o d/version.dmd.o
+    
+D_DMD_H := d/dmd/aggregate.h d/dmd/aliasthis.h d/dmd/arraytypes.h d/dmd/async.h \
+	d/dmd/attrib.h \
+	d/dmd/complex_t.h d/dmd/cond.h d/dmd/dchar.h d/dmd/declaration.h \
+	d/dmd/doc.h d/dmd/dsymbol.h d/dmd/enum.h d/dmd/expression.h \
+	d/dmd/gnuc.h d/dmd/hdrgen.h d/dmd/html.h d/dmd/identifier.h \
+	d/dmd/import.h d/dmd/init.h d/dmd/json.h d/dmd/lexer.h d/dmd/lstring.h \
+	d/dmd/macro.h d/dmd/mars.h d/dmd/mem.h d/dmd/module.h d/dmd/mtype.h \
+	d/dmd/parse.h d/dmd/port.h d/dmd/rmem.h d/dmd/root.h d/dmd/scope.h \
+	d/dmd/statement.h d/dmd/staticassert.h d/dmd/stringtable.h \
+	d/dmd/template.h d/dmd/total.h d/dmd/utf.h d/dmd/version.h \
+	d/id.h d/d-dmd-gcc.h d/d-gcc-real.h
+D_DMD_H := $(subst d/dmd,$(D_dmd_srcdir),$(D_DMD_H))
+In dmd folder:
+access.c ->  Y
+aggregate.h -> Y
+aliasthis.c -> Y
+aliasthis.h -> Y
+array.c -> Y
+arrayop.c -> Y 
+arraytypes.h -> Y
+artistic.txt -> N/A
+async.c -> Y
+async.h -> Y
+attrib.c -> Y
+attrib.h -> Y
+bit.c -> N
+cast.c -> Y
+class.c -> Y
+clone.c -> Y
+complex_t.h -> Y 
+cond.c -> Y
+cond.h -> Y
+constfold.c -> Y
+dchar.c -> Y
+dchar.h -> Y
+declaration.c -> Y
+declaration.h -> Y
+delegatize.c -> Y
+doc.c -> Y
+doc.h -> Y
+dsymbol.c -> Y
+dsymbol.h -> Y
+dump.c -> Y
+e2ir.c -> N
+elfobj.c -> N
+entity.c -> Y
+enum.c -> Y
+enum.h -> Y
+expression.c -> Y
+expression.h -> Y
+func.c -> Y
+gnuc.c -> Y
+gnuc.h -> Y
+gpl.txt -> N/A
+hdrgen.c -> Y
+hdrgen.h -> Y
+html.c -> Y
+html.h -> Y
+identifier.c -> Y
+identifier.h -> Y
+idgen.c -> NY
+impcnvgen.c -> NY
+import.c -> Y
+import.h -> Y
+init.c -> Y
+init.h -> Y
+inline.c -> Y
+interpret.c -> Y
+irstate.c -> N
+irstate.h -> N
+json.c -> Y
+json.h -> Y
+lexer.c -> Y
+lexer.h -> Y
+libelf.c -> N
+lib.h -> YN
+libmach.c -> N
+link.c -> N
+lstring.c -> Y
+lstring.h -> Y
+machobj.c -> Y
+macro.c -> Y
+macro.h -> Y
+man.c -> N
+mangle.c -> Y
+mars.c -> Y
+mars.h -> Y
+mem.c -> N
+mem.h -> Y
+module.c -> Y
+module.h -> Y
+mtype.c -> Y
+mtype.h -> Y
+opover.c -> Y
+optimize.c -> Y
+parse.c -> Y
+parse.h -> Y
+port.c -> N
+port.h -> Y
+readme.txt -> N/A
+rmem.c -> Y
+rmem.h -> Y
+root.c -> Y
+root.h -> Y
+scope.c -> Y
+scope.h -> Y
+statement.c -> Y
+statement.h -> Y
+staticassert.c -> Y
+staticassert.h -> Y
+stringtable.c -> Y
+stringtable.h -> Y
+struct.c -> Y
+template.c -> Y
+template.h -> Y
+tocsym.c -> N
+todt.c -> Y
+toir.c -> N
+toir.h -> N
+toobj.c -> Y
+total.h -> Y
+typinf.c -> Y
+unialpha.c -> Y
+utf.c -> Y
+utf.h -> Y
+version.c -> Y
+version.h -> Y

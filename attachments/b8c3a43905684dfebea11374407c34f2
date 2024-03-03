@@ -1,0 +1,607 @@
+make[1]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir'
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/libiberty'
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/libiberty/testsuite'
+make[3]: Nothing to be done for `all'.
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/libiberty/testsuite'
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/libiberty'
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/fixincludes'
+make[2]: Nothing to be done for `all'.
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/fixincludes'
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/intl'
+make[2]: Nothing to be done for `all'.
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/intl'
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/build-x86_64-unknown-linux-gnu/libiberty'
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/build-x86_64-unknown-linux-gnu/libiberty/testsuite'
+make[3]: Nothing to be done for `all'.
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/build-x86_64-unknown-linux-gnu/libiberty/testsuite'
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/build-x86_64-unknown-linux-gnu/libiberty'
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/build-x86_64-unknown-linux-gnu/fixincludes'
+make[2]: Nothing to be done for `all'.
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/build-x86_64-unknown-linux-gnu/fixincludes'
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/zlib'
+true "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2" "CXXFLAGS=" "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "LDFLAGS=" "LIBCFLAGS=-g -O2" "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000 " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "EXPECT=expect" "RUNTEST=runtest" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" "AR=ar" "AS=as" "CC=gcc" "CXX=g++" "LD=ld" "LIBCFLAGS=-g -O2" "NM=nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" DO=all multi-do # make
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/zlib'
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/libcpp'
+make[2]: Nothing to be done for `all'.
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/libcpp'
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/libdecnumber'
+make[2]: Nothing to be done for `all'.
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/libdecnumber'
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/gcc'
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/gcc'
+Checking multilib configuration for libgcc...
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgcc'
+# If this is the top-level multilib, build all the other
+# multilibs.
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgcc'
+if [ -z "32" ]; then \
+	  true; \
+	else \
+	  rootpre=`${PWDCMD-pwd}`/; export rootpre; \
+	  srcrootpre=`cd ../../../libgcc; ${PWDCMD-pwd}`/; export srcrootpre; \
+	  lib=`echo "${rootpre}" | sed -e 's,^.*/\([^/][^/]*\)/$,\1,'`; \
+	  compiler="/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include"; \
+	  for i in `${compiler} --print-multi-lib 2>/dev/null`; do \
+	    dir=`echo $i | sed -e 's/;.*$//'`; \
+	    if [ "${dir}" = "." ]; then \
+	      true; \
+	    else \
+	      if [ -d ../${dir}/${lib} ]; then \
+		flags=`echo $i | sed -e 's/^[^;]*;//' -e 's/@/ -/g'`; \
+		if (cd ../${dir}/${lib}; make "AR=ar" "AR_FLAGS=rc" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CFLAGS=-g -O2" "DESTDIR=" "EXTRA_OFILES=" "HDEFINES=" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "LDFLAGS=" "LOADLIBES=" "RANLIB=ranlib" "SHELL=/bin/bash" "prefix=/opt/gdc" "exec_prefix=/opt/gdc" "libdir=/opt/gdc/lib" "libsubdir=/opt/gdc/lib/gcc/x86_64-unknown-linux-gnu/4.4.5" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" \
+				CFLAGS="-g -O2 ${flags}" \
+				CCASFLAGS=" ${flags}" \
+				FCFLAGS=" ${flags}" \
+				FFLAGS=" ${flags}" \
+				ADAFLAGS=" ${flags}" \
+				prefix="/opt/gdc" \
+				exec_prefix="/opt/gdc" \
+				GCJFLAGS=" ${flags}" \
+				CXXFLAGS="-D_GNU_SOURCE   ${flags}" \
+				LIBCFLAGS="-g -O2   ${flags}" \
+				LIBCXXFLAGS="-D_GNU_SOURCE -fno-implicit-templates   ${flags}" \
+				LDFLAGS=" ${flags}" \
+				MULTIFLAGS="${flags}" \
+				DESTDIR="" \
+				INSTALL="/usr/bin/install -c" \
+				INSTALL_DATA="/usr/bin/install -c -m 644" \
+				INSTALL_PROGRAM="/usr/bin/install -c" \
+				INSTALL_SCRIPT="/usr/bin/install -c" \
+				all); then \
+		  true; \
+		else \
+		  exit 1; \
+		fi; \
+	      else true; \
+	      fi; \
+	    fi; \
+	  done; \
+	fi
+make[4]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgcc'
+# If this is the top-level multilib, build all the other
+# multilibs.
+# Early copyback; see "all" above for the rationale.  The
+# early copy is necessary so that the gcc -B options find
+# the right startup files when linking shared libgcc.
+/bin/bash ../../../../libgcc/../mkinstalldirs ../../.././gcc/32
+parts="crtbegin.o crtbeginS.o crtbeginT.o crtend.o crtendS.o crtprec32.o crtprec64.o crtprec80.o crtfastmath.o";					\
+	for file in $parts; do					\
+	  rm -f ../../.././gcc/32/$file;		\
+	  /usr/bin/install -c -m 644 $file ../../.././gcc/32/;	\
+	done
+# Now that we have built all the objects, we need to copy
+# them back to the GCC directory.  Too many things (other
+# in-tree libraries, and DejaGNU) know about the layout
+# of the build tree, for now.
+make install-leaf DESTDIR=../../.././gcc \
+	  slibdir= libsubdir= MULTIOSDIR=32
+make[5]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgcc'
+/bin/bash ../../../../libgcc/../mkinstalldirs ../../.././gcc/32
+/usr/bin/install -c -m 644 libgcc.a ../../.././gcc/32/
+chmod 644 ../../.././gcc/32/libgcc.a
+ranlib ../../.././gcc/32/libgcc.a
+/usr/bin/install -c -m 644 libgcov.a ../../.././gcc/32/
+chmod 644 ../../.././gcc/32/libgcov.a
+ranlib ../../.././gcc/32/libgcov.a
+parts="crtbegin.o crtbeginS.o crtbeginT.o crtend.o crtendS.o crtprec32.o crtprec64.o crtprec80.o crtfastmath.o";				\
+	for file in $parts; do					\
+	  rm -f ../../.././gcc/32/$file;		\
+	  /usr/bin/install -c -m 644 $file ../../.././gcc/32/;	\
+	done
+make[5]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgcc'
+make[4]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgcc'
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgcc'
+# Early copyback; see "all" above for the rationale.  The
+# early copy is necessary so that the gcc -B options find
+# the right startup files when linking shared libgcc.
+/bin/bash ../../../libgcc/../mkinstalldirs ../.././gcc
+parts="crtbegin.o crtbeginS.o crtbeginT.o crtend.o crtendS.o crtprec32.o crtprec64.o crtprec80.o crtfastmath.o";					\
+	for file in $parts; do					\
+	  rm -f ../.././gcc/$file;		\
+	  /usr/bin/install -c -m 644 $file ../.././gcc/;	\
+	done
+# Now that we have built all the objects, we need to copy
+# them back to the GCC directory.  Too many things (other
+# in-tree libraries, and DejaGNU) know about the layout
+# of the build tree, for now.
+make install-leaf DESTDIR=../.././gcc \
+	  slibdir= libsubdir= MULTIOSDIR=.
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgcc'
+/bin/bash ../../../libgcc/../mkinstalldirs ../.././gcc
+/usr/bin/install -c -m 644 libgcc.a ../.././gcc/
+chmod 644 ../.././gcc/libgcc.a
+ranlib ../.././gcc/libgcc.a
+/usr/bin/install -c -m 644 libgcov.a ../.././gcc/
+chmod 644 ../.././gcc/libgcov.a
+ranlib ../.././gcc/libgcov.a
+parts="crtbegin.o crtbeginS.o crtbeginT.o crtend.o crtendS.o crtprec32.o crtprec64.o crtprec80.o crtfastmath.o";				\
+	for file in $parts; do					\
+	  rm -f ../.././gcc/$file;		\
+	  /usr/bin/install -c -m 644 $file ../.././gcc/;	\
+	done
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgcc'
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgcc'
+Checking multilib configuration for libmudflap...
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2  " "CXXFLAGS=-D_GNU_SOURCE  " "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "JC1FLAGS=" "LDFLAGS=" "LIBCFLAGS=-g -O2  " "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000 " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "includedir=/opt/gdc/include" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "LIBCFLAGS=-g -O2  " "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" all-recursive
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap'
+Making all in testsuite
+make[4]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap/testsuite'
+make[4]: Nothing to be done for `all'.
+make[4]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap/testsuite'
+make[4]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2  " "CXXFLAGS=-D_GNU_SOURCE  " "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "JC1FLAGS=" "LDFLAGS=" "LIBCFLAGS=-g -O2  " "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000   " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "includedir=/opt/gdc/include" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "LIBCFLAGS=-g -O2  " "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" DO=all multi-do # make
+make[5]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap'
+if [ -z "32" ]; then \
+	  true; \
+	else \
+	  rootpre=`${PWDCMD-pwd}`/; export rootpre; \
+	  srcrootpre=`cd ../../../libmudflap; ${PWDCMD-pwd}`/; export srcrootpre; \
+	  lib=`echo "${rootpre}" | sed -e 's,^.*/\([^/][^/]*\)/$,\1,'`; \
+	  compiler="/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include"; \
+	  for i in `${compiler} --print-multi-lib 2>/dev/null`; do \
+	    dir=`echo $i | sed -e 's/;.*$//'`; \
+	    if [ "${dir}" = "." ]; then \
+	      true; \
+	    else \
+	      if [ -d ../${dir}/${lib} ]; then \
+		flags=`echo $i | sed -e 's/^[^;]*;//' -e 's/@/ -/g'`; \
+		if (cd ../${dir}/${lib}; make  \
+				CFLAGS="-g -O2   ${flags}" \
+				CCASFLAGS=" ${flags}" \
+				FCFLAGS=" ${flags}" \
+				FFLAGS=" ${flags}" \
+				ADAFLAGS=" ${flags}" \
+				prefix="/opt/gdc" \
+				exec_prefix="/opt/gdc" \
+				GCJFLAGS=" ${flags}" \
+				CXXFLAGS="-D_GNU_SOURCE   ${flags}" \
+				LIBCFLAGS="-g -O2   ${flags}" \
+				LIBCXXFLAGS="-D_GNU_SOURCE -fno-implicit-templates   ${flags}" \
+				LDFLAGS=" ${flags}" \
+				MULTIFLAGS="${flags}" \
+				DESTDIR="" \
+				INSTALL="/usr/bin/install -c" \
+				INSTALL_DATA="/usr/bin/install -c -m 644" \
+				INSTALL_PROGRAM="/usr/bin/install -c" \
+				INSTALL_SCRIPT="/usr/bin/install -c" \
+				all); then \
+		  true; \
+		else \
+		  exit 1; \
+		fi; \
+	      else true; \
+	      fi; \
+	    fi; \
+	  done; \
+	fi
+make[6]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libmudflap'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2    -m32" "CXXFLAGS=-D_GNU_SOURCE    -m32" "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "JC1FLAGS=" "LDFLAGS=-m32" "LIBCFLAGS=-g -O2    -m32" "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "includedir=/opt/gdc/lib/gcc-lib/x86_64-unknown-linux-gnu/include" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include  -m32" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld -m elf_x86_64 -m elf_i386" "LIBCFLAGS=-g -O2    -m32" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" all-recursive
+make[7]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libmudflap'
+Making all in testsuite
+make[8]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libmudflap/testsuite'
+make[8]: Nothing to be done for `all'.
+make[8]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libmudflap/testsuite'
+make[8]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libmudflap'
+true "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2    -m32" "CXXFLAGS=-D_GNU_SOURCE    -m32" "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "JC1FLAGS=" "LDFLAGS=-m32" "LIBCFLAGS=-g -O2    -m32" "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000   " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "includedir=/opt/gdc/lib/gcc-lib/x86_64-unknown-linux-gnu/include" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include  -m32" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld -m elf_x86_64 -m elf_i386" "LIBCFLAGS=-g -O2    -m32" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" DO=all multi-do # make
+make[8]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libmudflap'
+make[7]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libmudflap'
+make[6]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libmudflap'
+make[5]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap'
+make[4]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap'
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap'
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libmudflap'
+Checking multilib configuration for libssp...
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libssp'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2  " "CXXFLAGS=-D_GNU_SOURCE  " "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "JC1FLAGS=" "LDFLAGS=" "LIBCFLAGS=-g -O2  " "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000 " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "includedir=/opt/gdc/include" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "LIBCFLAGS=-g -O2  " "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" all-am
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libssp'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2  " "CXXFLAGS=-D_GNU_SOURCE  " "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "JC1FLAGS=" "LDFLAGS=" "LIBCFLAGS=-g -O2  " "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000  " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "includedir=/opt/gdc/include" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "LIBCFLAGS=-g -O2  " "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" DO=all multi-do # make
+make[4]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libssp'
+if [ -z "32" ]; then \
+	  true; \
+	else \
+	  rootpre=`${PWDCMD-pwd}`/; export rootpre; \
+	  srcrootpre=`cd ../../../libssp; ${PWDCMD-pwd}`/; export srcrootpre; \
+	  lib=`echo "${rootpre}" | sed -e 's,^.*/\([^/][^/]*\)/$,\1,'`; \
+	  compiler="/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include"; \
+	  for i in `${compiler} --print-multi-lib 2>/dev/null`; do \
+	    dir=`echo $i | sed -e 's/;.*$//'`; \
+	    if [ "${dir}" = "." ]; then \
+	      true; \
+	    else \
+	      if [ -d ../${dir}/${lib} ]; then \
+		flags=`echo $i | sed -e 's/^[^;]*;//' -e 's/@/ -/g'`; \
+		if (cd ../${dir}/${lib}; make  \
+				CFLAGS="-g -O2   ${flags}" \
+				CCASFLAGS=" ${flags}" \
+				FCFLAGS=" ${flags}" \
+				FFLAGS=" ${flags}" \
+				ADAFLAGS=" ${flags}" \
+				prefix="/opt/gdc" \
+				exec_prefix="/opt/gdc" \
+				GCJFLAGS=" ${flags}" \
+				CXXFLAGS="-D_GNU_SOURCE   ${flags}" \
+				LIBCFLAGS="-g -O2   ${flags}" \
+				LIBCXXFLAGS="-D_GNU_SOURCE -fno-implicit-templates   ${flags}" \
+				LDFLAGS=" ${flags}" \
+				MULTIFLAGS="${flags}" \
+				DESTDIR="" \
+				INSTALL="/usr/bin/install -c" \
+				INSTALL_DATA="/usr/bin/install -c -m 644" \
+				INSTALL_PROGRAM="/usr/bin/install -c" \
+				INSTALL_SCRIPT="/usr/bin/install -c" \
+				all); then \
+		  true; \
+		else \
+		  exit 1; \
+		fi; \
+	      else true; \
+	      fi; \
+	    fi; \
+	  done; \
+	fi
+make[5]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libssp'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2    -m32" "CXXFLAGS=-D_GNU_SOURCE    -m32" "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "JC1FLAGS=" "LDFLAGS=-m32" "LIBCFLAGS=-g -O2    -m32" "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "includedir=/opt/gdc/include" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include  -m32" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld -m elf_x86_64 -m elf_i386" "LIBCFLAGS=-g -O2    -m32" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" all-am
+make[6]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libssp'
+true "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2    -m32" "CXXFLAGS=-D_GNU_SOURCE    -m32" "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "JC1FLAGS=" "LDFLAGS=-m32" "LIBCFLAGS=-g -O2    -m32" "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000  " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "includedir=/opt/gdc/include" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include  -m32" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld -m elf_x86_64 -m elf_i386" "LIBCFLAGS=-g -O2    -m32" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" DO=all multi-do # make
+make[6]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libssp'
+make[5]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libssp'
+make[4]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libssp'
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libssp'
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libssp'
+Checking multilib configuration for libiberty...
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libiberty'
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libiberty/testsuite'
+make[3]: Nothing to be done for `all'.
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libiberty/testsuite'
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libiberty'
+if [ -z "32" ]; then \
+	  true; \
+	else \
+	  rootpre=`${PWDCMD-pwd}`/; export rootpre; \
+	  srcrootpre=`cd ../../../libiberty; ${PWDCMD-pwd}`/; export srcrootpre; \
+	  lib=`echo "${rootpre}" | sed -e 's,^.*/\([^/][^/]*\)/$,\1,'`; \
+	  compiler="/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include"; \
+	  for i in `${compiler} --print-multi-lib 2>/dev/null`; do \
+	    dir=`echo $i | sed -e 's/;.*$//'`; \
+	    if [ "${dir}" = "." ]; then \
+	      true; \
+	    else \
+	      if [ -d ../${dir}/${lib} ]; then \
+		flags=`echo $i | sed -e 's/^[^;]*;//' -e 's/@/ -/g'`; \
+		if (cd ../${dir}/${lib}; make "AR=ar" "AR_FLAGS=rc" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CFLAGS=-g -O2  " "CPPFLAGS=" "DESTDIR=" "EXTRA_OFILES=" "HDEFINES=" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "LDFLAGS=" "LOADLIBES=" "RANLIB=ranlib" "SHELL=/bin/bash" "prefix=/opt/gdc" "exec_prefix=/opt/gdc" "libdir=/opt/gdc/lib" "libsubdir=" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" \
+				CFLAGS="-g -O2   ${flags}" \
+				CCASFLAGS=" ${flags}" \
+				FCFLAGS=" ${flags}" \
+				FFLAGS=" ${flags}" \
+				ADAFLAGS=" ${flags}" \
+				prefix="/opt/gdc" \
+				exec_prefix="/opt/gdc" \
+				GCJFLAGS=" ${flags}" \
+				CXXFLAGS="-D_GNU_SOURCE   ${flags}" \
+				LIBCFLAGS="-g -O2   ${flags}" \
+				LIBCXXFLAGS="-D_GNU_SOURCE -fno-implicit-templates   ${flags}" \
+				LDFLAGS=" ${flags}" \
+				MULTIFLAGS="${flags}" \
+				DESTDIR="" \
+				INSTALL="/usr/bin/install -c" \
+				INSTALL_DATA="/usr/bin/install -c -m 644" \
+				INSTALL_PROGRAM="/usr/bin/install -c" \
+				INSTALL_SCRIPT="/usr/bin/install -c" \
+				all); then \
+		  true; \
+		else \
+		  exit 1; \
+		fi; \
+	      else true; \
+	      fi; \
+	    fi; \
+	  done; \
+	fi
+make[4]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libiberty'
+make[5]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libiberty/testsuite'
+make[5]: Nothing to be done for `all'.
+make[5]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libiberty/testsuite'
+make[4]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libiberty'
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libiberty'
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libiberty'
+Checking multilib configuration for zlib...
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/zlib'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2  " "CXXFLAGS=-D_GNU_SOURCE  " "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "LDFLAGS=" "LIBCFLAGS=-g -O2  " "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000 " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "EXPECT=expect" "RUNTEST=runtest" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "LIBCFLAGS=-g -O2  " "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" DO=all multi-do # make
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/zlib'
+if [ -z "32" ]; then \
+	  true; \
+	else \
+	  rootpre=`${PWDCMD-pwd}`/; export rootpre; \
+	  srcrootpre=`cd ../../../zlib; ${PWDCMD-pwd}`/; export srcrootpre; \
+	  lib=`echo "${rootpre}" | sed -e 's,^.*/\([^/][^/]*\)/$,\1,'`; \
+	  compiler="/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include"; \
+	  for i in `${compiler} --print-multi-lib 2>/dev/null`; do \
+	    dir=`echo $i | sed -e 's/;.*$//'`; \
+	    if [ "${dir}" = "." ]; then \
+	      true; \
+	    else \
+	      if [ -d ../${dir}/${lib} ]; then \
+		flags=`echo $i | sed -e 's/^[^;]*;//' -e 's/@/ -/g'`; \
+		if (cd ../${dir}/${lib}; make  \
+				CFLAGS="-g -O2   ${flags}" \
+				CCASFLAGS=" ${flags}" \
+				FCFLAGS=" ${flags}" \
+				FFLAGS=" ${flags}" \
+				ADAFLAGS=" ${flags}" \
+				prefix="/opt/gdc" \
+				exec_prefix="/opt/gdc" \
+				GCJFLAGS=" ${flags}" \
+				CXXFLAGS="-D_GNU_SOURCE   ${flags}" \
+				LIBCFLAGS="-g -O2   ${flags}" \
+				LIBCXXFLAGS="-D_GNU_SOURCE -fno-implicit-templates   ${flags}" \
+				LDFLAGS=" ${flags}" \
+				MULTIFLAGS="${flags}" \
+				DESTDIR="" \
+				INSTALL="/usr/bin/install -c" \
+				INSTALL_DATA="/usr/bin/install -c -m 644" \
+				INSTALL_PROGRAM="/usr/bin/install -c" \
+				INSTALL_SCRIPT="/usr/bin/install -c" \
+				all); then \
+		  true; \
+		else \
+		  exit 1; \
+		fi; \
+	      else true; \
+	      fi; \
+	    fi; \
+	  done; \
+	fi
+make[4]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/zlib'
+true "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CFLAGS=-g -O2    -m32" "CXXFLAGS=-D_GNU_SOURCE    -m32" "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "LDFLAGS=-m32" "LIBCFLAGS=-g -O2    -m32" "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000  " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "EXPECT=expect" "RUNTEST=runtest" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "prefix=/opt/gdc" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "CC=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CXX=g++ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "LIBCFLAGS=-g -O2    -m32" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "PICFLAG=" "RANLIB=ranlib" "DESTDIR=" DO=all multi-do # make
+make[4]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/zlib'
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/zlib'
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/zlib'
+Checking multilib configuration for libgomp...
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp'
+make  all-recursive
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp'
+Making all in testsuite
+make[4]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp/testsuite'
+make[4]: Nothing to be done for `all'.
+make[4]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp/testsuite'
+make[4]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp'
+make  DO=all multi-do # make
+make[5]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp'
+if [ -z "32" ]; then \
+	  true; \
+	else \
+	  rootpre=`${PWDCMD-pwd}`/; export rootpre; \
+	  srcrootpre=`cd ../../../libgomp; ${PWDCMD-pwd}`/; export srcrootpre; \
+	  lib=`echo "${rootpre}" | sed -e 's,^.*/\([^/][^/]*\)/$,\1,'`; \
+	  compiler="/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include"; \
+	  for i in `${compiler} --print-multi-lib 2>/dev/null`; do \
+	    dir=`echo $i | sed -e 's/;.*$//'`; \
+	    if [ "${dir}" = "." ]; then \
+	      true; \
+	    else \
+	      if [ -d ../${dir}/${lib} ]; then \
+		flags=`echo $i | sed -e 's/^[^;]*;//' -e 's/@/ -/g'`; \
+		if (cd ../${dir}/${lib}; make  \
+				CFLAGS="-g -O2   ${flags}" \
+				CCASFLAGS=" ${flags}" \
+				FCFLAGS="-Wall ${flags}" \
+				FFLAGS=" ${flags}" \
+				ADAFLAGS=" ${flags}" \
+				prefix="/opt/gdc" \
+				exec_prefix="/opt/gdc" \
+				GCJFLAGS=" ${flags}" \
+				CXXFLAGS="-D_GNU_SOURCE   ${flags}" \
+				LIBCFLAGS="-g -O2   ${flags}" \
+				LIBCXXFLAGS="-D_GNU_SOURCE -fno-implicit-templates   ${flags}" \
+				LDFLAGS=" ${flags}" \
+				MULTIFLAGS="${flags}" \
+				DESTDIR="" \
+				INSTALL="/usr/bin/install -c" \
+				INSTALL_DATA="/usr/bin/install -c -m 644" \
+				INSTALL_PROGRAM="/usr/bin/install -c" \
+				INSTALL_SCRIPT="/usr/bin/install -c" \
+				all); then \
+		  true; \
+		else \
+		  exit 1; \
+		fi; \
+	      else true; \
+	      fi; \
+	    fi; \
+	  done; \
+	fi
+make[6]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgomp'
+make  all-recursive
+make[7]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgomp'
+Making all in testsuite
+make[8]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgomp/testsuite'
+make[8]: Nothing to be done for `all'.
+make[8]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgomp/testsuite'
+make[8]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgomp'
+true  DO=all multi-do # make
+make[8]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgomp'
+make[7]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgomp'
+make[6]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libgomp'
+make[5]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp'
+make[4]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp'
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp'
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libgomp'
+Checking multilib configuration for libphobos...
+make[2]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libphobos'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CC_FOR_TARGET=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CFLAGS=-g -O2  " "CXXFLAGS=-D_GNU_SOURCE  " "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "LDFLAGS=" "LIBCFLAGS=-g -O2  " "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000 " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "includedir=/opt/gdc/include" "prefix=/opt/gdc" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" "gdc_include_dir=/opt/gdc/include/d2/4.4.5" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "RANLIB=ranlib" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "NM_FOR_BUILD=" "NM_FOR_TARGET=nm" "DESTDIR=" "WERROR=" all-am
+make[3]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libphobos'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CC_FOR_TARGET=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CFLAGS=-g -O2  " "CXXFLAGS=-D_GNU_SOURCE  " "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "LDFLAGS=" "LIBCFLAGS=-g -O2  " "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000  " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "includedir=/opt/gdc/include" "prefix=/opt/gdc" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" "gdc_include_dir=/opt/gdc/include/d2/4.4.5" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "RANLIB=ranlib" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "NM_FOR_BUILD=" "NM_FOR_TARGET=nm" "DESTDIR=" "WERROR=" DO=all multi-do # make
+make[4]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libphobos'
+if [ -z "32" ]; then \
+	  true; \
+	else \
+	  rootpre=`${PWDCMD-pwd}`/; export rootpre; \
+	  srcrootpre=`cd ../../../libphobos; ${PWDCMD-pwd}`/; export srcrootpre; \
+	  lib=`echo "${rootpre}" | sed -e 's,^.*/\([^/][^/]*\)/$,\1,'`; \
+	  compiler="/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include"; \
+	  for i in `${compiler} --print-multi-lib 2>/dev/null`; do \
+	    dir=`echo $i | sed -e 's/;.*$//'`; \
+	    if [ "${dir}" = "." ]; then \
+	      true; \
+	    else \
+	      if [ -d ../${dir}/${lib} ]; then \
+		flags=`echo $i | sed -e 's/^[^;]*;//' -e 's/@/ -/g'`; \
+		if (cd ../${dir}/${lib}; make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CC_FOR_TARGET=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CFLAGS=-g -O2  " "CXXFLAGS=-D_GNU_SOURCE  " "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "LDFLAGS=" "LIBCFLAGS=-g -O2  " "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000   " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "includedir=/opt/gdc/include" "prefix=/opt/gdc" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" "gdc_include_dir=/opt/gdc/include/d2/4.4.5" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "RANLIB=ranlib" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "NM_FOR_BUILD=" "NM_FOR_TARGET=nm" "DESTDIR=" "WERROR=" \
+				CFLAGS="-g -O2   ${flags}" \
+				CCASFLAGS=" ${flags}" \
+				FCFLAGS=" ${flags}" \
+				FFLAGS=" ${flags}" \
+				ADAFLAGS=" ${flags}" \
+				prefix="/opt/gdc" \
+				exec_prefix="/opt/gdc" \
+				GCJFLAGS=" ${flags}" \
+				CXXFLAGS="-D_GNU_SOURCE   ${flags}" \
+				LIBCFLAGS="-g -O2   ${flags}" \
+				LIBCXXFLAGS="-D_GNU_SOURCE -fno-implicit-templates   ${flags}" \
+				LDFLAGS=" ${flags}" \
+				MULTIFLAGS="${flags}" \
+				DESTDIR="" \
+				INSTALL="/usr/bin/install -c" \
+				INSTALL_DATA="/usr/bin/install -c -m 644" \
+				INSTALL_PROGRAM="/usr/bin/install -c" \
+				INSTALL_SCRIPT="/usr/bin/install -c" \
+				all); then \
+		  true; \
+		else \
+		  exit 1; \
+		fi; \
+	      else true; \
+	      fi; \
+	    fi; \
+	  done; \
+	fi
+make[5]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libphobos'
+make "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CC_FOR_TARGET=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CFLAGS=-g -O2    -m32" "CXXFLAGS=-D_GNU_SOURCE    -m32" "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "LDFLAGS=-m32" "LIBCFLAGS=-g -O2    -m32" "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000    " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "includedir=/opt/gdc/include" "prefix=/opt/gdc" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" "gdc_include_dir=/opt/gdc/include/d2/4.4.5" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "RANLIB=ranlib" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "NM_FOR_BUILD=" "NM_FOR_TARGET=nm" "DESTDIR=" "WERROR=" all-am
+make[6]: Entering directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libphobos'
+true "AR_FLAGS=rc" "CC_FOR_BUILD=gcc" "CC_FOR_TARGET=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/xgcc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include" "CFLAGS=-g -O2    -m32" "CXXFLAGS=-D_GNU_SOURCE    -m32" "CFLAGS_FOR_BUILD=-g -O2" "CFLAGS_FOR_TARGET=-g -O2" "INSTALL=/usr/bin/install -c" "INSTALL_DATA=/usr/bin/install -c -m 644" "INSTALL_PROGRAM=/usr/bin/install -c" "INSTALL_SCRIPT=/usr/bin/install -c" "LDFLAGS=-m32" "LIBCFLAGS=-g -O2    -m32" "LIBCFLAGS_FOR_TARGET=-g -O2" "MAKE=make" "MAKEINFO=makeinfo --split-size=5000000 --split-size=5000000     " "PICFLAG=" "PICFLAG_FOR_TARGET=" "SHELL=/bin/bash" "RUNTESTFLAGS=" "exec_prefix=/opt/gdc" "infodir=/opt/gdc/info" "libdir=/opt/gdc/lib" "includedir=/opt/gdc/include" "prefix=/opt/gdc" "tooldir=/opt/gdc/x86_64-unknown-linux-gnu" "gdc_include_dir=/opt/gdc/include/d2/4.4.5" "AR=ar" "AS=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/as" "LD=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/collect-ld" "RANLIB=ranlib" "NM=/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/nm" "NM_FOR_BUILD=" "NM_FOR_TARGET=nm" "DESTDIR=" "WERROR=" DO=all multi-do # make
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/atomic.di -fsyntax-only ../../../../libphobos/core/atomic.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/bitop.di -fsyntax-only ../../../../libphobos/core/bitop.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/cpuid.di -fsyntax-only ../../../../libphobos/core/cpuid.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/demangle.di -fsyntax-only ../../../../libphobos/core/demangle.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/exception.di -fsyntax-only ../../../../libphobos/core/exception.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/math.di -fsyntax-only ../../../../libphobos/core/math.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/memory.di -fsyntax-only ../../../../libphobos/core/memory.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/runtime.di -fsyntax-only ../../../../libphobos/core/runtime.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/thread.di -fsyntax-only ../../../../libphobos/core/thread.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/time.di -fsyntax-only ../../../../libphobos/core/time.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/vararg.di -fsyntax-only ../../../../libphobos/core/vararg.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/complex.di -fsyntax-only ../../../../libphobos/core/stdc/complex.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/config.di -fsyntax-only ../../../../libphobos/core/stdc/config.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/ctype.di -fsyntax-only ../../../../libphobos/core/stdc/ctype.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/errno.di -fsyntax-only ../../../../libphobos/core/stdc/errno.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/fenv.di -fsyntax-only ../../../../libphobos/core/stdc/fenv.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/float_.di -fsyntax-only ../../../../libphobos/core/stdc/float_.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/inttypes.di -fsyntax-only ../../../../libphobos/core/stdc/inttypes.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/limits.di -fsyntax-only ../../../../libphobos/core/stdc/limits.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/locale.di -fsyntax-only ../../../../libphobos/core/stdc/locale.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/math.di -fsyntax-only ../../../../libphobos/core/stdc/math.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/signal.di -fsyntax-only ../../../../libphobos/core/stdc/signal.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/stdarg.di -fsyntax-only ../../../../libphobos/core/stdc/stdarg.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/stddef.di -fsyntax-only ../../../../libphobos/core/stdc/stddef.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/stdint.di -fsyntax-only ../../../../libphobos/core/stdc/stdint.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/stdio.di -fsyntax-only ../../../../libphobos/core/stdc/stdio.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/stdlib.di -fsyntax-only ../../../../libphobos/core/stdc/stdlib.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/string.di -fsyntax-only ../../../../libphobos/core/stdc/string.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/tgmath.di -fsyntax-only ../../../../libphobos/core/stdc/tgmath.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/time.di -fsyntax-only ../../../../libphobos/core/stdc/time.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/wchar_.di -fsyntax-only ../../../../libphobos/core/stdc/wchar_.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/stdc/wctype.di -fsyntax-only ../../../../libphobos/core/stdc/wctype.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sync/barrier.di -fsyntax-only ../../../../libphobos/core/sync/barrier.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sync/condition.di -fsyntax-only ../../../../libphobos/core/sync/condition.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sync/config.di -fsyntax-only ../../../../libphobos/core/sync/config.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sync/exception.di -fsyntax-only ../../../../libphobos/core/sync/exception.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sync/mutex.di -fsyntax-only ../../../../libphobos/core/sync/mutex.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sync/rwmutex.di -fsyntax-only ../../../../libphobos/core/sync/rwmutex.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sync/semaphore.di -fsyntax-only ../../../../libphobos/core/sync/semaphore.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/osx/mach/kern_return.di -fsyntax-only ../../../../libphobos/core/sys/osx/mach/kern_return.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/osx/mach/port.di -fsyntax-only ../../../../libphobos/core/sys/osx/mach/port.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/osx/mach/semaphore.di -fsyntax-only ../../../../libphobos/core/sys/osx/mach/semaphore.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/osx/mach/thread_act.di -fsyntax-only ../../../../libphobos/core/sys/osx/mach/thread_act.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/osx/pthread.di -fsyntax-only ../../../../libphobos/core/sys/osx/pthread.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/arpa/inet.di -fsyntax-only ../../../../libphobos/core/sys/posix/arpa/inet.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/config.di -fsyntax-only ../../../../libphobos/core/sys/posix/config.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/dirent.di -fsyntax-only ../../../../libphobos/core/sys/posix/dirent.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/dlfcn.di -fsyntax-only ../../../../libphobos/core/sys/posix/dlfcn.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/fcntl.di -fsyntax-only ../../../../libphobos/core/sys/posix/fcntl.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/inttypes.di -fsyntax-only ../../../../libphobos/core/sys/posix/inttypes.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/netdb.di -fsyntax-only ../../../../libphobos/core/sys/posix/netdb.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/poll.di -fsyntax-only ../../../../libphobos/core/sys/posix/poll.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/pthread.di -fsyntax-only ../../../../libphobos/core/sys/posix/pthread.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/pwd.di -fsyntax-only ../../../../libphobos/core/sys/posix/pwd.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sched.di -fsyntax-only ../../../../libphobos/core/sys/posix/sched.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/semaphore.di -fsyntax-only ../../../../libphobos/core/sys/posix/semaphore.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/setjmp.di -fsyntax-only ../../../../libphobos/core/sys/posix/setjmp.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/signal.di -fsyntax-only ../../../../libphobos/core/sys/posix/signal.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/stdio.di -fsyntax-only ../../../../libphobos/core/sys/posix/stdio.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/stdlib.di -fsyntax-only ../../../../libphobos/core/sys/posix/stdlib.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/termios.di -fsyntax-only ../../../../libphobos/core/sys/posix/termios.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/time.di -fsyntax-only ../../../../libphobos/core/sys/posix/time.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/ucontext.di -fsyntax-only ../../../../libphobos/core/sys/posix/ucontext.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/unistd.di -fsyntax-only ../../../../libphobos/core/sys/posix/unistd.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/utime.di -fsyntax-only ../../../../libphobos/core/sys/posix/utime.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/net/if_.di -fsyntax-only ../../../../libphobos/core/sys/posix/net/if_.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/netinet/in_.di -fsyntax-only ../../../../libphobos/core/sys/posix/netinet/in_.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/netinet/tcp.di -fsyntax-only ../../../../libphobos/core/sys/posix/netinet/tcp.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/ipc.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/ipc.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/mman.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/mman.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/select.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/select.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/shm.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/shm.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/socket.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/socket.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/stat.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/stat.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/time.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/time.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/types.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/types.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/uio.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/uio.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/un.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/un.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/posix/sys/wait.di -fsyntax-only ../../../../libphobos/core/sys/posix/sys/wait.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/windows/dbghelp.di -fsyntax-only ../../../../libphobos/core/sys/windows/dbghelp.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/windows/dll.di -fsyntax-only ../../../../libphobos/core/sys/windows/dll.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/windows/stacktrace.di -fsyntax-only ../../../../libphobos/core/sys/windows/stacktrace.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/windows/threadaux.di -fsyntax-only ../../../../libphobos/core/sys/windows/threadaux.d
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -fintfc-file=import/core/sys/windows/windows.di -fsyntax-only ../../../../libphobos/core/sys/windows/windows.d
+ar -r libgdruntime.a gcc/config/unix.o  rt/fpmath.o gcc/unwind_generic.o core/stdc/config.o core/stdc/ctype.o core/stdc/errno.o core/stdc/errno_.o core/stdc/math.o core/stdc/signal.o core/stdc/stdarg.o core/stdc/stdio.o core/stdc/stdlib.o core/stdc/stdint.o core/stdc/stddef.o core/stdc/string.o core/stdc/time.o core/stdc/wchar_.o core/sys/posix/netinet/in_.o core/sys/posix/sys/select.o core/sys/posix/sys/socket.o core/sys/posix/sys/stat.o core/sys/posix/sys/wait.o core/sys/posix/sys/un.o core/sys/posix/netdb.o object_.o rt/aaA.o rt/aApply.o rt/aApplyR.o rt/adi.o rt/arrayassign.o rt/arraybyte.o rt/arraycast.o rt/arraycat.o rt/arraydouble.o rt/arrayfloat.o rt/arrayint.o rt/arrayreal.o rt/arrayshort.o rt/cast_.o rt/critical_.o rt/dmain2.o rt/memory.o rt/invariant.o rt/invariant_.o rt/lifetime.o rt/monitor_.o rt/obj.o rt/qsort.o rt/switch_.o rt/util/console.o rt/util/ctype.o rt/util/hash.o rt/util/string.o rt/util/utf.o rt/typeinfo/ti_AC.o rt/typeinfo/ti_Acdouble.o rt/typeinfo/ti_Acfloat.o rt/typeinfo/ti_Acreal.o rt/typeinfo/ti_Adouble.o rt/typeinfo/ti_Afloat.o rt/typeinfo/ti_Ag.o rt/typeinfo/ti_Aint.o rt/typeinfo/ti_Along.o rt/typeinfo/ti_Areal.o rt/typeinfo/ti_Ashort.o rt/typeinfo/ti_byte.o rt/typeinfo/ti_C.o rt/typeinfo/ti_cdouble.o rt/typeinfo/ti_cfloat.o rt/typeinfo/ti_char.o rt/typeinfo/ti_creal.o rt/typeinfo/ti_dchar.o rt/typeinfo/ti_delegate.o rt/typeinfo/ti_double.o rt/typeinfo/ti_float.o rt/typeinfo/ti_idouble.o rt/typeinfo/ti_ifloat.o rt/typeinfo/ti_int.o rt/typeinfo/ti_ireal.o rt/typeinfo/ti_long.o rt/typeinfo/ti_ptr.o rt/typeinfo/ti_real.o rt/typeinfo/ti_short.o rt/typeinfo/ti_ubyte.o rt/typeinfo/ti_uint.o rt/typeinfo/ti_ulong.o rt/typeinfo/ti_ushort.o rt/typeinfo/ti_void.o rt/typeinfo/ti_wchar.o core/atomic.o core/cpuid.o core/demangle.o core/exception.o core/math.o core/memory.o core/runtime.o core/thread.o core/time.o core/vararg.o core/sync/barrier.o core/sync/condition.o core/sync/config.o core/sync/exception.o core/sync/mutex.o core/sync/rwmutex.o core/sync/semaphore.o gc/gc.o gc/gcalloc.o gc/gcbits.o gc/gcstats.o gc/gcx.o gcc/unwind_pe.o gcc/deh.o gcc/threadsem.o gcc/builtins.o gcc/config/mathfuncs.o gcc/support.o gcc/cbridge_time.o gcc/cbridge_strerror.o gcc/atomics.o 
+ar: creating libgdruntime.a
+ranlib libgdruntime.a
+/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/gdc -B/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/./gcc/ -B/opt/gdc/x86_64-unknown-linux-gnu/bin/ -B/opt/gdc/x86_64-unknown-linux-gnu/lib/ -isystem /opt/gdc/x86_64-unknown-linux-gnu/include -isystem /opt/gdc/x86_64-unknown-linux-gnu/sys-include -m32 -o std/parallelism.o -Wall -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_GLibC -fversion=GC_Use_Data_Fixed -nostdinc -pipe -fdeprecated -I ../../../../libphobos -I ./x86_64-unknown-linux-gnu -m32 -c ../../../../libphobos/std/parallelism.d
+../../../../libphobos/std/parallelism.d:1: internal compiler error: in output_constant, at varasm.c:4603
+Please submit a full bug report,
+with preprocessed source if appropriate.
+See <https://bitbucket.org/goshawk/gdc/issues> for instructions.
+make[6]: *** [std/parallelism.o] Error 1
+make[6]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libphobos'
+make[5]: *** [all] Error 2
+make[5]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/32/libphobos'
+make[4]: *** [multi-do] Error 1
+make[4]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libphobos'
+make[3]: *** [all-multi] Error 2
+make[3]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libphobos'
+make[2]: *** [all] Error 2
+make[2]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir/x86_64-unknown-linux-gnu/libphobos'
+make[1]: *** [all-target-libphobos] Error 2
+make[1]: Leaving directory `/home/bouqueau/gdc/dev/gcc-4.4.5/objdir'
+make: *** [all] Error 2

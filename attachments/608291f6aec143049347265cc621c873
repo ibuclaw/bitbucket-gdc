@@ -1,0 +1,22 @@
+diff -ur gdc.orig/d/d-glue.cc gdc/build/gdc/d/d-glue.cc
+--- gdc.orig/d/d-glue.cc	2010-08-04 08:15:26.278444287 +0100
++++ gdc/build/gdc/d/d-glue.cc	2010-08-04 13:44:18.783494615 +0100
+@@ -520,8 +520,7 @@
+ 	}
+     }
+ 
+-    bool is_unsigned = e1_type->isunsigned() || e2_type->isunsigned()
+-	|| op == TOKushr;
++    bool is_unsigned = e1_type->isunsigned() || e2_type->isunsigned();
+ #if D_GCC_VER >= 43
+     if (POINTER_TYPE_P(TREE_TYPE(e1)) && e2_type->isintegral())
+     {
+@@ -546,7 +545,7 @@
+     }
+     else
+ #endif
+-    if (exp_type->isintegral() &&
++    if (op != TOKushr && exp_type->isintegral() &&
+ 	( exp_type->isunsigned() != 0 ) != is_unsigned) {
+ 	tree e_new_type_1 = is_unsigned ?
+ 	    d_unsigned_type(exp_type->toCtype()) :

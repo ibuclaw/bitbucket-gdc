@@ -1,0 +1,4374 @@
+# HG changeset patch
+# User Dan Green  <venix1@gmail.com>
+# Date 1274996627 14400
+# Node ID baa0d433abd35d336ab3b36e74bba6f41753332e
+# Parent  4160ff442248fb21b07ff8ab8329129a4443e537
+Initial merge of DMD v1.047
+
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/attrib.c
+--- a/d/dmd/attrib.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/attrib.c	Thu May 27 17:43:47 2010 -0400
+@@ -33,6 +33,9 @@
+ #include "module.h"
+ #include "parse.h"
+ #include "template.h"
++#if TARGET_NET
++ #include "frontend.net/pragma.h"
++#endif
+ 
+ extern void obj_includelib(const char *name);
+ void obj_startaddress(Symbol *s);
+@@ -66,6 +69,41 @@
+     return m;
+ }
+ 
++void AttribDeclaration::setScopeNewSc(Scope *sc,
++	unsigned stc, enum LINK linkage, enum PROT protection, int explicitProtection,
++	unsigned structalign)
++{
++    if (decl)
++    {
++	Scope *newsc = sc;
++	if (stc != sc->stc ||
++	    linkage != sc->linkage ||
++	    protection != sc->protection ||
++	    explicitProtection != sc->explicitProtection ||
++	    structalign != sc->structalign)
++	{
++	    // create new one for changes
++	    newsc = new Scope(*sc);
++	    newsc->flags &= ~SCOPEfree;
++	    newsc->stc = stc;
++	    newsc->linkage = linkage;
++	    newsc->protection = protection;
++	    newsc->explicitProtection = explicitProtection;
++	    newsc->structalign = structalign;
++	}
++	for (unsigned i = 0; i < decl->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)decl->data[i];
++
++	    s->setScope(newsc);	// yes, the only difference from semanticNewSc()
++	}
++	if (newsc != sc)
++	{
++	    sc->offset = newsc->offset;
++	    newsc->pop();
++	}
++    }
++}
++
+ void AttribDeclaration::semanticNewSc(Scope *sc,
+ 	unsigned stc, enum LINK linkage, enum PROT protection, int explicitProtection,
+ 	unsigned structalign)
+@@ -326,11 +364,10 @@
+     return scd;
+ }
+ 
+-void StorageClassDeclaration::semantic(Scope *sc)
++void StorageClassDeclaration::setScope(Scope *sc)
+ {
+     if (decl)
+     {
+-#if 1
+ 	unsigned scstc = sc->stc;
+ 
+ 	/* These sets of storage classes are mutually exclusive,
+@@ -346,30 +383,30 @@
+ 	    scstc &= ~(STCgshared | STCshared | STCtls);
+ 	scstc |= stc;
+ 
+-	semanticNewSc(sc, scstc, sc->linkage, sc->protection, sc->explicitProtection, sc->structalign);
+-#else
+-	unsigned stc_save = sc->stc;
++	setScopeNewSc(sc, scstc, sc->linkage, sc->protection, sc->explicitProtection, sc->structalign);
++    }
++}
++
++void StorageClassDeclaration::semantic(Scope *sc)
++{
++    if (decl)
++    {
++	unsigned scstc = sc->stc;
+ 
+ 	/* These sets of storage classes are mutually exclusive,
+ 	 * so choose the innermost or most recent one.
+ 	 */
+ 	if (stc & (STCauto | STCscope | STCstatic | STCextern | STCmanifest))
+-	    sc->stc &= ~(STCauto | STCscope | STCstatic | STCextern | STCmanifest);
++	    scstc &= ~(STCauto | STCscope | STCstatic | STCextern | STCmanifest);
+ 	if (stc & (STCauto | STCscope | STCstatic | STCtls | STCmanifest | STCgshared))
+-	    sc->stc &= ~(STCauto | STCscope | STCstatic | STCtls | STCmanifest | STCgshared);
++	    scstc &= ~(STCauto | STCscope | STCstatic | STCtls | STCmanifest | STCgshared);
+ 	if (stc & (STCconst | STCimmutable | STCmanifest))
+-	    sc->stc &= ~(STCconst | STCimmutable | STCmanifest);
++	    scstc &= ~(STCconst | STCimmutable | STCmanifest);
+ 	if (stc & (STCgshared | STCshared | STCtls))
+-	    sc->stc &= ~(STCgshared | STCshared | STCtls);
+-	sc->stc |= stc;
+-	for (unsigned i = 0; i < decl->dim; i++)
+-	{
+-	    Dsymbol *s = (Dsymbol *)decl->data[i];
+-
+-	    s->semantic(sc);
+-	}
+-	sc->stc = stc_save;
+-	#endif
++	    scstc &= ~(STCgshared | STCshared | STCtls);
++	scstc |= stc;
++	
++	semanticNewSc(sc, scstc, sc->linkage, sc->protection, sc->explicitProtection, sc->structalign);
+     }
+ }
+ 
+@@ -388,17 +425,11 @@
+ 	{ STCstatic,       TOKstatic },
+ 	{ STCextern,       TOKextern },
+ 	{ STCconst,        TOKconst },
+- //	{ STCinvariant,    TOKimmutable },
+- //	{ STCshared,       TOKshared },
+ 	{ STCfinal,        TOKfinal },
+ 	{ STCabstract,     TOKabstract },
+ 	{ STCsynchronized, TOKsynchronized },
+ 	{ STCdeprecated,   TOKdeprecated },
+ 	{ STCoverride,     TOKoverride },
+- //	{ STCnothrow,      TOKnothrow },
+- //	{ STCpure,         TOKpure },
+- //	{ STCref,          TOKref },
+- //	{ STCtls,          TOKtls },
+     };
+ 
+     for (int i = 0; i < sizeof(table)/sizeof(table[0]); i++)
+@@ -437,25 +468,21 @@
+     return ld;
+ }
+ 
++void LinkDeclaration::setScope(Scope *sc)
++{
++    //printf("LinkDeclaration::setScope(linkage = %d, decl = %p)\n", linkage, decl);
++    if (decl)
++    {
++	setScopeNewSc(sc, sc->stc, linkage, sc->protection, sc->explicitProtection, sc->structalign);
++    }
++}
++
+ void LinkDeclaration::semantic(Scope *sc)
+ {
+     //printf("LinkDeclaration::semantic(linkage = %d, decl = %p)\n", linkage, decl);
+     if (decl)
+     {
+-#if 1
+ 	semanticNewSc(sc, sc->stc, linkage, sc->protection, sc->explicitProtection, sc->structalign);
+-#else
+-	enum LINK linkage_save = sc->linkage;
+-
+-	sc->linkage = linkage;
+-	for (unsigned i = 0; i < decl->dim; i++)
+-	{
+-	    Dsymbol *s = (Dsymbol *)decl->data[i];
+-
+-	    s->semantic(sc);
+-	}
+-	sc->linkage = linkage_save;
+-    #endif
+     }
+ }
+ 
+@@ -523,27 +550,19 @@
+     return pd;
+ }
+ 
+-void ProtDeclaration::semantic(Scope *sc)
++void ProtDeclaration::setScope(Scope *sc)
+ {
+     if (decl)
+     {
+-#if 1
+-	semanticNewSc(sc, sc->stc, sc->linkage, protection, 1, sc->structalign);
+-#else
+-	enum PROT protection_save = sc->protection;
+-	int explicitProtection_save = sc->explicitProtection;
++	setScopeNewSc(sc, sc->stc, sc->linkage, protection, 1, sc->structalign);
++    }
++}
+ 
+-	sc->protection = protection;
+-	sc->explicitProtection = 1;
+-	for (unsigned i = 0; i < decl->dim; i++)
+-	{
+-	    Dsymbol *s = (Dsymbol *)decl->data[i];
+-
+-	    s->semantic(sc);
+-	}
+-	sc->protection = protection_save;
+-	sc->explicitProtection = explicitProtection_save;
+-    #endif
++void ProtDeclaration::semantic(Scope *sc)	
++{
++    if (decl)
++    {
++	semanticNewSc(sc, sc->stc, sc->linkage, protection, 1, sc->structalign);    
+     }
+ }
+ 
+@@ -589,25 +608,21 @@
+     return ad;
+ }
+ 
++void AlignDeclaration::setScope(Scope *sc)
++{
++    //printf("\tAlignDeclaration::setScope '%s'\n",toChars());
++    if (decl)
++    {
++	setScopeNewSc(sc, sc->stc, sc->linkage, sc->protection, sc->explicitProtection, salign);
++    }
++}
++
+ void AlignDeclaration::semantic(Scope *sc)
+ {
+     //printf("\tAlignDeclaration::semantic '%s'\n",toChars());
+     if (decl)
+     {
+-#if 1
+ 	semanticNewSc(sc, sc->stc, sc->linkage, sc->protection, sc->explicitProtection, salign);
+-#else
+-	unsigned salign_save = sc->structalign;
+-
+-	sc->structalign = salign;
+-	for (unsigned i = 0; i < decl->dim; i++)
+-	{
+-	    Dsymbol *s = (Dsymbol *)decl->data[i];
+-
+-	    s->semantic(sc);
+-	}
+-	sc->structalign = salign_save;
+-	#endif
+     }
+ }
+ 
+@@ -823,7 +838,7 @@
+ 		if (e->op == TOKstring)
+ 		{
+ 		    StringExp *se = (StringExp *)e;
+-		    fprintf(stdmsg, "%.*s", (int)se->len, se->string);
++		    fprintf(stdmsg, "%.*s", (int)se->len, (char *)se->string);
+ 		}
+ 		else
+ 		    error("string expected for message, not '%s'", e->toChars());
+@@ -1013,6 +1028,27 @@
+ 	goto Lnodecl;
+     }
+ #endif
++#if TARGET_NET
++    else if (ident == Lexer::idPool("assembly"))
++    {
++        if (!args || args->dim != 1)
++	        error("pragma has invalid number of arguments");
++	    else
++	    {
++	        Expression *e = (Expression *)args->data[0];
++	        e = e->semantic(sc);
++	        e = e->optimize(WANTvalue | WANTinterpret);
++	        args->data[0] = (void *)e;
++	        if (e->op != TOKstring)
++		    {
++		        error("string expected, not '%s'", e->toChars());
++	        }
++            PragmaScope* pragma = new PragmaScope(this, sc->parent, static_cast<StringExp*>(e));
++            decl = new Array;
++            decl->push(pragma);
++        }
++    }
++#endif // TARGET_NET
+     else if (global.params.ignoreUnsupportedPragmas)
+     {
+ 	if (global.params.verbose)
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/attrib.h
+--- a/d/dmd/attrib.h	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/attrib.h	Thu May 27 17:43:47 2010 -0400
+@@ -36,6 +36,9 @@
+     AttribDeclaration(Array *decl);
+     virtual Array *include(Scope *sc, ScopeDsymbol *s);
+     int addMember(Scope *sc, ScopeDsymbol *s, int memnum);
++    void setScopeNewSc(Scope *sc,
++	unsigned newstc, enum LINK linkage, enum PROT protection, int explictProtection,
++	unsigned structalign);
+     void semanticNewSc(Scope *sc,
+  	 unsigned newstc, enum LINK linkage, enum PROT protection, int explictProtection,
+  	 	unsigned structalign);
+@@ -63,6 +66,7 @@
+ 
+     StorageClassDeclaration(unsigned stc, Array *decl);
+     Dsymbol *syntaxCopy(Dsymbol *s);
++    void setScope(Scope *sc);
+     void semantic(Scope *sc);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+     
+@@ -75,6 +79,7 @@
+ 
+     LinkDeclaration(enum LINK p, Array *decl);
+     Dsymbol *syntaxCopy(Dsymbol *s);
++    void setScope(Scope *sc);
+     void semantic(Scope *sc);
+     void semantic3(Scope *sc);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+@@ -87,6 +92,7 @@
+ 
+     ProtDeclaration(enum PROT p, Array *decl);
+     Dsymbol *syntaxCopy(Dsymbol *s);
++    void setScope(Scope *sc);
+     void semantic(Scope *sc);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+     
+@@ -99,6 +105,7 @@
+ 
+     AlignDeclaration(unsigned sa, Array *decl);
+     Dsymbol *syntaxCopy(Dsymbol *s);
++    void setScope(Scope *sc);
+     void semantic(Scope *sc);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+ };
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/class.c
+--- a/d/dmd/class.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/class.c	Thu May 27 17:43:47 2010 -0400
+@@ -166,6 +166,12 @@
+ 		    Type::typeinfoinvariant->error("%s", msg);
+ 		Type::typeinfoinvariant = this;
+ 	    }
++
++	    if (id == Id::TypeInfo_Shared)
++	    {	if (Type::typeinfoshared)
++		    Type::typeinfoshared->error("%s", msg);
++		Type::typeinfoshared = this;
++	    }
+ #endif
+ 	}
+ 
+@@ -343,11 +349,14 @@
+  		}
+ 		if (!tc->sym->symtab || tc->sym->scope || tc->sym->sizeok == 0)
+ 		{
++		    //printf("%s: forward reference of base class %s\n", toChars(), tc->sym->toChars());
+ 		    //error("forward reference of base class %s", baseClass->toChars());
+ 		    // Forward reference of base class, try again later
+ 		    //printf("\ttry later, forward reference of base class %s\n", tc->sym->toChars());
+ 		    scope = scx ? scx : new Scope(*sc);
+ 		    scope->setNoFree();
++		    if (tc->sym->scope)
++		        tc->sym->scope->module->addDeferredSemantic(tc->sym);
+ 		    scope->module->addDeferredSemantic(this);
+ 		    return;
+ 		}
+@@ -401,6 +410,12 @@
+ 		    error("inherits from duplicate interface %s", b2->base->toChars());
+ 	    }
+ 
++	    if (!tc->sym->symtab)
++	    {   // Try to resolve forward reference
++		if (sc->mustsemantic && tc->sym->scope)
++		    tc->sym->semantic(NULL);
++	    }
++
+ 	    b->base = tc->sym;
+ 	    if (!b->base->symtab || b->base->scope)
+ 	    {
+@@ -409,6 +424,8 @@
+ 		//printf("\ttry later, forward reference of base %s\n", baseClass->toChars());
+ 		scope = scx ? scx : new Scope(*sc);
+ 		scope->setNoFree();
++		if (tc->sym->scope)
++		    tc->sym->scope->module->addDeferredSemantic(tc->sym);
+ 		scope->module->addDeferredSemantic(this);
+ 		return;
+ 	    }
+@@ -788,8 +805,8 @@
+ Dsymbol *ClassDeclaration::search(Loc loc, Identifier *ident, int flags)
+ {
+     Dsymbol *s;
++    //printf("%s.ClassDeclaration::search('%s')\n", toChars(), ident->toChars());
+ 
+-    //printf("%s.ClassDeclaration::search('%s')\n", toChars(), ident->toChars());
+     if (scope)
+ 	{	Scope *sc = scope;
+ 	sc->mustsemantic++;
+@@ -798,7 +815,8 @@
+     }
+ 
+     if (!members || !symtab || scope)
+-    {	error("is forward referenced when looking for '%s'", ident->toChars());
++    {
++	error("is forward referenced when looking for '%s'", ident->toChars());
+ 	//*(char*)0=0;
+ 	return NULL;
+     }
+@@ -931,6 +949,13 @@
+     return 0;
+ }
+ 
++#if DMDV2
++int ClassDeclaration::isCPPinterface()
++{
++    return 0;
++}
++#endif
++
+ 
+ /****************************************
+  */
+@@ -1113,6 +1138,11 @@
+ 		baseclasses.remove(i);
+ 		continue;
+ 	    }
++	    if (!b->base->symtab)
++	    {   // Try to resolve forward reference
++		if (sc->mustsemantic && b->base->scope)
++		    b->base->semantic(NULL);
++	    }
+ 	    if (!b->base->symtab || b->base->scope || b->base->inuse)
+ 	    {
+ 		//error("forward reference of base class %s", baseClass->toChars());
+@@ -1283,6 +1313,13 @@
+     return com;
+ }
+ 
++#if DMDV2
++int InterfaceDeclaration::isCPPinterface()
++{
++    return cpp;
++}
++#endif
++
+ /*******************************************
+  */
+ 
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/constfold.c
+--- a/d/dmd/constfold.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/constfold.c	Thu May 27 17:43:47 2010 -0400
+@@ -78,6 +78,11 @@
+     return 1;
+ }
+ 
++int NullExp::isConst()
++{
++    return 1;
++}
++
+ int SymOffExp::isConst()
+ {
+     return 2;
+@@ -1054,10 +1059,23 @@
+     if (type->equals(e1->type) && to->equals(type))
+ 	return e1;
+ 
++    Type *tb = to->toBasetype();
++
++    /* Allow casting from one string type to another
++     */
++    if (e1->op == TOKstring)
++    {
++	Type *typeb = type->toBasetype();
++	if (tb->ty == Tarray && typeb->ty == Tarray &&
++	    tb->nextOf()->size() == typeb->nextOf()->size())
++	{
++	    return expType(to, e1);
++	}
++    }
++
+     if (e1->isConst() != 1)
+ 	return EXP_CANT_INTERPRET;
+ 
+-    Type *tb = to->toBasetype();
+     if (tb->ty == Tbool)
+ 	e = new IntegerExp(loc, e1->toInteger() != 0, type);
+     else if (type->isintegral())
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/declaration.c
+--- a/d/dmd/declaration.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/declaration.c	Thu May 27 17:43:47 2010 -0400
+@@ -928,6 +928,7 @@
+ 	}
+     }
+ 
++    enum TOK op = TOKconstruct;
+     if (!init && !sc->inunion && !isStatic() && !isConst() && fd &&
+ 	!(storage_class & (STCfield | STCin | STCforeach)) &&
+ 	type->size() != 0)
+@@ -946,9 +947,7 @@
+ 	    Expression *e1;
+ 	    e1 = new VarExp(loc, this);
+ 	    e = new AssignExp(loc, e1, e);
+-	    #if DMDV2
+  	    e->op = TOKconstruct;
+- 		 #endif
+  	    e->type = e1->type;		// don't type check this, it would fail
+  	    init = new ExpInitializer(loc, e);
+ 	    return;
+@@ -969,16 +968,14 @@
+ 	{
+ 	    init = getExpInitializer();
+ 	}
+-	#if DMDV2
+ 	// Default initializer is always a blit
+ 	op = TOKblit;
+-	#endif
+     }
+ 
+     if (init)
+     {
+     	sc = sc->push();
+- 	sc->stc &= ~(STCconst | STCinvariant | STCpure);
++    sc->stc &= ~(STC_TYPECTOR | STCpure | STCnothrow | STCref);
+ 	ArrayInitializer *ai = init->isArrayInitializer();
+ 	if (ai && tb->ty == Taarray)
+ 	{
+@@ -988,7 +985,7 @@
+ 	StructInitializer *si = init->isStructInitializer();
+ 	ExpInitializer *ei = init->isExpInitializer();
+ 
+-	// See if we can allocate on the stack
++	// See if initializer is a NewExp that can be allocated on the stack
+ 	if (ei && isScope() && ei->exp->op == TOKnew)
+ 	{   NewExp *ne = (NewExp *)ei->exp;
+ 	    if (!(ne->newargs && ne->newargs->dim))
+@@ -1027,7 +1024,7 @@
+ 		Expression *e1 = new VarExp(loc, this);
+   
+  		Type *t = type->toBasetype();
+-		if (t->ty == Tsarray)
++		if (t->ty == Tsarray && !(storage_class & (STCref | STCout)))
+ 		{
+ 		    ei->exp = ei->exp->semantic(sc);
+ 		    if (!ei->exp->implicitConvTo(type))
+@@ -1149,7 +1146,7 @@
+ 		else if (ei)
+ 		{
+ 		    e = e->optimize(WANTvalue | WANTinterpret);
+-		    if (e->op == TOKint64 || e->op == TOKstring)
++		    if (e->op == TOKint64 || e->op == TOKstring || e->op == TOKfloat64)
+ 		    {
+ 			ei->exp = e;		// no errors, keep result
+ 		    }
+@@ -1312,6 +1309,15 @@
+ 	   parent->isTemplateInstance());
+ }
+ 
++/************************************
++ * Does symbol go into thread local storage?
++ */
++
++int VarDeclaration::isThreadlocal()
++{
++    return 0;
++}
++
+ int VarDeclaration::hasPointers()
+ {
+ 	//printf("VarDeclaration::hasPointers() %s, ty = %d\n", toChars(), type->ty);
+@@ -1323,7 +1329,7 @@
+  * Otherwise, return NULL.
+  */
+ 
+-Expression *VarDeclaration::callAutoDtor()
++Expression *VarDeclaration::callAutoDtor(Scope *sc)
+ {   Expression *e = NULL;
+ 
+     //printf("VarDeclaration::callAutoDtor() %s\n", toChars());
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/declaration.h
+--- a/d/dmd/declaration.h	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/declaration.h	Thu May 27 17:43:47 2010 -0400
+@@ -133,7 +133,7 @@
+     int isFinal()        { return storage_class & STCfinal; }
+     int isAbstract()     { return storage_class & STCabstract; }
+     int isConst()        { return storage_class & STCconst; }
+-    int isInvariant()    { return 0; }
++    int isInvariant()    { return storage_class & STCinvariant; }
+     int isAuto()         { return storage_class & STCauto; }
+     int isScope()        { return storage_class & (STCscope | STCauto); }
+     int isSynchronized() { return storage_class & STCsynchronized; }
+@@ -238,7 +238,11 @@
+     Initializer *init;
+     target_size_t offset;
+     int noauto;			// no auto semantics
++#if DMDV2
++    FuncDeclarations nestedrefs; // referenced by these lexically nested functions
++#else
+     int nestedref;		// referenced by a lexically nested function
++#endif
+     int ctorinit;		// it has been initialized in a ctor
+     int onstack;		// 1: it has been allocated on the stack
+ 				// 2: on stack, run destructor anyway
+@@ -246,6 +250,11 @@
+     Dsymbol *aliassym;		// if redone as alias to another symbol
+     Expression *value;		// when interpreting, this is the value
+ 				// (NULL if value not determinable)
++#if DMDV2
++    VarDeclaration *rundtor;	// if !NULL, rundtor is tested at runtime to see
++				// if the destructor should be run. Used to prevent
++				// dtor calls on postblitted vars
++#endif
+ 
+     VarDeclaration(Loc loc, Type *t, Identifier *id, Initializer *init);
+     Dsymbol *syntaxCopy(Dsymbol *);
+@@ -260,9 +269,15 @@
+     int needThis();
+     int isImportedSymbol();
+     int isDataseg();
++    int isThreadlocal();
+     int hasPointers();
+-    Expression *callAutoDtor();
++#if DMDV2
++    int canTakeAddressOf();
++    int needsAutoDtor();
++#endif
++    Expression *callAutoDtor(Scope *sc);
+     ExpInitializer *getExpInitializer();
++    Expression *getConstInitializer();
+     void checkCtorConstInit();
+     void checkNestedReference(Scope *sc, Loc loc);
+     Dsymbol *toAlias();
+@@ -566,6 +581,7 @@
+     void appendExp(Expression *e);
+     void appendState(Statement *s);
+     char *mangle();
++    const char *toPrettyChars();
+     int isMain();
+     int isWinMain();
+     int isDllMain();
+@@ -582,12 +598,14 @@
+     virtual int isFinal();
+     virtual int addPreInvariant();
+     virtual int addPostInvariant();
+-    Expression *interpret(InterState *istate, Expressions *arguments);
++    Expression *interpret(InterState *istate, Expressions *arguments, Expression *thisexp = NULL);
+     void inlineScan();
+     int canInline(int hasthis, int hdrscan = 0);
+     Expression *doInline(InlineScanState *iss, Expression *ethis, Array *arguments);
+     const char *kind();
+     void toDocBuffer(OutBuffer *buf);
++    FuncDeclaration *isUnique();
++    int needsClosure();
+ 
+     static FuncDeclaration *genCfunc(Type *treturn, const char *name,
+ 	Type *t1 = 0, Type *t2 = 0, Type *t3 = 0);
+@@ -598,10 +616,19 @@
+     Symbol *toThunkSymbol(target_ptrdiff_t offset);	// thunk version
+     void toObjFile(int multiobj);			// compile to .obj file
+     int cvMember(unsigned char *p);
++    void buildClosure(IRState *irs);
+ 
+     FuncDeclaration *isFuncDeclaration() { return this; }
+ };
+ 
++#if DMDV2
++FuncDeclaration *resolveFuncCall(Scope *sc, Loc loc, Dsymbol *s,
++	Objects *tiargs,
++	Expression *ethis,
++	Expressions *arguments,
++	int flags);
++#endif
++
+ struct FuncAliasDeclaration : FuncDeclaration
+ {
+     FuncDeclaration *funcalias;
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/doc.c
+--- a/d/dmd/doc.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/doc.c	Thu May 27 17:43:47 2010 -0400
+@@ -1,6 +1,6 @@
+ 
+ // Compiler implementation of the D programming language
+-// Copyright (c) 1999-2008 by Digital Mars
++// Copyright (c) 1999-2009 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -239,7 +239,7 @@
+     // Generate predefined macros
+ 
+     // Set the title to be the name of the module
+-    {	char *p = toPrettyChars();
++    {	const char *p = toPrettyChars();
+ 	Macro::define(&macrotable, (unsigned char *)"TITLE", 5, (unsigned char *)p, strlen(p));
+     }
+ 
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/dsymbol.c
+--- a/d/dmd/dsymbol.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/dsymbol.c	Thu May 27 17:43:47 2010 -0400
+@@ -151,7 +151,7 @@
+     return ident ? ident->toChars() : (char *)"__anonymous";
+ }
+ 
+-char *Dsymbol::toPrettyChars()
++const char *Dsymbol::toPrettyChars()
+ {   Dsymbol *p;
+     char *s;
+     char *q;
+@@ -177,6 +177,16 @@
+ 	if (q == s)
+ 	    break;
+ 	q--;
++#if TARGET_NET
++    if (AggregateDeclaration* ad = p->isAggregateDeclaration())
++    {
++        if (ad->isNested() && p->parent && p->parent->isAggregateDeclaration())
++        {
++            *q = '/';
++            continue;
++        }
++    }
++#endif
+ 	*q = '.';
+     }
+     return s;
+@@ -261,6 +271,7 @@
+ 
+ void Dsymbol::setScope(Scope *sc)
+ {
++    //printf("Dsymbol::setScope() %p %s\n", this, toChars());
+     if (!sc->nofree)
+ 	sc->setNoFree();		// may need it even after semantic() finishes
+     scope = sc;
+@@ -424,6 +435,13 @@
+     return FALSE;
+ }
+ 
++#if DMDV2
++int Dsymbol::isOverloadable()
++{
++    return 0;
++}
++#endif
++
+ LabelDsymbol *Dsymbol::isLabel()		// is this a LabelDsymbol()?
+ {
+     return NULL;
+@@ -631,6 +649,25 @@
+ #endif
+ }
+ 
++/********************************* OverloadSet ****************************/
++
++#if DMDV2
++OverloadSet::OverloadSet()
++    : Dsymbol()
++{
++}
++
++void OverloadSet::push(Dsymbol *s)
++{
++    a.push(s);
++}
++
++const char *OverloadSet::kind()
++{
++    return "overloadset";
++}
++#endif
++
+ 
+ /********************************* ScopeDsymbol ****************************/
+ 
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/dsymbol.h
+--- a/d/dmd/dsymbol.h	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/dsymbol.h	Thu May 27 17:43:47 2010 -0400
+@@ -69,7 +69,9 @@
+ struct DeleteDeclaration;
+ struct HdrGenState;
+ struct OverloadSet;
+-
++#if TARGET_NET
++struct PragmaScope;
++#endif
+ #if IN_GCC
+ union tree_node;
+ typedef union tree_node TYPE;
+@@ -106,7 +108,6 @@
+     Dsymbol();
+     Dsymbol(Identifier *);
+     char *toChars();
+-    char *toPrettyChars();
+     char *locToChars();
+     int equals(Object *o);
+     int isAnonymous();
+@@ -123,6 +124,7 @@
+ 
+     static Array *arraySyntaxCopy(Array *a);
+ 
++    virtual const char *toPrettyChars();
+     virtual const char *kind();
+     virtual Dsymbol *toAlias();			// resolve real symbol
+     virtual int addMember(Scope *sc, ScopeDsymbol *s, int memnum);
+@@ -148,6 +150,9 @@
+     virtual int isExport();			// is Dsymbol exported?
+     virtual int isImportedSymbol();		// is Dsymbol imported?
+     virtual int isDeprecated();			// is Dsymbol deprecated?
++#if DMDV2
++    virtual int isOverloadable();
++#endif
+     virtual LabelDsymbol *isLabel();		// is this a LabelDsymbol?
+     virtual AggregateDeclaration *isMember();	// is this symbol a member of an AggregateDeclaration?
+     virtual Type *getType();			// is this a type?
+@@ -184,6 +189,7 @@
+     virtual TemplateInstance *isTemplateInstance() { return NULL; }
+     virtual TemplateMixin *isTemplateMixin() { return NULL; }
+     virtual Declaration *isDeclaration() { return NULL; }
++    virtual ThisDeclaration *isThisDeclaration() { return NULL; }
+     virtual TupleDeclaration *isTupleDeclaration() { return NULL; }
+     virtual TypedefDeclaration *isTypedefDeclaration() { return NULL; }
+     virtual AliasDeclaration *isAliasDeclaration() { return NULL; }
+@@ -192,6 +198,7 @@
+     virtual FuncAliasDeclaration *isFuncAliasDeclaration() { return NULL; }
+     virtual FuncLiteralDeclaration *isFuncLiteralDeclaration() { return NULL; }
+     virtual CtorDeclaration *isCtorDeclaration() { return NULL; }
++    virtual PostBlitDeclaration *isPostBlitDeclaration() { return NULL; }
+     virtual DtorDeclaration *isDtorDeclaration() { return NULL; }
+     virtual StaticCtorDeclaration *isStaticCtorDeclaration() { return NULL; }
+     virtual StaticDtorDeclaration *isStaticDtorDeclaration() { return NULL; }
+@@ -213,6 +220,10 @@
+ #endif
+     virtual SymbolDeclaration *isSymbolDeclaration() { return NULL; }
+     virtual AttribDeclaration *isAttribDeclaration() { return NULL; }
++    virtual OverloadSet *isOverloadSet() { return NULL; }
++#if TARGET_NET
++    virtual PragmaScope* isPragmaScope() { return NULL; }
++#endif
+ };
+ 
+ // Dsymbol that generates a scope
+@@ -235,9 +246,13 @@
+     static void multiplyDefined(Loc loc, Dsymbol *s1, Dsymbol *s2);
+     Dsymbol *nameCollision(Dsymbol *s);
+     const char *kind();
++    FuncDeclaration *findGetMembers();
+ 
+     void emitMemberComments(Scope *sc);
+ 
++    static size_t dim(Array *members);
++    static Dsymbol *getNth(Array *members, size_t nth, size_t *pn = NULL);
++
+     ScopeDsymbol *isScopeDsymbol() { return this; }
+ };
+ 
+@@ -260,6 +275,7 @@
+     Expression *exp;	// IndexExp or SliceExp
+     TypeTuple *type;	// for tuple[length]
+     TupleDeclaration *td;	// for tuples of objects
++    Scope *sc;
+ 
+     ArrayScopeSymbol(Expression *e);
+     ArrayScopeSymbol(TypeTuple *t);
+@@ -269,6 +285,20 @@
+     ArrayScopeSymbol *isArrayScopeSymbol() { return this; }
+ };
+ 
++// Overload Sets
++
++#if DMDV2
++struct OverloadSet : Dsymbol
++{
++    Dsymbols a;		// array of Dsymbols
++
++    OverloadSet();
++    void push(Dsymbol *s);
++    OverloadSet *isOverloadSet() { return this; }
++    const char *kind();
++};
++#endif
++
+ // Table of Dsymbol's
+ 
+ struct DsymbolTable : Object
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/e2ir.c
+--- a/d/dmd/e2ir.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/e2ir.c	Thu May 27 17:43:47 2010 -0400
+@@ -332,12 +332,12 @@
+ 	    tx = type_fake(e->Ety);
+ 	stmp = symbol_genauto(tx);
+ 	eeq = el_bin(OPeq,e->Ety,el_var(stmp),e);
+-	if (e->Ety == TYstruct)
++	if (tybasic(e->Ety) == TYstruct)
+ 	{
+ 	    eeq->Eoper = OPstreq;
+ 	    eeq->Enumbytes = e->Enumbytes;
+ 	}
+-	else if (e->Ety == TYarray)
++	else if (tybasic(e->Ety) == TYarray)
+ 	{
+ 	    eeq->Eoper = OPstreq;
+ 	    eeq->Ejty = eeq->Ety = TYstruct;
+@@ -579,7 +579,7 @@
+ 	edim = el_bin(OPmul, TYuint, edim, el_long(TYuint, sz));
+     }
+ 
+-    if (evalue->Ety == TYstruct)
++    if (tybasic(evalue->Ety) == TYstruct)
+     {
+ 	evalue = el_una(OPstrpar, TYstruct, evalue);
+ 	evalue->Enumbytes = evalue->E1->Enumbytes;
+@@ -2105,7 +2105,7 @@
+     // set to:
+     //	aaIn(aa, keyti, key);
+ 
+-    if (key->Ety == TYstruct)
++    if (tybasic(key->Ety) == TYstruct)
+     {
+ 	key = el_una(OPstrpar, TYstruct, key);
+ 	key->Enumbytes = key->E1->Enumbytes;
+@@ -2134,7 +2134,7 @@
+     elem *ep;
+     elem *keyti;
+ 
+-    if (ekey->Ety == TYstruct)
++    if (tybasic(ekey->Ety) == TYstruct)
+     {
+ 	ekey = el_una(OPstrpar, TYstruct, ekey);
+ 	ekey->Enumbytes = ekey->E1->Enumbytes;
+@@ -2478,7 +2478,7 @@
+ 	ty = ta->ty;
+     }
+ 
+-#if DMDV2
++#if 1
+     /* Look for reference initializations
+      */
+     if (op == TOKconstruct && e1->op == TOKvar)
+@@ -2492,6 +2492,7 @@
+ 	    elem *es = el_var(s->toSymbol());
+ 	    es->Ety = TYnptr;
+ 	    e = el_bin(OPeq, TYnptr, es, e);
++// BUG: type is struct, and e2 is TOKint64
+ 	    goto Lret;
+ 	}
+     }
+@@ -2538,14 +2539,11 @@
+ 	}
+ 	else
+ 	{
+-	    elem *e1;
+-	    elem *e2;
+-
+ 	    //printf("toElemBin() '%s'\n", toChars());
+ 
+ 	    tym_t tym = type->totym();
+ 
+-	    e1 = this->e1->toElem(irs);
++	    elem *e1 = this->e1->toElem(irs);
+ 	    elem *ex = e1;
+ 	    if (e1->Eoper == OPind)
+ 		ex = e1->E1;
+@@ -2559,7 +2557,7 @@
+ 
+ 		se->sym = ex->EV.sp.Vsym;
+ 		se->soffset = 0;
+-		se->fillHoles = (op == TOKconstruct) ? 1 : 0;
++		se->fillHoles = (op == TOKconstruct || op == TOKblit) ? 1 : 0;
+ 
+ 		el_free(e1);
+ 		e = this->e2->toElem(irs);
+@@ -2635,7 +2633,7 @@
+ 	e1 = el_una(OPaddr, TYnptr, e1);
+ 
+ 	e2 = this->e2->toElem(irs);
+-	if (e2->Ety == TYstruct)
++	if (tybasic(e2->Ety) == TYstruct)
+ 	{
+ 	    e2 = el_una(OPstrpar, TYstruct, e2);
+ 	    e2->Enumbytes = e2->E1->Enumbytes;
+@@ -3139,7 +3137,7 @@
+ 	    elem *ep;
+ 	    elem *keyti;
+ 
+-	    if (ekey->Ety == TYstruct)
++	    if (tybasic(ekey->Ety) == TYstruct)
+ 	    {
+ 		ekey = el_una(OPstrpar, TYstruct, ekey);
+ 		ekey->Enumbytes = ekey->E1->Enumbytes;
+@@ -4020,7 +4018,7 @@
+ 
+ 	// n2 becomes the index, also known as the key
+ 	n2 = e2->toElem(irs);
+-	if (n2->Ety == TYstruct || n2->Ety == TYarray)
++	if (tybasic(n2->Ety) == TYstruct || tybasic(n2->Ety) == TYarray)
+ 	{
+ 	    n2 = el_una(OPstrpar, TYstruct, n2);
+ 	    n2->Enumbytes = n2->E1->Enumbytes;
+@@ -4360,10 +4358,10 @@
+ 	    {
+ 		tym_t ty = v->type->totym();
+ 		e1 = el_una(OPind, ty, e1);
+-		if (ty == TYstruct)
++		if (tybasic(ty) == TYstruct)
+ 		    e1->Enumbytes = v->type->size();
+ 		e1 = el_bin(OPeq, ty, e1, ep);
+-		if (ty == TYstruct)
++		if (tybasic(ty) == TYstruct)
+ 		{   e1->Eoper = OPstreq;
+ 		    e1->Enumbytes = v->type->size();
+ 		}
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/expression.c
+--- a/d/dmd/expression.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/expression.c	Thu May 27 17:43:47 2010 -0400
+@@ -592,8 +592,8 @@
+ 		if (arg->implicitConvTo(p->type))
+ 		{
+ 		    if (nargs != nparams)
+-		        error(loc, "expected %"PRIuSIZE" arguments, not %"PRIuSIZE, nparams, nargs);
+-		    goto L1;
++                error(loc, "expected %zu function arguments, not %zu", nparams, nargs);
++            goto L1;
+ 		}
+ 	     L2:
+ 		Type *tb = p->type->toBasetype();
+@@ -4294,13 +4294,13 @@
+ 	fd->parent = sc->parent;
+ 	if (global.errors)
+ 	{
+-	    if (!fd->type->next)
+-		fd->type->next = Type::terror;
+ 	}
+ 	else
+ 	{
+ 	    fd->semantic2(sc);
+-	    if (!global.errors)
++	    if (!global.errors ||
++		// need to infer return type
++		(fd->type && fd->type->ty == Tfunction && !fd->type->nextOf()))
+ 	    {
+ 		fd->semantic3(sc);
+ 
+@@ -4309,6 +4309,10 @@
+ 	    }
+ 	}
+ 
++	// need to infer return type
++	if (global.errors && fd->type && fd->type->ty == Tfunction && !fd->type->nextOf())
++	    ((TypeFunction *)fd->type)->next = Type::terror;
++
+ 	// Type is a "delegate to" or "pointer to" the function literal
+ 	if (fd->isNested())
+ 	{
+@@ -4952,7 +4956,7 @@
+ 
+ 	if (op == TOKmodass && e2->type->iscomplex())
+ 	{   error("cannot perform modulo complex arithmetic");
+-	    return new IntegerExp(0);
++	    return new ErrorExp();
+ 	}
+     }
+     return this;
+@@ -5126,7 +5130,7 @@
+     }
+ 
+     if (global.params.verbose)
+-	printf("file      %s\t(%s)\n", se->string, name);
++	printf("file      %s\t(%s)\n", (char *)se->string, name);
+ 
+     {	File f(name);
+ 	if (f.read())
+@@ -6190,6 +6194,36 @@
+ 	if (t1->ty == Tstruct)
+ 	{
+ 	    ad = ((TypeStruct *)t1)->sym;
++#if DMDV2
++	    // First look for constructor
++	    if (ad->ctor && arguments && arguments->dim)
++	    {
++		// Create variable that will get constructed
++		Identifier *idtmp = Lexer::uniqueId("__ctmp");
++		VarDeclaration *tmp = new VarDeclaration(loc, t1, idtmp, NULL);
++		Expression *av = new DeclarationExp(loc, tmp);
++		av = new CommaExp(loc, av, new VarExp(loc, tmp));
++
++		Expression *e;
++		CtorDeclaration *cf = ad->ctor->isCtorDeclaration();
++		if (cf)
++		    e = new DotVarExp(loc, av, cf, 1);
++		else
++		{   TemplateDeclaration *td = ad->ctor->isTemplateDeclaration();
++		    assert(td);
++		    e = new DotTemplateExp(loc, av, td);
++		}
++		e = new CallExp(loc, e, arguments);
++#if !STRUCTTHISREF
++		/* Constructors return a pointer to the instance
++		 */
++		e = new PtrExp(loc, e);
++#endif
++		e = e->semantic(sc);
++		return e;
++	    }
++#endif
++	    // No constructor, look for overload of opCall
+ 	    if (search_function(ad, Id::call))
+ 		goto L1;	// overload of opCall, therefore it's a call
+ 
+@@ -6550,6 +6584,7 @@
+      return 1;
+  }
+  
++    //printf("CallExp::canThrow() %s\n", toChars());
+  #if DMDV2
+  int CallExp::canThrow()
+  {
+@@ -6561,10 +6596,13 @@
+      for (size_t i = 0; i < arguments->dim; i++)
+      {   Expression *e = (Expression *)arguments->data[i];
+  
+- 	if (e->canThrow())
++	if (e && e->canThrow())
+  	    return 1;
+      }
+  
++    if (global.errors && !e1->type)
++	return 0;			// error recovery
++
+      /* If calling a function or delegate that is typed as nothrow,
+ +      * then this expression cannot throw.
+ +      * Note that pure functions can throw.
+@@ -6603,8 +6641,16 @@
+ 
+ Expression *CallExp::modifiableLvalue(Scope *sc, Expression *e)
+ {
++#if 1
++    return Expression::modifiableLvalue(sc, e);
++#else
++    /* Although function return values being usable as "ref" parameters is
++     * unsound, disabling it breaks existing code.
++     * Bugzilla 3167
++     */
+     error("cannot assign to function call");
+     return toLvalue(sc, e);
++#endif
+ }
+ 
+ void CallExp::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+@@ -6719,13 +6765,6 @@
+     {
+ 	case Tpointer:
+ 	    type = tb->next;
+-	    if (type->isbit())
+-	    {	Expression *e;
+-
+-		// Rewrite *p as p[0]
+-		e = new IndexExp(loc, e1, new IntegerExp(0));
+-		return e->semantic(sc);
+-	    }
+ 	    break;
+ 
+ 	case Tsarray:
+@@ -7775,7 +7814,7 @@
+ 
+ /************************************************************/
+ 
+-/* Can be TOKconstruct too */
++/* op can be TOKassign, TOKconstruct, or TOKblit */
+ 
+ AssignExp::AssignExp(Loc loc, Expression *e1, Expression *e2)
+ 	: BinExp(loc, TOKassign, sizeof(AssignExp), e1, e2)
+@@ -7784,26 +7823,39 @@
+ }
+ 
+ Expression *AssignExp::semantic(Scope *sc)
+-{   Type *t1;
++{
+     Expression *e1old = e1;
+ 
+ #if LOGSEMANTIC
+     printf("AssignExp::semantic('%s')\n", toChars());
+ #endif
+     //printf("e1->op = %d, '%s'\n", e1->op, Token::toChars(e1->op));
++    //printf("e2->op = %d, '%s'\n", e2->op, Token::toChars(e2->op));
++
++    if (type)
++	return this;
++
++    if (e2->op == TOKcomma)
++    {	/* Rewrite to get rid of the comma from rvalue
++	 */
++	AssignExp *ea = new AssignExp(loc, e1, ((CommaExp *)e2)->e2);
++	ea->op = op;
++	Expression *e = new CommaExp(loc, ((CommaExp *)e2)->e1, ea);
++	return e->semantic(sc);
++    }
+ 
+     /* Look for operator overloading of a[i]=value.
+      * Do it before semantic() otherwise the a[i] will have been
+      * converted to a.opIndex() already.
+      */
+     if (e1->op == TOKarray)
+-    {	Type *t1;
++    {
+ 	ArrayExp *ae = (ArrayExp *)e1;
+ 	AggregateDeclaration *ad;
+ 	Identifier *id = Id::index;
+ 
+ 	ae->e1 = ae->e1->semantic(sc);
+-	t1 = ae->e1->type->toBasetype();
++	Type *t1 = ae->e1->type->toBasetype();
+ 	if (t1->ty == Tstruct)
+ 	{
+ 	    ad = ((TypeStruct *)t1)->sym;
+@@ -7916,13 +7968,20 @@
+ 	}
+     }
+ 
+-    t1 = e1->type->toBasetype();
++    // Determine if this is an initialization of a reference
++    int refinit = 0;
++    if (op == TOKconstruct && e1->op == TOKvar)
++    {	VarExp *ve = (VarExp *)e1;
++	VarDeclaration *v = ve->var->isVarDeclaration();
++	if (v->storage_class & (STCout | STCref))
++	    refinit = 1;
++    }
++
++    Type *t1 = e1->type->toBasetype();
+ 
+     if (t1->ty == Tfunction)
+     {	// Rewrite f=value to f(value)
+-	Expression *e;
+-
+-	e = new CallExp(loc, e1, e2);
++	Expression *e = new CallExp(loc, e1, e2);
+ 	e = e->semantic(sc);
+ 	return e;
+     }
+@@ -7954,6 +8013,7 @@
+     else
+     {	// Try to do a decent error message with the expression
+ 	// before it got constant folded
++	if (op != TOKconstruct)
+ 	e1 = e1->modifiableLvalue(sc, e1old);
+     }
+ 
+@@ -7966,7 +8026,7 @@
+ 	ismemset = 1;	// make it easy for back end to tell what this is
+ 	e2 = e2->implicitCastTo(sc, t1->next);
+     }
+-    else if (t1->ty == Tsarray)
++    else if (t1->ty == Tsarray && !refinit)
+     {
+ 	error("cannot assign to static array %s", e1->toChars());
+     }
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/expression.h
+--- a/d/dmd/expression.h	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/expression.h	Thu May 27 17:43:47 2010 -0400
+@@ -76,6 +76,11 @@
+ Expression *fromConstInitializer(int result, Expression *e);
+ int arrayExpressionCanThrow(Expressions *exps);
+ 
++struct IntRange
++{   uinteger_t imin;
++    uinteger_t imax;
++};
++
+ struct Expression : Object
+ {
+     Loc loc;			// file location
+@@ -276,6 +281,7 @@
+ 
+     ThisExp(Loc loc);
+     Expression *semantic(Scope *sc);
++    Expression *interpret(InterState *istate);
+     int isBool(int result);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+     Expression *toLvalue(Scope *sc, Expression *e);
+@@ -307,6 +313,7 @@
+     NullExp(Loc loc);
+     Expression *semantic(Scope *sc);
+     int isBool(int result);
++    int isConst();
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+     void toMangleBuffer(OutBuffer *buf);
+     MATCH implicitConvTo(Type *t);
+@@ -500,6 +507,7 @@
+ 	Type *newtype, Expressions *arguments);
+     Expression *syntaxCopy();
+     Expression *semantic(Scope *sc);
++    Expression *optimize(int result);
+     elem *toElem(IRState *irs);
+     int checkSideEffect(int flag);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/func.c
+--- a/d/dmd/func.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/func.c	Thu May 27 17:43:47 2010 -0400
+@@ -40,7 +40,7 @@
+ FuncDeclaration::FuncDeclaration(Loc loc, Loc endloc, Identifier *id, enum STC storage_class, Type *type)
+     : Declaration(id)
+ {
+-    //printf("FuncDeclaration(id = '%s', type = %p)\n", id->toChars(), type);
++    //printf("FuncDeclaration(id = '%s', type = %s)\n", id->toChars(), type ? type->toChars() : "null");
+     //printf("storage_class = x%x\n", storage_class);
+     this->storage_class = storage_class;
+     this->type = type;
+@@ -1107,6 +1107,13 @@
+ 		error("expected to return a value of type %s", type->nextOf()->toChars());
+ 	    else if (!inlineAsm)
+ 	    {
++#if DMDV2
++		int blockexit = fbody ? fbody->blockExit() : BEfallthru;
++		if (f->isnothrow && blockexit & BEthrow)
++		    error("'%s' is nothrow yet may throw", toChars());
++
++		int offend = blockexit & BEfallthru;
++#endif
+ 		if (type->nextOf()->ty == Tvoid)
+ 		{
+ 		    if (offend && isMain())
+@@ -1119,9 +1126,11 @@
+ 		{
+ 		    if (offend)
+ 		    {   Expression *e;
+-
+-			warning(loc, "no return at end of function");
+-
++#if DMDV1
++			warning(loc, "no return exp; or assert(0); at end of function");
++#else
++			error("no return exp; or assert(0); at end of function");
++#endif
+ 			if (global.params.useAssert &&
+ 			    !global.params.useInline)
+ 			{   /* Add an assert(0, msg); where the missing return
+@@ -1202,7 +1211,8 @@
+ 		e = new DotIdExp(0, e, Id::elements);
+ 		Expression *e1 = new VarExp(0, _arguments);
+ 		e = new AssignExp(0, e1, e);
+-		e = e->semantic(sc);
++		e->op = TOKconstruct;
++		e = e->semantic(sc2);
+ 		a->push(new ExpStatement(0, e));
+ 	    }
+ 
+@@ -1246,6 +1256,10 @@
+ 		{   // Call invariant virtually
+ 		    ThisExp *v = new ThisExp(0);
+ 		    v->type = vthis->type;
++#if STRUCTTHISREF
++		    if (ad->isStructDeclaration())
++			v = v->addressOf(sc);
++#endif
+ 		    Expression *se = new StringExp(0, (char *)"null this");
+ 		    se = se->semantic(sc);
+ 		    se->type = Type::tchar->arrayOf();
+@@ -1280,6 +1294,75 @@
+ 	    }
+ 
+ 	    fbody = new CompoundStatement(0, a);
++#if DMDV2
++	    /* Append destructor calls for parameters as finally blocks.
++	     */
++	    if (parameters)
++	    {	for (size_t i = 0; i < parameters->dim; i++)
++		{
++		    VarDeclaration *v = (VarDeclaration *)parameters->data[i];
++
++		    if (v->storage_class & (STCref | STCout))
++			continue;
++
++		    /* Don't do this for static arrays, since static
++		     * arrays are called by reference. Remove this
++		     * when we change them to call by value.
++		     */
++		    if (v->type->toBasetype()->ty == Tsarray)
++			continue;
++
++		    Expression *e = v->callAutoDtor(sc);
++		    if (e)
++		    {	Statement *s = new ExpStatement(0, e);
++			s = s->semantic(sc);
++			if (fbody->blockExit() == BEfallthru)
++			    fbody = new CompoundStatement(0, fbody, s);
++			else
++			    fbody = new TryFinallyStatement(0, fbody, s);
++		    }
++		}
++	    }
++#endif
++
++#if 1
++	    if (isSynchronized())
++	    {	/* Wrap the entire function body in a synchronized statement
++		 */
++		ClassDeclaration *cd = parent->isClassDeclaration();
++		if (cd)
++		{
++#if TARGET_WINDOS
++		    if (/*config.flags2 & CFG2seh &&*/	// always on for WINDOS
++			!isStatic() && !fbody->usesEH())
++		    {
++			/* The back end uses the "jmonitor" hack for syncing;
++			 * no need to do the sync at this level.
++			 */
++		    }
++		    else
++#endif
++		    {
++			Expression *vsync;
++			if (isStatic())
++			{   // The monitor is in the ClassInfo
++			    vsync = new DotIdExp(loc, new DsymbolExp(loc, cd), Id::classinfo);
++			}
++			else
++			{   // 'this' is the monitor
++			    vsync = new VarExp(loc, vthis);
++			}
++			fbody = new PeelStatement(fbody);	// don't redo semantic()
++			fbody = new SynchronizedStatement(loc, vsync, fbody);
++			fbody = fbody->semantic(sc2);
++		    }
++		}
++		else
++		{
++		    error("synchronized function %s must be a member of a class", toChars());
++		}
++	    }
++#endif
+ 	}
+ 
+ 	sc2->callSuper = 0;
+@@ -1947,6 +2030,13 @@
+     cs->statements->push(s);
+ }
+ 
++const char *FuncDeclaration::toPrettyChars()
++{
++    if (isMain())
++	return "D main";
++    else
++	return Dsymbol::toPrettyChars();
++}
+ 
+ int FuncDeclaration::isMain()
+ {
+@@ -2306,6 +2396,10 @@
+ 	return;
+ 
+     sc = sc->push();
++#if STRUCTTHISREF
++    if (ad && ad->isStructDeclaration())
++	((TypeFunction *)type)->isref = 1;
++#endif
+     sc->stc &= ~STCstatic;		// not a static constructor
+ 
+     parent = sc->parent;
+@@ -2331,12 +2425,10 @@
+     //	return this;
+     // to the function body
+     if (fbody)
+-    {	Expression *e;
+-	Statement *s;
+-
+-	e = new ThisExp(0);
+-	s = new ReturnStatement(0, e);
+-	fbody = new CompoundStatement(0, fbody, s);
++    {
++	Expression *e = new ThisExp(loc);
++	Statement *s = new ReturnStatement(loc, e);
++	fbody = new CompoundStatement(loc, fbody, s);
+     }
+ 
+     FuncDeclaration::semantic(sc);
+@@ -2477,14 +2569,14 @@
+ 
+ void DtorDeclaration::semantic(Scope *sc)
+ {
+-    ClassDeclaration *cd;
+-
++    //printf("DtorDeclaration::semantic() %s\n", toChars());
++    //printf("ident: %s, %s, %p, %p\n", ident->toChars(), Id::dtor->toChars(), ident, Id::dtor);
+     parent = sc->parent;
+     Dsymbol *parent = toParent();
+-    cd = parent->isClassDeclaration();
++    ClassDeclaration *cd = parent->isClassDeclaration();
+     if (!cd)
+     {
+-	error("destructors only are for class definitions");
++	error("destructors are only for class/struct/union definitions, not %s %s", parent->kind(), parent->toChars());
+     }
+     else
+ 	cd->dtors.push(this);
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/idgen.c
+--- a/d/dmd/idgen.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/idgen.c	Thu May 27 17:43:47 2010 -0400
+@@ -213,6 +213,10 @@
+     { "aaKeys", "_aaKeys" },
+     { "aaValues", "_aaValues" },
+     { "aaRehash", "_aaRehash" },
++    { "monitorenter", "_d_monitorenter" },
++    { "monitorexit", "_d_monitorexit" },
++    { "criticalenter", "_d_criticalenter" },
++    { "criticalexit", "_d_criticalexit" },
+ 
+     // For pragma's
+     { "GNU_asm" },
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/import.c
+--- a/d/dmd/import.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/import.c	Thu May 27 17:43:47 2010 -0400
+@@ -1,6 +1,6 @@
+ 
+ // Compiler implementation of the D programming language
+-// Copyright (c) 1999-2006 by Digital Mars
++// Copyright (c) 1999-2009 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -21,6 +21,7 @@
+ #include "mtype.h"
+ #include "declaration.h"
+ #include "id.h"
++#include "attrib.h"
+ 
+ /********************************* Import ****************************/
+ 
+@@ -28,6 +29,7 @@
+ 	int isstatic)
+     : Dsymbol(id)
+ {
++    assert(id);
+     this->loc = loc;
+     this->packages = packages;
+     this->id = id;
+@@ -90,10 +92,14 @@
+     s = dst->lookup(id);
+     if (s)
+     {
++#if TARGET_NET
++		mod = (Module *)s;
++#else
+ 	if (s->isModule())
+ 	    mod = (Module *)s;
+ 	else
+ 	    error("package and module have the same name");
++#endif
+     }
+ 
+     if (!mod)
+@@ -111,6 +117,25 @@
+     //printf("-Import::load('%s'), pkg = %p\n", toChars(), pkg);
+ }
+ 
++void escapePath(OutBuffer *buf, const char *fname)
++{
++    while (1)
++    {
++	switch (*fname)
++	{
++	    case 0:
++		return;
++	    case '(':
++	    case ')':
++	    case '\\':
++		buf->writebyte('\\');
++	    default:
++		buf->writebyte(*fname);
++		break;
++	}
++	fname++;
++    }
++}
+ 
+ void Import::semantic(Scope *sc)
+ {
+@@ -161,6 +186,76 @@
+ 	}
+ 	sc = sc->pop();
+     }
++
++    if (global.params.moduleDeps != NULL)
++    {
++	/* The grammar of the file is:
++	 *	ImportDeclaration
++	 *	    ::= BasicImportDeclaration [ " : " ImportBindList ] [ " -> "
++	 *	ModuleAliasIdentifier ] "\n"
++	 *
++	 *	BasicImportDeclaration
++	 *	    ::= ModuleFullyQualifiedName " (" FilePath ") : " Protection
++	 *		" [ " static" ] : " ModuleFullyQualifiedName " (" FilePath ")"
++	 *
++	 *	FilePath
++	 *	    - any string with '(', ')' and '\' escaped with the '\' character
++	 */
++
++	OutBuffer *ob = global.params.moduleDeps;
++
++	ob->writestring(sc->module->toPrettyChars());
++	ob->writestring(" (");
++	escapePath(ob, sc->module->srcfile->toChars());
++	ob->writestring(") : ");
++
++	ProtDeclaration::protectionToCBuffer(ob, sc->protection);
++	if (isstatic)
++	    StorageClassDeclaration::stcToCBuffer(ob, STCstatic);
++	ob->writestring(": ");
++
++	if (packages)
++	{
++	    for (size_t i = 0; i < packages->dim; i++)
++	    {
++		Identifier *pid = (Identifier *)packages->data[i];
++		ob->printf("%s.", pid->toChars());
++	    }
++	}
++
++	ob->writestring(id->toChars());
++	ob->writestring(" (");
++	if (mod)
++	    escapePath(ob, mod->srcfile->toChars());
++	else
++	    ob->writestring("???");
++	ob->writebyte(')');
++
++	for (size_t i = 0; i < names.dim; i++)
++	{
++	    if (i == 0)
++		ob->writebyte(':');
++	    else
++		ob->writebyte(',');
++
++	    Identifier *name = (Identifier *)names.data[i];
++	    Identifier *alias = (Identifier *)aliases.data[i];
++
++	    if (!alias)
++	    {
++		ob->printf("%s", name->toChars());
++		alias = name;
++	    }
++	    else
++		ob->printf("%s=%s", alias->toChars(), name->toChars());
++	}
++
++	if (aliasId)
++		ob->printf(" -> %s", aliasId->toChars());
++
++	ob->writenl();
++    }
++
+     //printf("-Import::semantic('%s'), pkg = %p\n", toChars(), pkg);
+ }
+ 
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/init.c
+--- a/d/dmd/init.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/init.c	Thu May 27 17:43:47 2010 -0400
+@@ -426,7 +426,16 @@
+ 	}
+     }
+     else
++    {
+ 	edim = value.dim;
++	for (size_t i = 0, j = 0; i < value.dim; i++, j++)
++	{
++	    if (index.data[i])
++		j = ((Expression *)index.data[i])->toInteger();
++	    if (j >= edim)
++		edim = j + 1;
++	}
++    }
+ 
+     elements = new Expressions();
+     elements->setDim(edim);
+@@ -471,7 +480,7 @@
+ Lno:
+     delete elements;
+     error(loc, "array initializers as expressions are not allowed");
+-    return NULL;
++    return new ErrorExp();
+ }
+ 
+ /********************************
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/inline.c
+--- a/d/dmd/inline.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/inline.c	Thu May 27 17:43:47 2010 -0400
+@@ -1,5 +1,5 @@
+ 
+-// Copyright (c) 1999-2008 by Digital Mars
++// Copyright (c) 1999-2009 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -846,6 +846,7 @@
+ 	condition = condition->inlineScan(iss);
+     if (increment)
+ 	increment = increment->inlineScan(iss);
++    if (body)
+     body = body->inlineScan(iss);
+     return this;
+ }
+@@ -1048,6 +1049,31 @@
+ 
+ 		if (ie)
+ 		{
++#if DMDV2
++		    if (vd->type)
++		    {	Type *tb = vd->type->toBasetype();
++			if (tb->ty == Tstruct)
++			{   StructDeclaration *sd = ((TypeStruct *)tb)->sym;
++			    if (sd->cpctor)
++			    {   /* The problem here is that if the initializer is a
++				 * function call that returns a struct S with a cpctor:
++				 *   S s = foo();
++				 * the postblit is done by the return statement in foo()
++				 * in s2ir.c, the intermediate code generator.
++				 * But, if foo() is inlined and now the code looks like:
++				 *   S s = x;
++				 * the postblit is not there, because such assignments
++				 * are rewritten as s.cpctor(&x) by the front end.
++				 * So, the inlining won't get the postblit called.
++				 * Work around by not inlining these cases.
++				 * A proper fix would be to move all the postblit
++				 * additions to the front end.
++				 */
++				return;
++			    }
++			}
++		    }
++#endif
+ 		    ie->exp = ie->exp->inlineScan(iss);
+ 		}
+ 	    }
+@@ -1368,6 +1394,20 @@
+ 	ExpInitializer *ei;
+ 	VarExp *ve;
+ 
++#if STRUCTTHISREF
++	if (ethis->type->ty == Tpointer)
++	{   Type *t = ethis->type->nextOf();
++	    ethis = new PtrExp(ethis->loc, ethis);
++	    ethis->type = t;
++	}
++	ei = new ExpInitializer(ethis->loc, ethis);
++
++	vthis = new VarDeclaration(ethis->loc, ethis->type, Id::This, ei);
++	if (ethis->type->ty != Tclass)
++	    vthis->storage_class = STCref;
++	else
++	    vthis->storage_class = STCin;
++#else
+ 	if (ethis->type->ty != Tclass && ethis->type->ty != Tpointer)
+ 	{
+ 	    ethis = ethis->addressOf(NULL);
+@@ -1377,6 +1417,7 @@
+ 
+ 	vthis = new VarDeclaration(ethis->loc, ethis->type, Id::This, ei);
+ 	vthis->storage_class = STCin;
++#endif
+ 	vthis->linkage = LINKd;
+ 	vthis->parent = iss->fd;
+ 
+@@ -1385,6 +1426,13 @@
+ 
+ 	ei->exp = new AssignExp(vthis->loc, ve, ethis);
+ 	ei->exp->type = ve->type;
++#if STRUCTTHISREF
++	if (ethis->type->ty != Tclass)
++	{   /* This is a reference initialization, not a simple assignment.
++	     */
++	    ei->exp->op = TOKconstruct;
++	}
++#endif
+ 
+ 	ids.vthis = vthis;
+     }
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/interpret.c
+--- a/d/dmd/interpret.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/interpret.c	Thu May 27 17:43:47 2010 -0400
+@@ -1,6 +1,6 @@
+ 
+ // Compiler implementation of the D programming language
+-// Copyright (c) 1999-2008 by Digital Mars
++// Copyright (c) 1999-2009 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -34,6 +34,7 @@
+     Dsymbols vars;		// variables used in this function
+     Statement *start;		// if !=NULL, start execution at this statement
+     Statement *gotoTarget;	// target of EXP_GOTO_INTERPRET result
++    Expression *localThis;	// value of 'this', or NULL if none
+ 
+     InterState();
+ };
+@@ -51,10 +52,13 @@
+  * Attempt to interpret a function given the arguments.
+  * Input:
+  *	istate	state for calling function (NULL if none)
++ *      arguments  function arguments
++ *      thisarg    'this', if a needThis() function, NULL if not.	
++ *
+  * Return result expression if successful, NULL if not.
+  */
+ 
+-Expression *FuncDeclaration::interpret(InterState *istate, Expressions *arguments)
++Expression *FuncDeclaration::interpret(InterState *istate, Expressions *arguments, Expression *thisarg)
+ {
+ #if LOG
+     printf("\n********\nFuncDeclaration::interpret(istate = %p) %s\n", istate, toChars());
+@@ -72,7 +76,7 @@
+     if (cantInterpret || semanticRun == 3)
+ 	return NULL;
+ 
+-    if (needThis() || isNested() || !fbody)
++    if (!fbody)
+     {	cantInterpret = 1;
+ 	return NULL;
+     }
+@@ -90,11 +94,13 @@
+     assert(tb->ty == Tfunction);
+     TypeFunction *tf = (TypeFunction *)tb;
+     Type *tret = tf->next->toBasetype();
+-    if (tf->varargs /*|| tret->ty == Tvoid*/)
++    if (tf->varargs)
+     {	cantInterpret = 1;
++	error("Variadic functions are not yet implemented in CTFE");
+ 	return NULL;
+     }
+ 
++    // Ensure there are no lazy parameters
+     if (tf->parameters)
+     {	size_t dim = Argument::dim(tf->parameters);
+ 	for (size_t i = 0; i < dim; i++)
+@@ -109,13 +115,20 @@
+     InterState istatex;
+     istatex.caller = istate;
+     istatex.fd = this;
++    istatex.localThis = thisarg;
+ 
+     Expressions vsave;		// place to save previous parameter values
+     size_t dim = 0;
++    if (needThis() && !thisarg)
++    {	cantInterpret = 1;
++	// error, no this. Prevent segfault.
++	error("need 'this' to access member %s", toChars());
++	return NULL;
++    }
+     if (arguments)
+     {
+ 	dim = arguments->dim;
+-	assert(!dim || parameters->dim == dim);
++	assert(!dim || (parameters && (parameters->dim == dim)));
+ 	vsave.setDim(dim);
+ 
+ 	/* Evaluate all the arguments to the function,
+@@ -144,8 +157,10 @@
+ 		}
+ 		earg = earg->interpret(istate ? istate : &istatex);
+ 		if (earg == EXP_CANT_INTERPRET)
++		{   cantInterpret = 1;
+ 		    return NULL;
+ 	    }
++	    }
+ 	    eargs.data[i] = earg;
+ 	}
+ 
+@@ -157,23 +172,36 @@
+ #if LOG
+ 	    printf("arg[%d] = %s\n", i, earg->toChars());
+ #endif
+-	    if (arg->storageClass & (STCout | STCref))
++	    if (arg->storageClass & (STCout | STCref) && earg->op==TOKvar)
+ 	    {
+ 		/* Bind out or ref parameter to the corresponding
+ 		 * variable v2
+ 		 */
+-		if (!istate || earg->op != TOKvar)
++		if (!istate)
++		{   cantInterpret = 1;
++		    error("%s cannot be by passed by reference at compile time", earg->toChars());
+ 		    return NULL;	// can't bind to non-interpreted vars
+-
++		}		
++		// We need to chase down all of the the passed parameters until
++		// we find something that isn't a TOKvar, then create a variable
++		// containg that expression.
+ 		VarDeclaration *v2;
+ 		while (1)
+ 		{
+ 		    VarExp *ve = (VarExp *)earg;
+ 		    v2 = ve->var->isVarDeclaration();
+ 		    if (!v2)
++		    {   cantInterpret = 1;
+ 			return NULL;
++		    }
+ 		    if (!v2->value || v2->value->op != TOKvar)
+ 			break;
++		    if (((VarExp *)v2->value)->var->isSymbolDeclaration())		   
++		    {	// This can happen if v is a struct initialized to
++			// 0 using an __initZ SymbolDeclaration from
++			// TypeStruct::defaultInit()
++			break; // eg default-initialized variable
++		    }
+ 		    earg = v2->value;
+ 		}
+ 
+@@ -191,8 +219,7 @@
+ 		}
+ 	    }
+ 	    else
+-	    {	/* Value parameters
+-		 */
++	    {	// Value parameters and non-trivial references
+ 		v->value = earg;
+ 	    }
+ #if LOG
+@@ -200,11 +227,22 @@
+ #endif
+ 	}
+     }
++    // Don't restore the value of 'this' upon function return
++    if (needThis() && thisarg->op==TOKvar) {
++	VarDeclaration *thisvar = ((VarExp *)(thisarg))->var->isVarDeclaration();
++    	for (size_t i = 0; i < istate->vars.dim; i++)
++	{   VarDeclaration *v = (VarDeclaration *)istate->vars.data[i];
++	    if (v == thisvar)
++	    {	istate->vars.data[i] = NULL;
++		break;
++	    }
++	}
++    }
+ 
+     /* Save the values of the local variables used
+      */
+     Expressions valueSaves;
+-    if (istate)
++    if (istate && !isNested())
+     {
+ 	//printf("saving local variables...\n");
+ 	valueSaves.setDim(istate->vars.dim);
+@@ -220,7 +258,6 @@
+     }
+ 
+     Expression *e = NULL;
+-
+     while (1)
+     {
+ 	e = fbody->interpret(&istatex);
+@@ -246,7 +283,6 @@
+ 	else
+ 	    break;
+     }
+-
+     /* Restore the parameter values
+      */
+     for (size_t i = 0; i < dim; i++)
+@@ -255,7 +291,7 @@
+ 	v->value = (Expression *)vsave.data[i];
+     }
+ 
+-    if (istate)
++    if (istate && !isNested())
+     {
+ 	/* Restore the variable values
+ 	 */
+@@ -268,7 +304,6 @@
+ 	    }
+ 	}
+     }
+-
+     return e;
+ }
+ 
+@@ -478,7 +513,7 @@
+ 	    return e;
+ 	if (e == EXP_BREAK_INTERPRET)
+ 	    return NULL;
+-	if (e != EXP_CONTINUE_INTERPRET)
++	if (e && e != EXP_CONTINUE_INTERPRET)
+ 	    return e;
+     }
+ 
+@@ -758,7 +793,7 @@
+ 
+ 	while (1)
+ 	{
+-	    e = Cmp(TOKlt, key->value->type, key->value, upr);
++	    e = Cmp(TOKlt, key->value->type, key->value, eupr);
+ 	    if (e == EXP_CANT_INTERPRET)
+ 		break;
+ 	    if (e->isBool(TRUE) == FALSE)
+@@ -773,19 +808,23 @@
+ 	    {   e = NULL;
+ 		break;
+ 	    }
+-	    e = Add(key->value->type, key->value, new IntegerExp(loc, 1, key->value->type));
++	    if (e == NULL || e == EXP_CONTINUE_INTERPRET)
++	    {	e = Add(key->value->type, key->value, new IntegerExp(loc, 1, key->value->type));
+ 	    if (e == EXP_CANT_INTERPRET)
+ 		break;
+ 	    key->value = e;
+ 	}
++	    else
++		break;
++	}
+     }
+     else // TOKforeach_reverse
+     {
+ 	key->value = eupr;
+ 
+-	while (1)
++	do
+ 	{
+-	    e = Cmp(TOKgt, key->value->type, key->value, lwr);
++	    e = Cmp(TOKgt, key->value->type, key->value, elwr);
+ 	    if (e == EXP_CANT_INTERPRET)
+ 		break;
+ 	    if (e->isBool(TRUE) == FALSE)
+@@ -805,7 +844,7 @@
+ 	    {   e = NULL;
+ 		break;
+ 	    }
+-	}
++	} while (e == NULL || e == EXP_CONTINUE_INTERPRET);
+     }
+     key->value = keysave;
+     return e;
+@@ -946,6 +985,14 @@
+     printf("type = %s\n", type->toChars());
+     dump(0);
+ #endif
++    error("Cannot interpret %s at compile time", toChars());
++    return EXP_CANT_INTERPRET;
++}
++
++Expression *ThisExp::interpret(InterState *istate)
++{
++    if (istate->localThis)
++        return istate->localThis->interpret(istate);
+     return EXP_CANT_INTERPRET;
+ }
+ 
+@@ -991,7 +1038,7 @@
+     if (v)
+     {
+ #if DMDV2
+-	if ((v->isConst() || v->isInvariant()) && v->init && !v->value)
++	if ((v->isConst() || v->isInvariant() || v->storage_class & STCmanifest) && v->init && !v->value)
+ #else
+ 	if (v->isConst() && v->init)
+ #endif
+@@ -1001,7 +1048,11 @@
+ 	}
+ 	else
+ 	{   e = v->value;
+-	    if (!e)
++	    if (v->isDataseg())
++	    {	error(loc, "static variable %s cannot be read at compile time", v->toChars());
++		e = EXP_CANT_INTERPRET;
++	    }
++	    else if (!e)
+ 		error(loc, "variable %s is used before initialization", v->toChars());
+ 	    else if (e != EXP_CANT_INTERPRET)
+ 		e = e->interpret(istate);
+@@ -1062,6 +1113,8 @@
+ 	     declaration->isTemplateMixin() ||
+ 	     declaration->isTupleDeclaration())
+     {	// These can be made to work, too lazy now
++    error("Declaration %s is not yet implemented in CTFE", toChars());
++
+ 	e = EXP_CANT_INTERPRET;
+     }
+     else
+@@ -1069,7 +1122,7 @@
+ 	e = NULL;
+     }
+ #if LOG
+-    printf("-DeclarationExp::interpret(): %p\n", e);
++    printf("-DeclarationExp::interpret(%s): %p\n", toChars(), e);
+ #endif
+     return e;
+ }
+@@ -1259,7 +1312,9 @@
+     /* We don't know how to deal with overlapping fields
+      */
+     if (sd->hasUnions)
++	{   error("Unions with overlapping fields are not yet supported in CTFE");
+ 	return EXP_CANT_INTERPRET;
++    }
+ 
+     if (elements)
+     {
+@@ -1431,6 +1486,98 @@
+ BIN_INTERPRET2(Identity)
+ BIN_INTERPRET2(Cmp)
+ 
++/* Helper functions for BinExp::interpretAssignCommon
++ */
++
++/***************************************
++ * Duplicate the elements array, then set field 'indexToChange' = newelem.
++ */
++Expressions *changeOneElement(Expressions *oldelems, size_t indexToChange, void *newelem)
++{
++    Expressions *expsx = new Expressions();
++    expsx->setDim(oldelems->dim);
++    for (size_t j = 0; j < expsx->dim; j++)
++    {
++	if (j == indexToChange)
++	    expsx->data[j] = newelem;
++	else
++	    expsx->data[j] = oldelems->data[j];
++    }
++    return expsx;
++}
++
++/***************************************
++ * Returns oldelems[0..insertpoint] ~ newelems ~ oldelems[insertpoint..$]
++ */
++Expressions *spliceElements(Expressions *oldelems,
++	Expressions *newelems, size_t insertpoint)
++{
++    Expressions *expsx = new Expressions();
++    expsx->setDim(oldelems->dim);
++    for (size_t j = 0; j < expsx->dim; j++)
++    {
++	if (j >= insertpoint && j < insertpoint + newelems->dim)
++	    expsx->data[j] = newelems->data[j - insertpoint];
++	else
++	    expsx->data[j] = oldelems->data[j];
++    }
++    return expsx;
++}
++
++/******************************
++ * Create an array literal consisting of 'elem' duplicated 'dim' times.
++ */
++ArrayLiteralExp *createBlockDuplicatedArrayLiteral(Type *type,
++	Expression *elem, size_t dim)
++{
++    Expressions *elements = new Expressions();
++    elements->setDim(dim);
++    for (size_t i = 0; i < dim; i++)
++	 elements->data[i] = elem;	
++    ArrayLiteralExp *ae = new ArrayLiteralExp(0, elements);
++    ae->type = type;
++    return ae;
++}
++
++
++/********************************
++ * Necessary because defaultInit() for a struct is a VarExp, not a StructLiteralExp.
++ */
++StructLiteralExp *createDefaultInitStructLiteral(Loc loc, StructDeclaration *sym)
++{
++    Expressions *structelems = new Expressions();
++    structelems->setDim(sym->fields.dim);
++    for (size_t j = 0; j < structelems->dim; j++)
++    {
++	structelems->data[j] = ((VarDeclaration *)(sym->fields.data[j]))->type->defaultInit();
++    }
++    StructLiteralExp *structinit = new StructLiteralExp(loc, sym, structelems);
++    // Why doesn't the StructLiteralExp constructor do this, when
++    // sym->type != NULL ?
++    structinit->type = sym->type;
++    return structinit;
++}
++
++/********************************
++ *  Add v to the istate list, unless it already exists there.
++ */
++void addVarToInterstate(InterState *istate, VarDeclaration *v)
++{
++    if (!v->isParameter())
++    {
++	for (size_t i = 0; 1; i++)
++	{
++	    if (i == istate->vars.dim)
++	    {   istate->vars.push(v);
++		//printf("\tadding %s to istate\n", v->toChars());
++		break;
++	    }
++	    if (v == (VarDeclaration *)istate->vars.data[i])
++		break;
++	}
++    }
++}
++
+ Expression *BinExp::interpretAssignCommon(InterState *istate, fp_t fp, int post)
+ {
+ #if LOG
+@@ -1452,6 +1599,39 @@
+     if (e2 == EXP_CANT_INTERPRET)
+ 	return e2;
+ 
++    // Chase down rebinding of out and ref.
++    if (e1->op == TOKvar)
++    {
++	VarExp *ve = (VarExp *)e1;
++	VarDeclaration *v = ve->var->isVarDeclaration();
++	if (v && v->value && v->value->op == TOKvar)
++	    {
++		VarExp *ve2 = (VarExp *)v->value;
++		if (ve2->var->isSymbolDeclaration())
++	    {	// This can happen if v is a struct initialized to
++		// 0 using an __initZ SymbolDeclaration from
++		// TypeStruct::defaultInit()
++		}
++		else
++		e1 = v->value;
++	}
++	else if (v && v->value && (v->value->op==TOKindex || v->value->op == TOKdotvar))
++	{
++            // It is no longer be a TOKvar, eg when a[4] is passed by ref.
++	    e1 = v->value;	    
++	}
++    }
++
++    // To reduce code complexity of handling dotvar expressions,
++    // extract the aggregate now.
++    Expression *aggregate;
++    if (e1->op == TOKdotvar) {
++        aggregate = ((DotVarExp *)e1)->e1;
++	// Get rid of 'this'.
++        if (aggregate->op == TOKthis && istate->localThis)
++            aggregate = istate->localThis;	
++	    }
++
+     /* Assignment to variable of the form:
+      *	v = e2
+      */
+@@ -1459,25 +1639,14 @@
+     {
+ 	VarExp *ve = (VarExp *)e1;
+ 	VarDeclaration *v = ve->var->isVarDeclaration();
++	assert(v);
++   	if (v && v->isDataseg())
++	{   // Can't modify global or static data
++	    error("%s cannot be modified at compile time", v->toChars());
++	    return EXP_CANT_INTERPRET;
++	}
+ 	if (v && !v->isDataseg())
+ 	{
+-	    /* Chase down rebinding of out and ref
+-	     */
+-	    if (v->value && v->value->op == TOKvar)
+-	    {
+-		VarExp *ve2 = (VarExp *)v->value;
+-		if (ve2->var->isSymbolDeclaration())
+-		{
+-		    /* This can happen if v is a struct initialized to
+-		     * 0 using an __initZ SymbolDeclaration from
+-		     * TypeStruct::defaultInit()
+-		     */
+-		}
+-		else
+-		    v = ve2->var->isVarDeclaration();
+-		assert(v);
+-	    }
+-
+ 	    Expression *ev = v->value;
+ 	    if (fp && !ev)
+ 	    {	error("variable %s is used before initialization", v->toChars());
+@@ -1494,35 +1663,42 @@
+ 		}
+ 		e2 = Cast(v->type, v->type, e2);
+ 	    }
+-	    if (e2 != EXP_CANT_INTERPRET)
+-	    {
+-		if (!v->isParameter())
+-		{
+-		    for (size_t i = 0; 1; i++)
+-		    {
+-			if (i == istate->vars.dim)
+-			{   istate->vars.push(v);
+-			    //printf("\tadding %s to istate\n", v->toChars());
+-			    break;
+-			}
+-			if (v == (VarDeclaration *)istate->vars.data[i])
+-			    break;
+-		    }
+-		}
+-		v->value = e2;
++	    if (e2 == EXP_CANT_INTERPRET)
++		return e2;
++
++	    addVarToInterstate(istate, v);		v->value = e2;
+ 		e = Cast(type, type, post ? ev : e2);
+ 	    }
+ 	}
+-    }
++    else if (e1->op == TOKdotvar && aggregate->op == TOKdotvar)
++    {	// eg  v.u.var = e2,  v[3].u.var = e2, etc.
++	error("Nested struct assignment %s is not yet supported in CTFE", toChars());    
++	}
+     /* Assignment to struct member of the form:
+-    *   v.var = e2
+-+      */
+-     else if (e1->op == TOKdotvar && ((DotVarExp *)e1)->e1->op == TOKvar)
+-     {	VarExp *ve = (VarExp *)((DotVarExp *)e1)->e1;
+- 	VarDeclaration *v = ve->var->isVarDeclaration();
+- 
++     *   v.var = e2
++     */
++    else if (e1->op == TOKdotvar && aggregate->op == TOKvar)
++    {	VarDeclaration *v = ((VarExp *)aggregate)->var->isVarDeclaration(); 
++    
+  	if (v->isDataseg())
++	{   // Can't modify global or static data
++	    error("%s cannot be modified at compile time", v->toChars());
+  	    return EXP_CANT_INTERPRET;
++	} else {
++	    // Chase down rebinding of out and ref
++	    if (v->value && v->value->op == TOKvar)
++	    {
++		VarExp *ve2 = (VarExp *)v->value;
++		if (ve2->var->isSymbolDeclaration())
++		{	// This can happen if v is a struct initialized to
++			// 0 using an __initZ SymbolDeclaration from
++			// TypeStruct::defaultInit()
++		}
++		else
++		    v = ve2->var->isVarDeclaration();
++		assert(v);
++	    }
++	}
+  	if (fp && !v->value)
+  	{   error("variable %s is used before initialization", v->toChars());
+  	    return e;
+@@ -1559,30 +1735,11 @@
+  	if (e2 == EXP_CANT_INTERPRET)
+  	    return e2;
+  
+- 	if (!v->isParameter())
+- 	{
+- 	    for (size_t i = 0; 1; i++)
+- 	    {
+- 		if (i == istate->vars.dim)
+- 		{   istate->vars.push(v);
+- 		    break;
+- 		}
+- 		if (v == (VarDeclaration *)istate->vars.data[i])
+- 		    break;
+- 	    }
+- 	}
++   	addVarToInterstate(istate, v);
+  
+  	/* Create new struct literal reflecting updated fieldi
+-+ 	 */
+- 	Expressions *expsx = new Expressions();
+- 	expsx->setDim(se->elements->dim);
+- 	for (size_t j = 0; j < expsx->dim; j++)
+- 	{
+- 	    if (j == fieldi)
+- 		expsx->data[j] = (void *)e2;
+- 	    else
+- 		expsx->data[j] = se->elements->data[j];
+- 	}
++ 	 */
++	Expressions *expsx = changeOneElement(se->elements, fieldi, e2);
+  	v->value = new StructLiteralExp(se->loc, se->sd, expsx);
+  	v->value->type = se->type;
+  
+@@ -1621,30 +1778,11 @@
+ 	if (e2 == EXP_CANT_INTERPRET)
+ 	    return e2;
+ 
+-	if (!v->isParameter())
+-	{
+-	    for (size_t i = 0; 1; i++)
+-	    {
+-		if (i == istate->vars.dim)
+-		{   istate->vars.push(v);
+-		    break;
+-		}
+-		if (v == (VarDeclaration *)istate->vars.data[i])
+-		    break;
+-	    }
+-	}
++	addVarToInterstate(istate, v);
+ 
+ 	/* Create new struct literal reflecting updated fieldi
+ 	 */
+-	Expressions *expsx = new Expressions();
+-	expsx->setDim(se->elements->dim);
+-	for (size_t j = 0; j < expsx->dim; j++)
+-	{
+-	    if (j == fieldi)
+-		expsx->data[j] = (void *)e2;
+-	    else
+-		expsx->data[j] = se->elements->data[j];
+-	}
++	Expressions *expsx = changeOneElement(se->elements, fieldi, e2);
+ 	v->value = new StructLiteralExp(se->loc, se->sd, expsx);
+ 	v->value->type = se->type;
+ 
+@@ -1657,9 +1795,23 @@
+     {	IndexExp *ie = (IndexExp *)e1;
+ 	VarExp *ve = (VarExp *)ie->e1;
+ 	VarDeclaration *v = ve->var->isVarDeclaration();
+-
+ 	if (!v || v->isDataseg())
++	{
++	    error("%s cannot be modified at compile time", v ? v->toChars(): "void");
+ 	    return EXP_CANT_INTERPRET;
++	}
++	    if (v->value && v->value->op == TOKvar)
++	    {
++		VarExp *ve2 = (VarExp *)v->value;
++		if (ve2->var->isSymbolDeclaration())
++		{	// This can happen if v is a struct initialized to
++			// 0 using an __initZ SymbolDeclaration from
++			// TypeStruct::defaultInit()
++		}
++		else
++		    v = ve2->var->isVarDeclaration();
++		assert(v);
++	    }
+ 	if (!v->value)
+ 	{
+ 	    if (fp)
+@@ -1677,15 +1829,10 @@
+ 		 * But we're too lazy at the moment to do it, as that
+ 		 * involves redoing Index() and whoever calls it.
+ 		 */
+-		Expression *ev = v->type->defaultInit();
++
+ 		size_t dim = ((TypeSArray *)t)->dim->toInteger();
+-		Expressions *elements = new Expressions();
+-		elements->setDim(dim);
+-		for (size_t i = 0; i < dim; i++)
+-		    elements->data[i] = (void *)ev;
+-		ArrayLiteralExp *ae = new ArrayLiteralExp(0, elements);
+-		ae->type = v->type;
+-		v->value = ae;
++	        v->value = createBlockDuplicatedArrayLiteral(v->type,
++			v->type->defaultInit(), dim);
+ 	    }
+ 	    else
+ 		return EXP_CANT_INTERPRET;
+@@ -1700,9 +1847,20 @@
+ 	    aae = (AssocArrayLiteralExp *)v->value;
+ 	else if (v->value->op == TOKstring)
+ 	    se = (StringExp *)v->value;
++	else if (v->value->op == TOKnull)
++	{
++	    // This would be a runtime segfault
++	    error("Cannot index null array %s", v->toChars());
++	    return EXP_CANT_INTERPRET;
++	}
+ 	else
+ 	    return EXP_CANT_INTERPRET;
+ 
++	/* Set the $ variable
++	 */
++	Expression *ee = ArrayLength(Type::tsize_t, v->value);
++	if (ee != EXP_CANT_INTERPRET && ie->lengthVar)
++	    ie->lengthVar->value = ee;
+ 	Expression *index = ie->e2->interpret(istate);
+ 	if (index == EXP_CANT_INTERPRET)
+ 	    return EXP_CANT_INTERPRET;
+@@ -1721,33 +1879,13 @@
+ 	if (e2 == EXP_CANT_INTERPRET)
+ 	    return e2;
+ 
+-	if (!v->isParameter())
+-	{
+-	    for (size_t i = 0; 1; i++)
+-	    {
+-		if (i == istate->vars.dim)
+-		{   istate->vars.push(v);
+-		    break;
+-		}
+-		if (v == (VarDeclaration *)istate->vars.data[i])
+-		    break;
+-	    }
+-	}
+-
++	addVarToInterstate(istate, v);
+ 	if (ae)
+ 	{
+ 	    /* Create new array literal reflecting updated elem
+ 	     */
+ 	    int elemi = index->toInteger();
+-	    Expressions *expsx = new Expressions();
+-	    expsx->setDim(ae->elements->dim);
+-	    for (size_t j = 0; j < expsx->dim; j++)
+-	    {
+-		if (j == elemi)
+-		    expsx->data[j] = (void *)e2;
+-		else
+-		    expsx->data[j] = ae->elements->data[j];
+-	    }
++	    Expressions *expsx = changeOneElement(ae->elements, elemi, e2);
+ 	    v->value = new ArrayLiteralExp(ae->loc, expsx);
+ 	    v->value->type = ae->type;
+ 	}
+@@ -1810,8 +1948,245 @@
+ 
+ 	e = Cast(type, type, post ? ev : e2);
+     }
++    
++    /* Assignment to struct element in array, of the form:
++     *  a[i].var = e2
++     */
++    else if (e1->op == TOKdotvar && aggregate->op == TOKindex &&
++	     ((IndexExp *)aggregate)->e1->op == TOKvar)
++    {
++        IndexExp * ie = (IndexExp *)aggregate;
++	VarExp *ve = (VarExp *)(ie->e1);
++	VarDeclaration *v = ve->var->isVarDeclaration();
++	if (!v || v->isDataseg())
++	{
++	    error("%s cannot be modified at compile time", v ? v->toChars(): "void");
++	    return EXP_CANT_INTERPRET;
++	}
++	Type *t = ve->type->toBasetype();
++	ArrayLiteralExp *ae = (ArrayLiteralExp *)v->value;
++	if (!ae)
++	{
++	    // assignment to one element in an uninitialized (static) array.
++	    // This is quite difficult, because defaultInit() for a struct is a VarExp,
++	    // not a StructLiteralExp.
++	    Type *t = v->type->toBasetype();
++	    if (t->ty != Tsarray)
++	    {
++		error("Cannot index an uninitialized variable");
++		return EXP_CANT_INTERPRET;
++	    }
++
++	    Type *telem = ((TypeSArray *)t)->nextOf()->toBasetype();
++	    if (telem->ty != Tstruct) { return EXP_CANT_INTERPRET; }
++
++	    // Create a default struct literal...
++	    StructDeclaration *sym = ((TypeStruct *)telem)->sym;
++	    StructLiteralExp *structinit = createDefaultInitStructLiteral(v->loc, sym);
++
++	    // ... and use to create a blank array literal
++	    size_t dim = ((TypeSArray *)t)->dim->toInteger();
++	    ae = createBlockDuplicatedArrayLiteral(v->type, structinit, dim);
++	    v->value = ae;
++	}
++	if ((Expression *)(ae->elements) == EXP_CANT_INTERPRET)
++	{
++	    // Note that this would be a runtime segfault
++	    error("Cannot index null array %s", v->toChars());
++	    return EXP_CANT_INTERPRET;
++	}
++	// Set the $ variable
++	Expression *ee = ArrayLength(Type::tsize_t, v->value);
++	if (ee != EXP_CANT_INTERPRET && ie->lengthVar)
++	    ie->lengthVar->value = ee;
++	// Determine the index, and check that it's OK.
++	Expression *index = ie->e2->interpret(istate);
++	if (index == EXP_CANT_INTERPRET)
++	    return EXP_CANT_INTERPRET;
++
++	int elemi = index->toInteger();
++	if (elemi >= ae->elements->dim)
++	{
++	    error("array index %d is out of bounds %s[0..%d]", elemi,
++		v->toChars(), ae->elements->dim);
++	    return EXP_CANT_INTERPRET;
++	}
++	// Get old element
++	Expression *vie = (Expression *)(ae->elements->data[elemi]);
++	if (vie->op != TOKstructliteral)
++	    return EXP_CANT_INTERPRET;
++
++	// Work out which field needs to be changed
++	StructLiteralExp *se = (StructLiteralExp *)vie;
++	VarDeclaration *vf = ((DotVarExp *)e1)->var->isVarDeclaration();
++	if (!vf)
++	    return EXP_CANT_INTERPRET;
++
++	int fieldi = se->getFieldIndex(type, vf->offset);
++	if (fieldi == -1)
++	    return EXP_CANT_INTERPRET;
++		
++	Expression *ev = se->getField(type, vf->offset);
++	if (fp)
++	    e2 = (*fp)(type, ev, e2);
++	else
++	    e2 = Cast(type, type, e2);
++	if (e2 == EXP_CANT_INTERPRET)
++	    return e2;
++
++	// Create new struct literal reflecting updated field
++	Expressions *expsx = changeOneElement(se->elements, fieldi, e2);
++	Expression * newstruct = new StructLiteralExp(se->loc, se->sd, expsx);
++
++	// Create new array literal reflecting updated struct elem
++	ae->elements = changeOneElement(ae->elements, elemi, newstruct);
++	return ae;
++    }
++    /* Slice assignment, initialization of static arrays
++     *   a[] = e
++     */
++    else if (e1->op == TOKslice && ((SliceExp *)e1)->e1->op==TOKvar)
++    {
++        SliceExp * sexp = (SliceExp *)e1;
++	VarExp *ve = (VarExp *)(sexp->e1);
++	VarDeclaration *v = ve->var->isVarDeclaration();
++	if (!v || v->isDataseg())
++	{
++	    error("%s cannot be modified at compile time", v->toChars());
++	    return EXP_CANT_INTERPRET;
++	}
++	    // Chase down rebinding of out and ref
++	    if (v->value && v->value->op == TOKvar)
++	    {
++		VarExp *ve2 = (VarExp *)v->value;
++		if (ve2->var->isSymbolDeclaration())
++		{	// This can happen if v is a struct initialized to
++			// 0 using an __initZ SymbolDeclaration from
++			// TypeStruct::defaultInit()
++		}
++		else
++		    v = ve2->var->isVarDeclaration();
++		assert(v);
++	    }
++	/* Set the $ variable
++	 */
++	Expression *ee = v->value ? ArrayLength(Type::tsize_t, v->value)
++				  : EXP_CANT_INTERPRET;
++	if (ee != EXP_CANT_INTERPRET && sexp->lengthVar)
++	    sexp->lengthVar->value = ee;
++	Expression *upper = NULL;
++	Expression *lower = NULL;
++	if (sexp->upr)
++	{
++	    upper = sexp->upr->interpret(istate);
++	    if (upper == EXP_CANT_INTERPRET)
++		return EXP_CANT_INTERPRET;
++	}
++	if (sexp->lwr)
++	{
++	    lower = sexp->lwr->interpret(istate);
++	    if (lower == EXP_CANT_INTERPRET)
++		return EXP_CANT_INTERPRET;
++	}
++	Type *t = v->type->toBasetype();
++	size_t dim;
++	if (t->ty == Tsarray)			
++	    dim = ((TypeSArray *)t)->dim->toInteger();
++	else if (t->ty == Tarray)
++	{
++	    if (!v->value || v->value->op == TOKnull)
++	    {
++		error("cannot assign to null array %s", v->toChars());
++		return EXP_CANT_INTERPRET;
++	    }
++	    if (v->value->op == TOKarrayliteral)
++		dim = ((ArrayLiteralExp *)v->value)->elements->dim;
++	    else if (v->value->op ==TOKstring)
++	    {
++		error("String slice assignment is not yet supported in CTFE");
++		return EXP_CANT_INTERPRET;
++	    }
++	}
++	else
++	{
++	    error("%s cannot be evaluated at compile time", toChars());
++	    return EXP_CANT_INTERPRET;
++	}
++	int upperbound = upper ? upper->toInteger() : dim;
++	int lowerbound = lower ? lower->toInteger() : 0;
++
++	ArrayLiteralExp *existing;
++	if (((int)lowerbound < 0) || (upperbound > dim))
++	{
++	    error("Array bounds [0..%d] exceeded in slice [%d..%d]", dim, lowerbound, upperbound);
++	    return EXP_CANT_INTERPRET;
++	}
++	if (upperbound-lowerbound != dim)
++	{
++	    // Only modifying part of the array. Must create a new array literal.
++	    // If the existing array is uninitialized (this can only happen
++	    // with static arrays), create it.
++	    if (v->value && v->value->op == TOKarrayliteral)
++		    existing = (ArrayLiteralExp *)v->value;
++	    else
++	    {
++		// this can only happen with static arrays
++		existing = createBlockDuplicatedArrayLiteral(v->type, v->type->defaultInit(), dim);
++	    }
++	}
++
++	if (e2->op == TOKarrayliteral)
++	{
++	    // Static array assignment from literal
++	    ArrayLiteralExp *ae = (ArrayLiteralExp *)e2;				
++	    if (ae->elements->dim != (upperbound - lowerbound))
++	    {
++		error("Array length mismatch assigning [0..%d] to [%d..%d]", ae->elements->dim, lowerbound, upperbound);
++		return e;
++	    }
++	    if (upperbound - lowerbound == dim)
++		v->value = ae;
++	    else
++	    {
++		// value[] = value[0..lower] ~ ae ~ value[upper..$]
++		existing->elements = spliceElements(existing->elements, ae->elements, lowerbound);
++		v->value = existing;
++	    }
++	    return e2;
++	}
++	else if (t->nextOf()->ty == e2->type->ty)
++	{
++	     // Static array block assignment
++	    if (upperbound-lowerbound ==dim)
++		v->value = createBlockDuplicatedArrayLiteral(v->type, e2, dim);
+     else
+     {
++		// value[] = value[0..lower] ~ ae ~ value[upper..$]
++		existing->elements = spliceElements(existing->elements, createBlockDuplicatedArrayLiteral(v->type, e2, upperbound-lowerbound)->elements, lowerbound);
++		v->value = existing;
++	    }				
++	    return e2;
++	}
++	else if (e2->op == TOKstring)
++	{
++	    StringExp *se = (StringExp *)e2;
++	    // This is problematic. char[8] should be storing
++	    // values as a string literal, not
++	    // as an array literal. Then, for static arrays, we
++	    // could do modifications
++	    // in-place, with a dramatic memory and speed improvement.
++	    error("String slice assignment is not yet supported in CTFE");
++	    return e2;
++	}
++	else
++	{
++	    error("Slice operation %s cannot be evaluated at compile time", toChars());
++	    return e;
++	}
++    }
++    else
++    {
++	error("%s cannot be evaluated at compile time", toChars());
+ #ifdef DEBUG
+ 	dump(0);
+ #endif
+@@ -1925,6 +2300,27 @@
+ #if LOG
+     printf("CallExp::interpret() %s\n", toChars());
+ #endif
++    if (e1->op == TOKdotvar)
++    {
++        Expression * pthis = ((DotVarExp*)e1)->e1;
++	FuncDeclaration *fd = ((DotVarExp*)e1)->var->isFuncDeclaration();
++	TypeFunction *tf = fd ? (TypeFunction *)(fd->type) : NULL;
++	if (tf)
++	{   // Member function call
++	    if(pthis->op == TOKthis)
++		pthis = istate->localThis;	    
++	    Expression *eresult = fd->interpret(istate, arguments, pthis);
++	    if (eresult)
++		e = eresult;
++	    else if (fd->type->toBasetype()->nextOf()->ty == Tvoid && !global.errors)
++		e = EXP_VOID_INTERPRET;
++	    else
++		error("cannot evaluate %s at compile time", toChars());
++	    return e;
++	} 
++	error("cannot evaluate %s at compile time", toChars());
++        return EXP_CANT_INTERPRET;
++    }
+     if (e1->op == TOKvar)
+     {
+ 	FuncDeclaration *fd = ((VarExp *)e1)->var->isFuncDeclaration();
+@@ -2157,6 +2553,17 @@
+ #if LOG
+     printf("AssertExp::interpret() %s\n", toChars());
+ #endif
++    if( this->e1->op == TOKaddress)
++    {   // Special case: deal with compiler-inserted assert(&this, "null this") 
++	AddrExp *ade = (AddrExp *)this->e1;
++	if(ade->e1->op == TOKthis && istate->localThis)   	
++	return istate->localThis->interpret(istate);
++    }
++if (this->e1->op == TOKthis)
++{
++	if(istate->localThis)   	
++	return istate->localThis->interpret(istate);
++}    
+     e1 = this->e1->interpret(istate);
+     if (e1 == EXP_CANT_INTERPRET)
+ 	goto Lcant;
+@@ -2225,6 +2632,14 @@
+ 	    }
+ 	}
+     }
++#if DMDV2
++#else // this is required for D1, where structs return *this instead of 'this'.    
++    else if (e1->op == TOKthis)
++    {
++    	if(istate->localThis)   	
++	    return istate->localThis->interpret(istate);
++    }
++#endif    
+ #if LOG
+     if (e == EXP_CANT_INTERPRET)
+ 	printf("PtrExp::interpret() %s = EXP_CANT_INTERPRET\n", toChars());
+@@ -2251,7 +2666,7 @@
+  		    e = EXP_CANT_INTERPRET;
+  		return e;
+  	    }
+- 	}
++	} else error("%s.%s is not yet implemented at compile time", ex->toChars(), var->toChars());
+      }
+  
+  #if LOG
+@@ -2280,7 +2695,9 @@
+ 
+ Expression *interpret_aaKeys(InterState *istate, Expressions *arguments)
+ {
+-    //printf("interpret_aaKeys()\n");
++#if LOG
++    printf("interpret_aaKeys()\n");
++#endif
+     if (!arguments || arguments->dim != 2)
+ 	return NULL;
+     Expression *earg = (Expression *)arguments->data[0];
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/libmach.c
+--- a/d/dmd/libmach.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/libmach.c	Thu May 27 17:43:47 2010 -0400
+@@ -151,7 +151,7 @@
+     if (nzeros < 4)
+ 	nzeros += 8;		// emulate mysterious behavior of ar
+ 
+-    size_t len = sprintf(h->object_name, "#1/%d", slen + nzeros);
++    size_t len = sprintf(h->object_name, "#1/%ld", slen + nzeros);
+     memset(h->object_name + len, ' ', OBJECT_NAME_SIZE - len);
+ 
+     /* In the following sprintf's, don't worry if the trailing 0
+@@ -178,7 +178,7 @@
+ 
+     int filesize = om->length;
+     filesize = (filesize + 7) & ~7;
+-    len = sprintf(h->file_size, "%u", slen + nzeros + filesize);
++    len = sprintf(h->file_size, "%lu", slen + nzeros + filesize);
+     assert(len <= 10);
+     memset(h->file_size + len, ' ', 10 - len);
+ 
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/machobj.c
+--- a/d/dmd/machobj.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/machobj.c	Thu May 27 17:43:47 2010 -0400
+@@ -2278,7 +2278,7 @@
+ 	    offset = (foffset + 31) & ~31;
+ 	    break;
+ 	default:
+-	    dbg_printf("size was %d\n",size);
++	    dbg_printf("size was %lu\n",size);
+ 	    assert(0);
+ 	    break;
+     }
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/mars.c
+--- a/d/dmd/mars.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/mars.c	Thu May 27 17:43:47 2010 -0400
+@@ -88,7 +88,7 @@
+     "\nMSIL back-end (alpha release) by Cristian L. Vlasceanu and associates.";
+ #endif
+     ;
+-    version = "v1.046";
++    version = "v1.047";
+     global.structalign = 8;
+ 
+     memset(&params, 0, sizeof(Param));
+@@ -690,7 +690,7 @@
+ 	}
+ 	else
+ 	{
+-#if !TARGET_LINUX && !TARGET_OSX && !TARGET_FREEBSD
++#if TARGET_WINDOS
+ 	    char *ext = FileName::ext(p);
+ 	    if (ext && FileName::compare(ext, "exe") == 0)
+ 	    {
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/mtype.c
+--- a/d/dmd/mtype.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/mtype.c	Thu May 27 17:43:47 2010 -0400
+@@ -3424,6 +3424,8 @@
+ 	}
+ 	if (t->ty == Ttuple)
+ 	    *pt = t;
++	else if (t->ty == Ttypeof)
++	    *pt = t->semantic(loc, sc);
+ 	else
+ 	    *pt = t->merge();
+     }
+@@ -3732,6 +3734,11 @@
+     toCBuffer2Helper(buf, hgs);
+ }
+ 
++void TypeTypeof::toDecoBuffer(OutBuffer *buf)
++{
++    assert(0);
++}
++
+ Type *TypeTypeof::semantic(Loc loc, Scope *sc)
+ {   Expression *e;
+     Type *t;
+@@ -4587,7 +4594,7 @@
+ 
+ char *TypeClass::toChars()
+ {
+-    return sym->toPrettyChars();
++    return (char *)sym->toPrettyChars();
+ }
+ 
+ Type *TypeClass::syntaxCopy()
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/mtype.h
+--- a/d/dmd/mtype.h	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/mtype.h	Thu May 27 17:43:47 2010 -0400
+@@ -520,6 +520,7 @@
+     Type *syntaxCopy();
+     Dsymbol *toDsymbol(Scope *sc);
+     void toCBuffer2(OutBuffer *buf, HdrGenState *hgs, int mod);
++    void toDecoBuffer(OutBuffer *buf);
+     Type *semantic(Loc loc, Scope *sc);
+     d_uns64 size(Loc loc);
+ };
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/optimize.c
+--- a/d/dmd/optimize.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/optimize.c	Thu May 27 17:43:47 2010 -0400
+@@ -322,9 +322,48 @@
+      return this;
+  }
+ 
++Expression *NewExp::optimize(int result)
++{
++    if (thisexp)
++	thisexp = thisexp->optimize(WANTvalue);
++
++    // Optimize parameters
++    if (newargs)
++    {
++	for (size_t i = 0; i < newargs->dim; i++)
++	{   Expression *e = (Expression *)newargs->data[i];
++
++	    e = e->optimize(WANTvalue);
++	    newargs->data[i] = (void *)e;
++	}
++    }
++
++    if (arguments)
++    {
++	for (size_t i = 0; i < arguments->dim; i++)
++	{   Expression *e = (Expression *)arguments->data[i];
++
++	    e = e->optimize(WANTvalue);
++	    arguments->data[i] = (void *)e;
++	}
++    }
++    return this;
++}
++
+ Expression *CallExp::optimize(int result)
+ {   Expression *e = this;
+ 
++    // Optimize parameters
++    if (arguments)
++    {
++	for (size_t i = 0; i < arguments->dim; i++)
++	{   Expression *e = (Expression *)arguments->data[i];
++
++	    e = e->optimize(WANTvalue);
++	    arguments->data[i] = (void *)e;
++	}
++    }
++
+     e1 = e1->optimize(result);
+     if (e1->op == TOKvar && result & WANTinterpret)
+     {
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/root.c
+--- a/d/dmd/root.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/root.c	Thu May 27 17:43:47 2010 -0400
+@@ -408,10 +408,12 @@
+ 			continue;
+ #endif
+ 
++#if 0
+ 		    case ' ':
+ 		    case '\t':		// tabs in filenames?
+ 			if (!instring)	// if not in string
+ 			    break;	// treat as end of path
++#endif
+ 		    default:
+ 			buf.writeByte(c);
+ 			continue;
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/statement.c
+--- a/d/dmd/statement.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/statement.c	Thu May 27 17:43:47 2010 -0400
+@@ -36,6 +36,8 @@
+ #include "template.h"
+ #include "attrib.h"
+ 
++extern int os_critsecsize();
++
+ /******************************** Statement ***************************/
+ 
+ Statement::Statement(Loc loc)
+@@ -163,7 +165,7 @@
+  *	*sfinally	code executed in finally block
+  */
+ 
+-void Statement::scopeCode(Statement **sentry, Statement **sexception, Statement **sfinally)
++void Statement::scopeCode(Scope *sc, Statement **sentry, Statement **sexception, Statement **sfinally)
+ {
+     //printf("Statement::scopeCode()\n");
+     //print();
+@@ -184,6 +186,22 @@
+ }
+ 
+ 
++/******************************** PeelStatement ***************************/
++
++PeelStatement::PeelStatement(Statement *s)
++    : Statement(s->loc)
++{
++    this->s = s;
++}
++
++Statement *PeelStatement::semantic(Scope *sc)
++{
++    /* "peel" off this wrapper, and don't run semantic()
++     * on the result.
++     */
++    return s;
++}
++
+ /******************************** ExpStatement ***************************/
+ 
+ ExpStatement::ExpStatement(Loc loc, Expression *exp)
+@@ -324,7 +342,7 @@
+     return ds;
+ }
+ 
+-void DeclarationStatement::scopeCode(Statement **sentry, Statement **sexception, Statement **sfinally)
++void DeclarationStatement::scopeCode(Scope *sc, Statement **sentry, Statement **sexception, Statement **sfinally)
+ {
+     //printf("DeclarationStatement::scopeCode()\n");
+     //print();
+@@ -342,7 +360,7 @@
+ 	    if (v)
+ 	    {	Expression *e;
+ 
+-		e = v->callAutoDtor();
++		e = v->callAutoDtor(sc);
+ 		if (e)
+ 		{
+ 		    //printf("dtor is: "); e->print();
+@@ -416,7 +434,7 @@
+ 		Statement *sexception;
+ 		Statement *sfinally;
+ 
+-		s->scopeCode(&sentry, &sexception, &sfinally);
++		s->scopeCode(sc, &sentry, &sexception, &sfinally);
+ 		if (sentry)
+ 		{
+ 		    sentry = sentry->semantic(sc);
+@@ -565,6 +583,7 @@
+  //printf("%s\n", s->toChars());
+  	    if (!(result & BEfallthru) && !s->comeFrom())
+ 	    {
++		if (s->blockExit() != BEhalt)
+  		s->warning("statement is not reachable");
+  	    }
+  
+@@ -824,7 +843,7 @@
+ 	    Statement *sexception;
+ 	    Statement *sfinally;
+ 
+-	    statement->scopeCode(&sentry, &sexception, &sfinally);
++	    statement->scopeCode(sc, &sentry, &sexception, &sfinally);
+ 	    if (sfinally)
+ 	    {
+ 		//printf("adding sfinally\n");
+@@ -895,46 +914,12 @@
+ 
+ Statement *WhileStatement::semantic(Scope *sc)
+ {
+-#if 0
+-    if (condition->op == TOKmatch)
+-    {
+-	/* Rewrite while (condition) body as:
+-	 *   if (condition)
+-	 *     do
+-	 *       body
+-	 *     while ((_match = _match.opNext), _match);
+-	 */
+-
+-	Expression *ew = new IdentifierExp(0, Id::_match);
+-	ew = new DotIdExp(0, ew, Id::next);
+-	ew = new AssignExp(0, new IdentifierExp(0, Id::_match), ew);
+-	////ew = new EqualExp(TOKnotequal, 0, ew, new NullExp(0));
+-	Expression *ev = new IdentifierExp(0, Id::_match);
+-	//ev = new CastExp(0, ev, Type::tvoidptr);
+-	ew = new CommaExp(0, ew, ev);
+-	Statement *sw = new DoStatement(loc, body, ew);
+-	Statement *si = new IfStatement(loc, condition, sw, NULL);
+-	return si->semantic(sc);
+-    }
+-#endif
+-
+-    condition = condition->semantic(sc);
+-    condition = resolveProperties(sc, condition);
+-    condition = condition->optimize(WANTvalue);
+-    condition = condition->checkToBoolean();
+-
+-    sc->noctor++;
+-
+-    Scope *scd = sc->push();
+-    scd->sbreak = this;
+-    scd->scontinue = this;
+-    if (body)
+-	body = body->semantic(scd);
+-    scd->pop();
+-
+-    sc->noctor--;
+-
+-    return this;
++    /* Rewrite as a for(;condition;) loop
++     */
++
++    Statement *s = new ForStatement(loc, NULL, condition, NULL, body);
++    s = s->semantic(sc);
++    return s;
+ }
+ 
+ int WhileStatement::hasBreak()
+@@ -949,11 +934,13 @@
+ 
+ int WhileStatement::usesEH()
+ {
++    assert(0);
+     return body ? body->usesEH() : 0;
+ }
+ 
+ int WhileStatement::blockExit()
+ {
++    assert(0);
+      //printf("WhileStatement::blockExit(%p)\n", this);
+  
+      int result = BEnone;
+@@ -984,6 +971,7 @@
+ 
+ int WhileStatement::comeFrom()
+ {
++    assert(0);
+     if (body)
+ 	return body->comeFrom();
+     return FALSE;
+@@ -1147,14 +1135,14 @@
+     return this;
+ }
+ 
+-void ForStatement::scopeCode(Statement **sentry, Statement **sexception, Statement **sfinally)
++void ForStatement::scopeCode(Scope *sc, Statement **sentry, Statement **sexception, Statement **sfinally)
+ {
+     //printf("ForStatement::scopeCode()\n");
+     //print();
+     if (init)
+-	init->scopeCode(sentry, sexception, sfinally);
++	init->scopeCode(sc, sentry, sexception, sfinally);
+     else
+-	Statement::scopeCode(sentry, sexception, sfinally);
++	Statement::scopeCode(sc, sentry, sexception, sfinally);
+ }
+ 
+ int ForStatement::hasBreak()
+@@ -1184,6 +1172,10 @@
+      if (condition)
+      {	if (condition->canThrow())
+  	    result |= BEthrow;
++	if (condition->isBool(TRUE))
++	    result &= ~BEfallthru;
++	else if (condition->isBool(FALSE))
++	    return result;
+      }
+      else
+  	result &= ~BEfallthru;	// the body must do the exiting
+@@ -1450,29 +1442,79 @@
+ 	    for (size_t i = 0; i < dim; i++)
+ 	    {	// Declare args
+ 		Argument *arg = (Argument *)arguments->data[i];
++		Type *argtype = arg->type->semantic(loc, sc);
+ 		VarDeclaration *var;
+ 
+-		var = new VarDeclaration(loc, arg->type, arg->ident, NULL);
++		var = new VarDeclaration(loc, argtype, arg->ident, NULL);
+ 		var->storage_class |= STCforeach;
+ 		var->storage_class |= arg->storageClass & (STCin | STCout | STCref);
+-#if 1
+-		DeclarationExp *de = new DeclarationExp(loc, var);
+-		de->semantic(sc);
+-#else
+-		var->semantic(sc);
+-		if (!sc->insert(var))
+-		    error("%s already defined", var->ident->toChars());
+-#endif
++
+ 		if (dim == 2 && i == 0)
+ 		    key = var;
+ 		else
+ 		    value = var;
++#if 0
++		DeclarationExp *de = new DeclarationExp(loc, var);
++		de->semantic(sc);
++#endif
+ 	    }
+ 
+-	    sc->sbreak = this;
+-	    sc->scontinue = this;
+-	    body = body->semantic(sc);
+-
++#if 1
++	{
++	     /* Convert to a ForStatement
++	      *   foreach (key, value; a) body =>
++	      *   for (T[] tmp = a[], size_t key; key < tmp.length; ++key)
++	      *   { T value = tmp[k]; body }
++	      *
++	      *   foreach_reverse (key, value; a) body =>
++	      *   for (T[] tmp = a[], size_t key = tmp.length; key--; )
++	      *   { T value = tmp[k]; body }
++	      */
++	    Identifier *id = Lexer::uniqueId("__aggr");
++	    ExpInitializer *ie = new ExpInitializer(loc, new SliceExp(loc, aggr, NULL, NULL));
++	    VarDeclaration *tmp = new VarDeclaration(loc, aggr->type->nextOf()->arrayOf(), id, ie);
++
++	    Expression *tmp_length = new DotIdExp(loc, new VarExp(loc, tmp), Id::length);
++
++	    if (!key)
++	    {
++		Identifier *id = Lexer::uniqueId("__key");
++		key = new VarDeclaration(loc, Type::tsize_t, id, NULL);
++	    }
++	    if (op == TOKforeach_reverse)
++		key->init = new ExpInitializer(loc, tmp_length);
++	    else
++		key->init = new ExpInitializer(loc, new IntegerExp(0));
++
++	    Statements *cs = new Statements();
++	    cs->push(new DeclarationStatement(loc, new DeclarationExp(loc, tmp)));
++	    cs->push(new DeclarationStatement(loc, new DeclarationExp(loc, key)));
++	    Statement *forinit = new CompoundDeclarationStatement(loc, cs);
++
++	    Expression *cond;
++	    if (op == TOKforeach_reverse)
++		// key--
++		cond = new PostExp(TOKminusminus, loc, new VarExp(loc, key));
++	    else
++		// key < tmp.length
++		cond = new CmpExp(TOKlt, loc, new VarExp(loc, key), tmp_length);
++
++	    Expression *increment = NULL;
++	    if (op == TOKforeach)
++		// key += 1
++		increment = new AddAssignExp(loc, new VarExp(loc, key), new IntegerExp(1));
++
++	    // T value = tmp[key];
++	    value->init = new ExpInitializer(loc, new IndexExp(loc, new VarExp(loc, tmp), new VarExp(loc, key)));
++	    Statement *ds = new DeclarationStatement(loc, new DeclarationExp(loc, value));
++
++	    body = new CompoundStatement(loc, ds, body);
++
++	    ForStatement *fs = new ForStatement(loc, forinit, cond, increment, body);
++	    s = fs->semantic(sc);
++	    break;
++	}
++#else
+ 	    if (!value->type->equals(tab->next))
+ 	    {
+ 		if (aggr->op == TOKstring)
+@@ -1482,7 +1524,9 @@
+  			tab->toChars(), value->type->toChars());
+ 	    }
+ 
+-	    if (key && key->type->ty != Tint32 && key->type->ty != Tuns32)
++	    if (key)
++	    {
++		if (key->type->ty != Tint32 && key->type->ty != Tuns32)
+ 	    {
+ 	    if (global.params.isX86_64)
+  		{
+@@ -1493,9 +1537,15 @@
+ 		error("foreach: key type must be int or uint, not %s", key->type->toChars());
+ 	    }
+ 
+-	    if (key && key->storage_class & (STCout | STCref))
++		if (key->storage_class & (STCout | STCref))
+ 		error("foreach: key cannot be out or ref");
++	    }
++
++	    sc->sbreak = this;
++	    sc->scontinue = this;
++	    body = body->semantic(sc);
+ 	    break;
++#endif
+ 
+ 	case Taarray:
+ 	    taa = (TypeAArray *)tab;
+@@ -1514,14 +1564,14 @@
+ 	case Tstruct:
+ 	#if DMDV2
+  	{   /* Look for range iteration, i.e. the properties
+-+ 	     * .empty, .next, .retreat, .head and .rear
+-+ 	     *    foreach (e; range) { ... }
+-+ 	     * translates to:
+-+ 	     *    for (auto __r = range; !__r.empty; __r.next)
+-+ 	     *    {   auto e = __r.head;
+-+ 	     *        ...
+-+ 	     *    }
+-+ 	     */
++ 	     * .empty, .next, .retreat, .head and .rear
++ 	     *    foreach (e; aggr) { ... }
++ 	     * translates to:
++ 	     *    for (auto __r = aggr[]; !__r.empty; __r.next)
++ 	     *    {   auto e = __r.head;
++ 	     *        ...
++ 	     *    }
++ 	     */
+  	    if (dim != 1)	// only one argument allowed with ranges
+  		goto Lapply;
+  	    AggregateDeclaration *ad = (tab->ty == Tclass)
+@@ -1534,7 +1584,7 @@
+  		idnext = Id::Fnext;
+  	    }
+  	    else
+- 	    {	idhead = Id::Frear;
++	    {	idhead = Id::Ftoe;
+  		idnext = Id::Fretreat;
+  	    }
+  	    Dsymbol *shead = search_function(ad, idhead);
+@@ -1544,9 +1594,15 @@
+  	    /* Generate a temporary __r and initialize it with the aggregate.
+ + 	     */
+  	    Identifier *id = Identifier::generateId("__r");
+- 	    VarDeclaration *r = new VarDeclaration(loc, NULL, id, new ExpInitializer(loc, aggr));
+- 	    r->semantic(sc);
++	    Expression *rinit = new SliceExp(loc, aggr, NULL, NULL);
++	    rinit = rinit->trySemantic(sc);
++	    if (!rinit)			// if application of [] failed
++		rinit = aggr;
++	    VarDeclaration *r = new VarDeclaration(loc, NULL, id, new ExpInitializer(loc, rinit));
++//	    r->semantic(sc);
++//printf("r: %s, init: %s\n", r->toChars(), r->init->toChars());
+  	    Statement *init = new DeclarationStatement(loc, r);
++//printf("init: %s\n", init->toChars());
+  
+  	    // !__r.empty
+  	    Expression *e = new VarExp(loc, r);
+@@ -1562,11 +1618,11 @@
+ + 	     */
+  	    e = new VarExp(loc, r);
+  	    Expression *einit = new DotIdExp(loc, e, idhead);
+- 	    einit = einit->semantic(sc);
++//	    einit = einit->semantic(sc);
+  	    Argument *arg = (Argument *)arguments->data[0];
+  	    VarDeclaration *ve = new VarDeclaration(loc, arg->type, arg->ident, new ExpInitializer(loc, einit));
+  	    ve->storage_class |= STCforeach;
+- 	    ve->storage_class |= arg->storageClass & (STCin | STCout | STCref | STCconst | STCinvariant);
++	    ve->storage_class |= arg->storageClass & (STCin | STCout | STCref | STC_TYPECTOR);
+  
+  	    DeclarationExp *de = new DeclarationExp(loc, ve);
+  
+@@ -1574,6 +1630,12 @@
+  		new DeclarationStatement(loc, de), this->body);
+ 
+  	    s = new ForStatement(loc, init, condition, increment, body);
++#if 0
++	    printf("init: %s\n", init->toChars());
++	    printf("condition: %s\n", condition->toChars());
++	    printf("increment: %s\n", increment->toChars());
++	    printf("body: %s\n", body->toChars());
++#endif
+  	    s = s->semantic(sc);
+  	    break;
+  	}
+@@ -1712,7 +1774,7 @@
+ 		    default:		assert(0);
+ 		}
+ 		const char *r = (op == TOKforeach_reverse) ? "R" : "";
+-		int j = sprintf(fdname, "_aApply%s%.*s%d", r, 2, fntab[flag], dim);
++		int j = sprintf(fdname, "_aApply%s%.*s%ld", r, 2, fntab[flag], dim);
+ 		assert(j < sizeof(fdname));
+ 		fdapply = FuncDeclaration::genCfunc(Type::tint32, fdname,
+ 		    Type::tvoid->arrayOf(), flde->type); // flde->type is not generic
+@@ -1784,6 +1846,7 @@
+ 
+ 	default:
+ 	    error("foreach: %s is not an aggregate type", aggr->type->toChars());
++	    s = NULL;	// error recovery
+ 	    break;
+     }
+     sc->noctor--;
+@@ -1819,6 +1882,7 @@
+      return result;
+  }
+ 
++
+ int ForeachStatement::comeFrom()
+ {
+     if (body)
+@@ -1855,6 +1919,216 @@
+     buf->writenl();
+ }
+ 
++/**************************** ForeachRangeStatement ***************************/
++
++#if DMDV2
++
++ForeachRangeStatement::ForeachRangeStatement(Loc loc, enum TOK op, Argument *arg,
++	Expression *lwr, Expression *upr, Statement *body)
++    : Statement(loc)
++{
++    this->op = op;
++    this->arg = arg;
++    this->lwr = lwr;
++    this->upr = upr;
++    this->body = body;
++
++    this->key = NULL;
++}
++
++Statement *ForeachRangeStatement::syntaxCopy()
++{
++    ForeachRangeStatement *s = new ForeachRangeStatement(loc, op,
++	arg->syntaxCopy(),
++	lwr->syntaxCopy(),
++	upr->syntaxCopy(),
++	body ? body->syntaxCopy() : NULL);
++    return s;
++}
++
++Statement *ForeachRangeStatement::semantic(Scope *sc)
++{
++    //printf("ForeachRangeStatement::semantic() %p\n", this);
++    ScopeDsymbol *sym;
++    Statement *s = this;
++
++    lwr = lwr->semantic(sc);
++    lwr = resolveProperties(sc, lwr);
++    lwr = lwr->optimize(WANTvalue);
++    if (!lwr->type)
++    {
++	error("invalid range lower bound %s", lwr->toChars());
++	return this;
++    }
++
++    upr = upr->semantic(sc);
++    upr = resolveProperties(sc, upr);
++    upr = upr->optimize(WANTvalue);
++    if (!upr->type)
++    {
++	error("invalid range upper bound %s", upr->toChars());
++	return this;
++    }
++
++    if (arg->type)
++    {
++	arg->type = arg->type->semantic(loc, sc);
++	lwr = lwr->implicitCastTo(sc, arg->type);
++	upr = upr->implicitCastTo(sc, arg->type);
++    }
++    else
++    {
++	/* Must infer types from lwr and upr
++	 */
++	AddExp ea(loc, lwr, upr);
++	ea.typeCombine(sc);
++	arg->type = ea.type->mutableOf();
++	lwr = ea.e1;
++	upr = ea.e2;
++    }
++#if 1
++    /* Convert to a for loop:
++     *	foreach (key; lwr .. upr) =>
++     *	for (auto key = lwr, auto tmp = upr; key < tmp; ++key)
++     *
++     *	foreach_reverse (key; lwr .. upr) =>
++     *	for (auto tmp = lwr, auto key = upr; key-- > tmp;)
++     */
++
++    ExpInitializer *ie = new ExpInitializer(loc, (op == TOKforeach) ? lwr : upr);
++    key = new VarDeclaration(loc, arg->type, arg->ident, ie);
++
++    Identifier *id = Lexer::uniqueId("__limit");
++    ie = new ExpInitializer(loc, (op == TOKforeach) ? upr : lwr);
++    VarDeclaration *tmp = new VarDeclaration(loc, arg->type, id, ie);
++
++    Statements *cs = new Statements();
++    // Keep order of evaluation as lwr, then upr
++    if (op == TOKforeach)
++    {
++	cs->push(new DeclarationStatement(loc, new DeclarationExp(loc, key)));
++	cs->push(new DeclarationStatement(loc, new DeclarationExp(loc, tmp)));
++    }
++    else
++    {
++	cs->push(new DeclarationStatement(loc, new DeclarationExp(loc, tmp)));
++	cs->push(new DeclarationStatement(loc, new DeclarationExp(loc, key)));
++    }
++    Statement *forinit = new CompoundDeclarationStatement(loc, cs);
++
++    Expression *cond;
++    if (op == TOKforeach_reverse)
++    {	// key-- > tmp
++	cond = new PostExp(TOKminusminus, loc, new VarExp(loc, key));
++	cond = new CmpExp(TOKgt, loc, cond, new VarExp(loc, tmp));
++    }
++    else
++	// key < tmp
++	cond = new CmpExp(TOKlt, loc, new VarExp(loc, key), new VarExp(loc, tmp));
++
++    Expression *increment = NULL;
++    if (op == TOKforeach)
++	// key += 1
++	increment = new AddAssignExp(loc, new VarExp(loc, key), new IntegerExp(1));
++
++    ForStatement *fs = new ForStatement(loc, forinit, cond, increment, body);
++    s = fs->semantic(sc);
++    return s;
++#else
++    if (!arg->type->isscalar())
++	error("%s is not a scalar type", arg->type->toChars());
++
++    sym = new ScopeDsymbol();
++    sym->parent = sc->scopesym;
++    sc = sc->push(sym);
++
++    sc->noctor++;
++
++    key = new VarDeclaration(loc, arg->type, arg->ident, NULL);
++    DeclarationExp *de = new DeclarationExp(loc, key);
++    de->semantic(sc);
++
++    if (key->storage_class)
++	error("foreach range: key cannot have storage class");
++
++    sc->sbreak = this;
++    sc->scontinue = this;
++    body = body->semantic(sc);
++
++    sc->noctor--;
++    sc->pop();
++    return s;
++#endif
++}
++
++int ForeachRangeStatement::hasBreak()
++{
++    return TRUE;
++}
++
++int ForeachRangeStatement::hasContinue()
++{
++    return TRUE;
++}
++
++int ForeachRangeStatement::usesEH()
++{
++    assert(0);
++    return body->usesEH();
++}
++
++int ForeachRangeStatement::blockExit()
++{
++    assert(0);
++    int result = BEfallthru;
++
++    if (lwr && lwr->canThrow())
++	result |= BEthrow;
++    else if (upr && upr->canThrow())
++	result |= BEthrow;
++
++    if (body)
++    {
++	result |= body->blockExit() & ~(BEbreak | BEcontinue);
++    }
++    return result;
++}
++
++
++int ForeachRangeStatement::comeFrom()
++{
++    assert(0);
++    if (body)
++	return body->comeFrom();
++    return FALSE;
++}
++
++void ForeachRangeStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
++{
++    buf->writestring(Token::toChars(op));
++    buf->writestring(" (");
++
++    if (arg->type)
++	arg->type->toCBuffer(buf, arg->ident, hgs);
++    else
++	buf->writestring(arg->ident->toChars());
++
++    buf->writestring("; ");
++    lwr->toCBuffer(buf, hgs);
++    buf->writestring(" .. ");
++    upr->toCBuffer(buf, hgs);
++    buf->writebyte(')');
++    buf->writenl();
++    buf->writebyte('{');
++    buf->writenl();
++    if (body)
++	body->toCBuffer(buf, hgs);
++    buf->writebyte('}');
++    buf->writenl();
++}
++
++#endif
++
+ /******************************** IfStatement ***************************/
+ 
+ IfStatement::IfStatement(Loc loc, Argument *arg, Expression *condition, Statement *ifbody, Statement *elsebody)
+@@ -1977,6 +2251,7 @@
+  }
+ 
+ 
++
+ void IfStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("if (");
+@@ -2129,7 +2404,7 @@
+                 if (e->op == TOKstring)
+                 {
+                     StringExp *se = (StringExp *)e;
+-                    fprintf(stdmsg, "%.*s", (int)se->len, se->string);
++                    fprintf(stdmsg, "%.*s", (int)se->len, (char *)se->string);
+                 }
+                 else
+ 		    error("string expected for message, not '%s'", e->toChars());
+@@ -2167,6 +2442,28 @@
+ 	}
+ 	#endif
+     }
++#if DMDV2
++    else if (ident == Id::startaddress)
++    {
++	if (!args || args->dim != 1)
++	    error("function name expected for start address");
++	else
++	{
++	    Expression *e = (Expression *)args->data[0];
++	    e = e->semantic(sc);
++	    e = e->optimize(WANTvalue | WANTinterpret);
++	    args->data[0] = (void *)e;
++	    Dsymbol *sa = getDsymbol(e);
++	    if (!sa || !sa->isFuncDeclaration())
++		error("function name expected for start address, not '%s'", e->toChars());
++	    if (body)
++	    {
++		body = body->semantic(sc);
++	    }
++	    return this;
++	}
++    }
++#endif
+     else
+         error("unrecognized pragma(%s)", ident->toChars());
+ 
+@@ -2194,6 +2491,7 @@
+     return result;
+  }
+ 
++
+ void PragmaStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("pragma (");
+@@ -2355,6 +2653,37 @@
+ 	body = cs;
+     }
+ 
++#if DMDV2
++    if (isFinal)
++    {	Type *t = condition->type;
++	while (t->ty == Ttypedef)
++	{   // Don't use toBasetype() because that will skip past enums
++	    t = ((TypeTypedef *)t)->sym->basetype;
++	}
++	if (condition->type->ty == Tenum)
++	{   TypeEnum *te = (TypeEnum *)condition->type;
++	    EnumDeclaration *ed = te->toDsymbol(sc)->isEnumDeclaration();
++	    assert(ed);
++	    size_t dim = ed->members->dim;
++	    for (size_t i = 0; i < dim; i++)
++	    {
++		EnumMember *em = ((Dsymbol *)ed->members->data[i])->isEnumMember();
++		if (em)
++		{
++		    for (size_t j = 0; j < cases->dim; j++)
++		    {   CaseStatement *cs = (CaseStatement *)cases->data[j];
++			if (cs->exp->equals(em->value))
++			    goto L1;
++		    }
++		    error("enum member %s not represented in final switch", em->toChars());
++		}
++	      L1:
++		;
++	    }
++	}
++    }
++#endif
++
+     sc->pop();
+     return this;
+ }
+@@ -2387,6 +2716,7 @@
+      return result;
+  }
+ 
++
+ void SwitchStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("switch (");
+@@ -2490,6 +2820,7 @@
+      return statement->blockExit();
+  }
+ 
++
+ int CaseStatement::comeFrom()
+ {
+     return TRUE;
+@@ -2504,6 +2835,85 @@
+     statement->toCBuffer(buf, hgs);
+ }
+ 
++/******************************** CaseRangeStatement ***************************/
++
++#if DMDV2
++
++CaseRangeStatement::CaseRangeStatement(Loc loc, Expression *first,
++	Expression *last, Statement *s)
++    : Statement(loc)
++{
++    this->first = first;
++    this->last = last;
++    this->statement = s;
++}
++
++Statement *CaseRangeStatement::syntaxCopy()
++{
++    CaseRangeStatement *s = new CaseRangeStatement(loc,
++	first->syntaxCopy(), last->syntaxCopy(), statement->syntaxCopy());
++    return s;
++}
++
++Statement *CaseRangeStatement::semantic(Scope *sc)
++{   SwitchStatement *sw = sc->sw;
++
++    //printf("CaseRangeStatement::semantic() %s\n", toChars());
++    if (sw->isFinal)
++	error("case ranges not allowed in final switch");
++
++    first = first->semantic(sc);
++    first = first->implicitCastTo(sc, sw->condition->type);
++    first = first->optimize(WANTvalue | WANTinterpret);
++    dinteger_t fval = first->toInteger();
++
++    last = last->semantic(sc);
++    last = last->implicitCastTo(sc, sw->condition->type);
++    last = last->optimize(WANTvalue | WANTinterpret);
++    dinteger_t lval = last->toInteger();
++
++    if (lval - fval > 256)
++    {	error("more than 256 cases in case range");
++	lval = fval + 256;
++    }
++
++    /* This works by replacing the CaseRange with an array of Case's.
++     *
++     * case a: .. case b: s;
++     *    =>
++     * case a:
++     *   [...]
++     * case b:
++     *   s;
++     */
++
++    Statements *statements = new Statements();
++    for (dinteger_t i = fval; i <= lval; i++)
++    {
++	Statement *s = statement;
++	if (i != lval)
++	    s = new ExpStatement(loc, NULL);
++	Expression *e = new IntegerExp(loc, i, first->type);
++	Statement *cs = new CaseStatement(loc, e, s);
++	statements->push(cs);
++    }
++    Statement *s = new CompoundStatement(loc, statements);
++    s = s->semantic(sc);
++    return s;
++}
++
++void CaseRangeStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
++{
++    buf->writestring("case ");
++    first->toCBuffer(buf, hgs);
++    buf->writestring(": .. case ");
++    last->toCBuffer(buf, hgs);
++    buf->writenl();
++    statement->toCBuffer(buf, hgs);
++}
++
++#endif
++
+ /******************************** DefaultStatement ***************************/
+ 
+ DefaultStatement::DefaultStatement(Loc loc, Statement *s)
+@@ -2548,6 +2958,7 @@
+      return statement->blockExit();
+  }
+ 
++
+ int DefaultStatement::comeFrom()
+ {
+     return TRUE;
+@@ -2586,6 +2997,7 @@
+      return BEgoto;
+  }
+  
++
+ void GotoDefaultStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("goto default;\n");
+@@ -2631,6 +3043,7 @@
+      return BEgoto;
+  }
+ 
++
+ void GotoCaseStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("goto case");
+@@ -2654,6 +3067,7 @@
+      return BEthrow;
+  }
+ 
++
+ void SwitchErrorStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("SwitchErrorStatement::toCBuffer()");
+@@ -2747,7 +3161,9 @@
+ 		fd->nrvo_can = 0;
+ 	    else if (fd->nrvo_var == NULL)
+ 	    {	if (!v->isDataseg() && !v->isParameter() && v->toParent2() == fd)
++		{   //printf("Setting nrvo to %s\n", v->toChars());
+ 		    fd->nrvo_var = v;
++		}
+ 		else
+ 		    fd->nrvo_can = 0;
+ 	    }
+@@ -2852,6 +3268,7 @@
+ 
+ 	    // Construct: { vresult = exp; return cases.dim + 1; }
+ 	    exp = new AssignExp(loc, new VarExp(0, fd->vresult), exp);
++	    exp->op = TOKconstruct;
+ 	    exp = exp->semantic(sc);
+ 	    Statement *s1 = new ExpStatement(loc, exp);
+  	    Statement *s2 = new ReturnStatement(0, new IntegerExp(sc->fes->cases.dim + 1));
+@@ -2868,6 +3285,7 @@
+ 	    VarExp *v = new VarExp(0, fd->vresult);
+ 
+ 	    exp = new AssignExp(loc, v, exp);
++	    exp->op = TOKconstruct;
+ 	    exp = exp->semantic(sc);
+ 	}
+ 	//exp->dump(0);
+@@ -2928,6 +3346,7 @@
+      return result;
+  }
+ 
++
+ void ReturnStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->printf("return ");
+@@ -3018,6 +3437,7 @@
+      return ident ? BEgoto : BEbreak;
+  }
+ 
++
+ void BreakStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("break");
+@@ -3117,6 +3537,7 @@
+      return ident ? BEgoto : BEcontinue;
+  }
+ 
++
+ void ContinueStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("continue");
+@@ -3156,21 +3577,87 @@
+ Statement *SynchronizedStatement::semantic(Scope *sc)
+ {
+     if (exp)
+-    {	ClassDeclaration *cd;
+-
++    {
+ 	exp = exp->semantic(sc);
+ 	exp = resolveProperties(sc, exp);
+-	cd = exp->type->isClassHandle();
++	ClassDeclaration *cd = exp->type->isClassHandle();
+ 	if (!cd)
+ 	    error("can only synchronize on class objects, not '%s'", exp->type->toChars());
+ 	else if (cd->isInterfaceDeclaration())
+-	{   Type *t = new TypeIdentifier(0, Id::Object);
++	{   /* Cast the interface to an object, as the object has the monitor,
++	     * not the interface.
++	     */
++	    Type *t = new TypeIdentifier(0, Id::Object);
+ 
+ 	    t = t->semantic(0, sc);
+ 	    exp = new CastExp(loc, exp, t);
+ 	    exp = exp->semantic(sc);
+ 	}
++
++#if 1
++	/* Rewrite as:
++	 *  auto tmp = exp;
++	 *  _d_monitorenter(tmp);
++	 *  try { body } finally { _d_monitorexit(tmp); }
++	 */
++	Identifier *id = Lexer::uniqueId("__sync");
++	ExpInitializer *ie = new ExpInitializer(loc, exp);
++	VarDeclaration *tmp = new VarDeclaration(loc, exp->type, id, ie);
++
++	Statements *cs = new Statements();
++	cs->push(new DeclarationStatement(loc, new DeclarationExp(loc, tmp)));
++
++	FuncDeclaration *fdenter = FuncDeclaration::genCfunc(Type::tvoid, Id::monitorenter);
++	Expression *e = new CallExp(loc, new VarExp(loc, fdenter), new VarExp(loc, tmp));
++	e->type = Type::tvoid;			// do not run semantic on e
++	cs->push(new ExpStatement(loc, e));
++
++	FuncDeclaration *fdexit = FuncDeclaration::genCfunc(Type::tvoid, Id::monitorexit);
++	e = new CallExp(loc, new VarExp(loc, fdexit), new VarExp(loc, tmp));
++	e->type = Type::tvoid;			// do not run semantic on e
++	Statement *s = new ExpStatement(loc, e);
++	s = new TryFinallyStatement(loc, body, s);
++	cs->push(s);
++
++	s = new CompoundStatement(loc, cs);
++	return s->semantic(sc);
++#endif
+     }
++#if 1
++    else
++    {	/* Generate our own critical section, then rewrite as:
++	 *  __gshared byte[CriticalSection.sizeof] critsec;
++	 *  _d_criticalenter(critsec.ptr);
++	 *  try { body } finally { _d_criticalexit(critsec.ptr); }
++	 */
++	Identifier *id = Lexer::uniqueId("__critsec");
++	Type *t = new TypeSArray(Type::tint8, new IntegerExp(PTRSIZE +  os_critsecsize()));
++	VarDeclaration *tmp = new VarDeclaration(loc, t, id, NULL);
++	tmp->storage_class |= STCgshared | STCstatic;
++
++	Statements *cs = new Statements();
++	cs->push(new DeclarationStatement(loc, new DeclarationExp(loc, tmp)));
++
++	FuncDeclaration *fdenter = FuncDeclaration::genCfunc(Type::tvoid, Id::criticalenter);
++	Expression *e = new DotIdExp(loc, new VarExp(loc, tmp), Id::ptr);
++	e = e->semantic(sc);
++	e = new CallExp(loc, new VarExp(loc, fdenter), e);
++	e->type = Type::tvoid;			// do not run semantic on e
++	cs->push(new ExpStatement(loc, e));
++
++	FuncDeclaration *fdexit = FuncDeclaration::genCfunc(Type::tvoid, Id::criticalexit);
++	e = new DotIdExp(loc, new VarExp(loc, tmp), Id::ptr);
++	e = e->semantic(sc);
++	e = new CallExp(loc, new VarExp(loc, fdexit), e);
++	e->type = Type::tvoid;			// do not run semantic on e
++	Statement *s = new ExpStatement(loc, e);
++	s = new TryFinallyStatement(loc, body, s);
++	cs->push(s);
++
++	s = new CompoundStatement(loc, cs);
++	return s->semantic(sc);
++    }
++#endif
+     if (body)
+ 	body = body->semantic(sc);
+     return this;
+@@ -3196,6 +3683,7 @@
+      return body ? body->blockExit() : BEfallthru;
+  }
+ 
++
+ void SynchronizedStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("synchronized");
+@@ -3313,6 +3801,7 @@
+      return result;
+  }
+ 
++
+ /******************************** TryCatchStatement ***************************/
+ 
+ TryCatchStatement::TryCatchStatement(Loc loc, Statement *body, Array *catches)
+@@ -3371,10 +3860,9 @@
+ }
+ 
+ int TryCatchStatement::blockExit()
+- {   int result;
+- 
++ {
+      assert(body);
+-     result = body->blockExit();
++     int result = body->blockExit();
+  
+      for (size_t i = 0; i < catches->dim; i++)
+      {
+@@ -3578,7 +4066,7 @@
+     return (tok != TOKon_scope_success);
+ }
+ 
+-void OnScopeStatement::scopeCode(Statement **sentry, Statement **sexception, Statement **sfinally)
++void OnScopeStatement::scopeCode(Scope *sc, Statement **sentry, Statement **sexception, Statement **sfinally)
+ {
+     //printf("OnScopeStatement::scopeCode()\n");
+     //print();
+@@ -3659,6 +4147,7 @@
+      return BEthrow;  // obviously
+  }
+ 
++
+ void ThrowStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->printf("throw ");
+@@ -3711,6 +4200,7 @@
+      return statement ? statement->blockExit() : BEfallthru;
+  }
+ 
++
+ void VolatileStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("volatile");
+@@ -3773,6 +4263,7 @@
+      return BEgoto;
+  }
+ 
++
+ void GotoStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writestring("goto ");
+@@ -3855,6 +4346,7 @@
+      return statement ? statement->blockExit() : BEfallthru;
+  }
+ 
++
+ int LabelStatement::comeFrom()
+ {
+     //printf("LabelStatement::comeFrom()\n");
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/statement.h
+--- a/d/dmd/statement.h	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/statement.h	Thu May 27 17:43:47 2010 -0400
+@@ -104,7 +104,7 @@
+     virtual int usesEH();
+     virtual int blockExit();
+     virtual int comeFrom();
+-    virtual void scopeCode(Statement **sentry, Statement **sexit, Statement **sfinally);
++    virtual void scopeCode(Scope *sc, Statement **sentry, Statement **sexit, Statement **sfinally);
+     virtual Statements *flatten(Scope *sc);
+     virtual Expression *interpret(InterState *istate);
+ 
+@@ -122,6 +122,14 @@
+     virtual IfStatement *isIfStatement() { return NULL; }
+ };
+ 
++struct PeelStatement : Statement
++{
++    Statement *s;
++
++    PeelStatement(Statement *s);
++    Statement *semantic(Scope *sc);
++};
++
+ struct ExpStatement : Statement
+ {
+     Expression *exp;
+@@ -160,7 +168,7 @@
+     DeclarationStatement(Loc loc, Expression *exp);
+     Statement *syntaxCopy();
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+-    void scopeCode(Statement **sentry, Statement **sexit, Statement **sfinally);
++    void scopeCode(Scope *sc, Statement **sentry, Statement **sexit, Statement **sfinally);
+ 
+     DeclarationStatement *isDeclarationStatement() { return this; }
+ };
+@@ -295,7 +303,7 @@
+     ForStatement(Loc loc, Statement *init, Expression *condition, Expression *increment, Statement *body);
+     Statement *syntaxCopy();
+     Statement *semantic(Scope *sc);
+-    void scopeCode(Statement **sentry, Statement **sexit, Statement **sfinally);
++    void scopeCode(Scope *sc, Statement **sentry, Statement **sexit, Statement **sfinally);
+     int hasBreak();
+     int hasContinue();
+     int usesEH();
+@@ -465,6 +473,7 @@
+ {
+     Expression *exp;
+     Statement *statement;
++
+     int index;		// which case it is (since we sort this)
+     block *cblock;	// back end: label for the block
+ 
+@@ -483,6 +492,22 @@
+     void toIR(IRState *irs);
+ };
+ 
++#if DMDV2
++
++struct CaseRangeStatement : Statement
++{
++    Expression *first;
++    Expression *last;
++    Statement *statement;
++
++    CaseRangeStatement(Loc loc, Expression *first, Expression *last, Statement *s);
++    Statement *syntaxCopy();
++    Statement *semantic(Scope *sc);
++    void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
++};
++
++#endif
++
+ struct DefaultStatement : Statement
+ {
+     Statement *statement;
+@@ -694,7 +719,7 @@
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+     Statement *semantic(Scope *sc);
+     int usesEH();
+-    void scopeCode(Statement **sentry, Statement **sexit, Statement **sfinally);
++    void scopeCode(Scope *sc, Statement **sentry, Statement **sexit, Statement **sfinally);
+ 
+     void toIR(IRState *irs);
+ };
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/struct.c
+--- a/d/dmd/struct.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/struct.c	Thu May 27 17:43:47 2010 -0400
+@@ -67,7 +67,7 @@
+ void AggregateDeclaration::semantic2(Scope *sc)
+ {
+     //printf("AggregateDeclaration::semantic2(%s)\n", toChars());
+-    if (scope)
++    if (scope && members)
+     {	error("has forward references");
+ 	return;
+     }
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/template.c
+--- a/d/dmd/template.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/template.c	Thu May 27 17:43:47 2010 -0400
+@@ -1899,13 +1899,21 @@
+ 
+       L2:
+ 
+-	for (int i = 0; i < tempinst->tiargs->dim; i++)
++    for (int i = 0; 1; i++)
+ 	{
+ 	    //printf("\ttest: tempinst->tiargs[%d]\n", i);
++	    Object *o1;
++	    if (i < tempinst->tiargs->dim)
++		o1 = (Object *)tempinst->tiargs->data[i];
++	    else if (i < tempinst->tdtypes.dim && i < tp->tempinst->tiargs->dim)
++		// Pick up default arg
++		o1 = (Object *)tempinst->tdtypes.data[i];
++	    else
++		break;
++
+ 	    if (i >= tp->tempinst->tiargs->dim)
+  		goto Lnomatch;
+ 	    int j;
+-	    Object *o1 = (Object *)tempinst->tiargs->data[i];
+ 	    Object *o2 = (Object *)tp->tempinst->tiargs->data[i];
+ 
+ 	    Type *t1 = isType(o1);
+@@ -1925,6 +1933,7 @@
+ 	    if (t2)	printf("t2 = %s\n", t2->toChars());
+ 	    if (e1)	printf("e1 = %s\n", e1->toChars());
+ 	    if (e2)	printf("e2 = %s\n", e2->toChars());
++	    int j;
+ 	    if (s1)	printf("s1 = %s\n", s1->toChars());
+  	    if (s2)	printf("s2 = %s\n", s2->toChars());
+  	    if (v1)	printf("v1 = %s\n", v1->toChars());
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/tocsym.c
+--- a/d/dmd/tocsym.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/tocsym.c	Thu May 27 17:43:47 2010 -0400
+@@ -89,7 +89,7 @@
+     }
+ #endif
+     id = (char *) alloca(2 + nlen + sizeof(size_t) * 3 + strlen(prefix) + strlen(suffix) + 1);
+-    sprintf(id,"_D%s%d%s%s", n, strlen(prefix), prefix, suffix);
++    sprintf(id,"_D%s%lu%s%s", n, strlen(prefix), prefix, suffix);
+ #if 0
+     if (global.params.isWindows &&
+ 	(type_mangle(t) == mTYman_c || type_mangle(t) == mTYman_std))
+@@ -143,7 +143,7 @@
+     id = (char *) alloca(6 + strlen(n) + 1 + sizeof(type_paramsize(sym->Stype))*3 + 1);
+     if (sym->Stype->Tmangle == mTYman_std && tyfunc(sym->Stype->Tty))
+     {
+-	sprintf(id,"_imp__%s@%d",n,type_paramsize(sym->Stype));
++	sprintf(id,"_imp__%s@%lu",n,type_paramsize(sym->Stype));
+     }
+     else if (sym->Stype->Tmangle == mTYman_d)
+ 	sprintf(id,"_imp_%s",n);
+@@ -326,6 +326,7 @@
+ 	slist_add(s);
+ 
+ 	{
++	    s->prettyIdent = toPrettyChars();
+ 
+ 	    s->Sclass = SCglobal;
+ 	    symbol_func(s);
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/toobj.c
+--- a/d/dmd/toobj.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/toobj.c	Thu May 27 17:43:47 2010 -0400
+@@ -1,5 +1,5 @@
+ 
+-// Copyright (c) 1999-2008 by Digital Mars
++// Copyright (c) 1999-2009 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -103,7 +103,11 @@
+ 
+     Symbol *msym = toSymbol();
+     unsigned offset;
++#if DMDV2
++    unsigned sizeof_ModuleInfo = 18 * PTRSIZE;
++#else
+     unsigned sizeof_ModuleInfo = 14 * PTRSIZE;
++#endif
+ 
+     //////////////////////////////////////////////
+ 
+@@ -143,7 +147,7 @@
+  #endif
+ 
+     // name[]
+-    char *name = toPrettyChars();
++    const char *name = toPrettyChars();
+     size_t namelen = strlen(name);
+     dtdword(&dt, namelen);
+     dtabytes(&dt, TYnptr, 0, namelen + 1, name);
+@@ -217,6 +221,13 @@
+     else
+ 	dtdword(&dt, 0);
+ 
++#if DMDV2
++    // void*[4] reserved;
++    dtdword(&dt, 0);
++    dtdword(&dt, 0);
++    dtdword(&dt, 0);
++    dtdword(&dt, 0);
++#endif
+     //////////////////////////////////////////////
+ 
+ #ifdef IN_GCC
+@@ -458,7 +469,7 @@
+     dtxoff(&dt, sinit, 0, TYnptr);	// initializer
+ 
+     // name[]
+-    char *name = ident->toChars();
++    const char *name = ident->toChars();
+     size_t namelen = strlen(name);
+     if (!(namelen > 9 && memcmp(name, "TypeInfo_", 9) == 0))
+     {	name = toPrettyChars();
+@@ -942,7 +953,7 @@
+     dtdword(&dt, 0);			// initializer
+ 
+     // name[]
+-    char *name = toPrettyChars();
++    const char *name = toPrettyChars();
+     size_t namelen = strlen(name);
+     dtdword(&dt, namelen);
+     dtabytes(&dt, TYnptr, 0, namelen + 1, name);
+diff -r 4160ff442248 -r baa0d433abd3 d/dmd/typinf.c
+--- a/d/dmd/typinf.c	Thu May 27 17:17:05 2010 -0400
++++ b/d/dmd/typinf.c	Thu May 27 17:43:47 2010 -0400
+@@ -33,6 +33,7 @@
+ #include "import.h"
+ #include "aggregate.h"
+ 
++#ifndef TARGET_NET
+ #include "rmem.h"
+ #ifndef IN_GCC
+ #include "cc.h"
+@@ -43,6 +44,7 @@
+ #include "dt.h"
+ #include "cgcv.h"
+ #include "outbuf.h"
++#endif
+ #include "irstate.h"
+ #else
+ #include "symbol.h"
+@@ -220,7 +222,7 @@
+     return new TypeInfoTupleDeclaration(this);
+ }
+ 
+-
++#ifndef TARGET_NET
+ /****************************************************
+  */
+ 
+@@ -296,7 +298,7 @@
+     assert(sd->basetype->vtinfo);
+     dtxoff(pdt, sd->basetype->vtinfo->toSymbol(), 0, TYnptr);	// TypeInfo for basetype
+ 
+-    char *name = sd->toPrettyChars();
++    const char *name = sd->toPrettyChars();
+     size_t namelen = strlen(name);
+     dtdword(pdt, namelen);
+     dtabytes(pdt, TYnptr, 0, namelen + 1, name);
+@@ -334,7 +336,7 @@
+     sd->memtype->getTypeInfo(NULL);
+     dtxoff(pdt, sd->memtype->vtinfo->toSymbol(), 0, TYnptr);	// TypeInfo for enum members
+ 
+-    char *name = sd->toPrettyChars();
++    const char *name = sd->toPrettyChars();
+     size_t namelen = strlen(name);
+     dtdword(pdt, namelen);
+     dtabytes(pdt, TYnptr, 0, namelen + 1, name);
+@@ -467,7 +469,7 @@
+      *	name[]
+      */
+ 
+-    char *name = sd->toPrettyChars();
++    const char *name = sd->toPrettyChars();
+     size_t namelen = strlen(name);
+     dtdword(pdt, namelen);
+     //dtabytes(pdt, TYnptr, 0, namelen + 1, name);
+@@ -505,7 +507,13 @@
+     {
+ 	Scope sc;
+ 	Arguments *arguments = new Arguments;
++#if STRUCTTHISREF
++	// arg type is ref const T
++	Argument *arg = new Argument(STCref, tc->constOf(), NULL, NULL);
++#else
++	// arg type is const T*
+ 	Argument *arg = new Argument(STCin, tc->pointerTo(), NULL, NULL);
++#endif
+ 
+ 	arguments->push(arg);
+ 	tfeqptr = new TypeFunction(arguments, Type::tint32, 0, LINKd);
+@@ -551,6 +559,7 @@
+ 		dtdword(pdt, 0);
+ 	}
+ 	else
++	    //fdx->error("must be declared as extern (D) int %s(%s*)", fdx->toChars(), sd->toChars());
+ 	    dtdword(pdt, 0);
+ 
+ 	s = search_function(sd, Id::cmp);
+@@ -710,6 +719,7 @@
+ }
+ 
+ #endif
++#endif // TARGET_NET
+ 
+ /* ========================================================================= */
+ 
+@@ -747,7 +757,11 @@
+     /* This is statically put out with the ClassInfo, so
+      * claim it is built in so it isn't regenerated by each module.
+      */
++#if DMDV2
++    return mod ? 0 : 1;
++#else
+     return 1;
++#endif
+ }
+ 
+ /* ========================================================================= */

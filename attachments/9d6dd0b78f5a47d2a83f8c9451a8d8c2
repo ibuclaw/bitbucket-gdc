@@ -1,0 +1,48 @@
+diff -r 616079c615b1 d/phobos/std/process.d
+--- a/d/phobos/std/process.d	Mon Apr 05 19:53:16 2010 -0400
++++ b/d/phobos/std/process.d	Wed Apr 07 22:05:47 2010 +0100
+@@ -237,7 +237,7 @@
+         return iRet;
+     }
+ }
+-else version(Windows)
++else
+ {
+     auto argv_ = cast(char**)alloca((char*).sizeof * (1 + argv.length));
+     auto envp_ = cast(char**)alloca((char*).sizeof * (1 + envp.length));
+@@ -246,12 +246,6 @@
+     toAStringz(envp, envp_);
+ 
+     return std.c.process.execvpe(toStringz(pathname), argv_, envp_);
+-}
+-else
+-{
+-  // Evidently if we don't need it we don't _need_ it.
+-  assert(false);
+-  // static assert(0);
+ } // version
+ }
+ 
+diff -r 616079c615b1 d/phobos2/std/process.d
+--- a/d/phobos2/std/process.d	Mon Apr 05 19:53:16 2010 -0400
++++ b/d/phobos2/std/process.d	Wed Apr 07 22:05:47 2010 +0100
+@@ -273,7 +273,7 @@
+         return iRet;
+     }
+ }
+-else version(Windows)
++else
+ {
+     auto argv_ = cast(const(char)**)alloca((char*).sizeof * (1 + argv.length));
+     auto envp_ = cast(const(char)**)alloca((char*).sizeof * (1 + envp.length));
+@@ -282,10 +282,6 @@
+     toAStringz(envp, envp_);
+ 
+     return std.c.process.execvpe(toStringz(pathname), argv_, envp_);
+-}
+-else
+-{
+-    static assert(0);
+ } // version
+ }
+ 

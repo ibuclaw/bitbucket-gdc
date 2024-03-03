@@ -1,0 +1,19 @@
+diff -r 1d3d564d0bfc d/dmd2/optimize.c
+--- a/d/dmd2/optimize.c	Sun Nov 21 16:11:18 2010 +0000
++++ b/d/dmd2/optimize.c	Sun Nov 21 17:14:08 2010 +0000
+@@ -88,6 +88,15 @@
+                     if (ei->type != v->type)
+                         goto L1;
+                 }
++#if IN_GCC
++                if (ei->op == TOKarrayliteral)
++                {   // Cap the limit of array literal expansion.
++                    ArrayInitializer *ai = v->init->isArrayInitializer();
++                    assert(ai);
++                    if (ai->dim > 255)
++                        goto L1;
++                }
++#endif
+                 if (v->scope)
+                 {
+                     v->inuse++;

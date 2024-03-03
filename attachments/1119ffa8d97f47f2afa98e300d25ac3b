@@ -1,0 +1,13 @@
+diff -r 9cfb6bb2ab18 d/d-glue.cc
+--- a/d/d-glue.cc	Wed Aug 04 08:21:53 2010 +0100
++++ b/d/d-glue.cc	Wed Aug 04 23:13:07 2010 +0100
+@@ -551,6 +551,9 @@
+ 	tree e_new_type_1 = is_unsigned ?
+ 	    d_unsigned_type(exp_type->toCtype()) :
+ 	    d_signed_type(exp_type->toCtype());
++	if (op == TOKushr) {
++	    e1 = convert(e_new_type_1, e1);
++	}
+ 	tree t = build2(out_code, e_new_type_1, e1, e2);
+ 	return convert(exp_type->toCtype(), t);
+     } else {

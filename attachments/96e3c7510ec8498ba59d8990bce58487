@@ -1,0 +1,30 @@
+diff -r 9b0d7c8816cf d/d-asm-i386.h
+--- a/d/d-asm-i386.h	Sat Jul 09 23:47:10 2011 +0100
++++ b/d/d-asm-i386.h	Sat Jul 16 23:17:39 2011 -0400
+@@ -2319,17 +2319,24 @@
+                                 {
+                                     Expression * offset = newIntExp(operand->constDisplacement);
+ 
+-                                    if (decl->isDataseg())
++                                    if ((decl->isDataseg() && !decl->isThreadlocal()) 
++                                        || (decl->isThreadlocal() && targetm.have_tls))
+                                     {   // Displacement can only come after symbol
++                                        // If all TLS implementations don't use the segment
++                                        // register a preprocessor directive may be required.
+                                         addOperand(fmt, Arg_Memory, e, asmcode, mode);
+                                         insnTemplate->writebyte('+');
+                                         addOperand("%a", Arg_Integer, offset, asmcode);
+                                     }
+                                     else
+                                     {   // Displacement cannot come after symbol.
++                                        // Emulated TLS has same requirement.
+                                         addOperand("%a", Arg_Integer, offset, asmcode);
+-                                        if (decl->isParameter())
++                                        if (decl->isParameter()
++                                            || decl->toParent2()->isFuncDeclaration() != NULL
++                                            || decl->isThreadlocal())
+                                         {   // Parameter may have offset that will add to this value.
++                                            // As will local variables and emulated TLS.
+                                             insnTemplate->writebyte('+');
+                                         }
+                                         addOperand(fmt, Arg_Memory, e, asmcode, mode);

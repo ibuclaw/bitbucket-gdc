@@ -1,0 +1,21 @@
+diff -r d53a8be7c0ed d/d-codegen.cc
+--- a/d/d-codegen.cc	Sat Jul 24 21:14:54 2010 +0100
++++ b/d/d-codegen.cc	Tue Aug 03 18:01:45 2010 -0400
+@@ -3236,8 +3236,15 @@
+     // % wrong loc.. can set pass statement to startCatch, set
+     // the loc on t_type and then use it here..
+     // may not be important?
+-    doExp(build2(CATCH_EXPR, void_type_node,
+-	      currentFlow()->catchType, t_body));
++    
++    // GDC requires multiple statements to make a list.
++    pushStatementList();
++    doAsm(build_string(0, ""), NULL_TREE, NULL_TREE, NULL_TREE);   
++    tree nop_expr = popStatementList();
++    
++    t_body = build2(TRY_FINALLY_EXPR, void_type_node, t_body, nop_expr);
++    doExp(build2(CATCH_EXPR, void_type_node, currentFlow()->catchType, t_body));
++    
+ }
+ 
+ void

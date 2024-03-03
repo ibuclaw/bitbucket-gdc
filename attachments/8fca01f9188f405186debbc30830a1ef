@@ -1,0 +1,1294 @@
+diff -r 6a92bcae44c5 d/Make-lang.in
+--- a/d/Make-lang.in	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/Make-lang.in	Sat Jun 26 21:05:38 2010 +0100
+@@ -93,7 +93,7 @@
+ 	d/dmd/complex_t.h d/dmd/cond.h d/dmd/dchar.h d/dmd/declaration.h \
+ 	d/dmd/doc.h d/dmd/dsymbol.h d/dmd/enum.h d/dmd/expression.h \
+ 	d/dmd/gnuc.h d/dmd/hdrgen.h d/dmd/html.h d/dmd/identifier.h \
+-	d/dmd/import.h d/dmd/init.h d/dmd/lexer.h d/dmd/lstring.h \
++	d/dmd/import.h d/dmd/init.h d/dmd/json.h d/dmd/lexer.h d/dmd/lstring.h \
+ 	d/dmd/macro.h d/dmd/mars.h d/dmd/mem.h d/dmd/module.h d/dmd/mtype.h \
+ 	d/dmd/parse.h d/dmd/port.h d/dmd/rmem.h d/dmd/root.h d/dmd/scope.h \
+ 	d/dmd/statement.h d/dmd/staticassert.h d/dmd/stringtable.h \
+@@ -197,8 +197,8 @@
+     d/access.dmd.o d/aliasthis.dmd.o d/array.dmd.o d/arrayop.dmd.o d/async.dmd.o d/attrib.dmd.o d/cast.dmd.o d/class.dmd.o d/clone.dmd.o d/cond.dmd.o \
+     d/constfold.dmd.o d/dchar.dmd.o d/declaration.dmd.o d/delegatize.dmd.o d/doc.dmd.o \
+     d/dsymbol.dmd.o d/dump.dmd.o d/entity.dmd.o d/enum.dmd.o d/expression.dmd.o d/func.dmd.o d/gnuc.dmd.o d/hdrgen.dmd.o d/html.dmd.o \
+-    d/identifier.dmd.o d/import.dmd.o \
+-    d/init.dmd.o d/inline.dmd.o d/interpret.dmd.o d/lexer.dmd.o d/lstring.dmd.o d/machobj.dmd.o d/macro.dmd.o d/mangle.dmd.o d/mars.dmd.o d/mtype.dmd.o \
++    d/identifier.dmd.o d/import.dmd.o d/init.dmd.o d/inline.dmd.o d/interpret.dmd.o d/json.dmd.o \
++    d/lexer.dmd.o d/lstring.dmd.o d/machobj.dmd.o d/macro.dmd.o d/mangle.dmd.o d/mars.dmd.o d/mtype.dmd.o \
+     d/module.dmd.o d/opover.dmd.o d/optimize.dmd.o d/parse.dmd.o d/rmem.dmd.o \
+     d/root.dmd.o d/scope.dmd.o d/statement.dmd.o d/staticassert.dmd.o d/stringtable.dmd.o d/struct.dmd.o d/template.dmd.o  \
+     d/todt.dmd.o d/toobj.dmd.o d/typinf.dmd.o d/unialpha.dmd.o d/utf.dmd.o d/version.dmd.o
+diff -r 6a92bcae44c5 d/dmd/aggregate.h
+--- a/d/dmd/aggregate.h	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/aggregate.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -63,6 +63,13 @@
+     NewDeclaration *aggNew;		// allocator
+     DeleteDeclaration *aggDelete;	// deallocator
+ 
++#if DMDV2
++    //CtorDeclaration *ctor;
++    Dsymbol *ctor;			// CtorDeclaration or TemplateDeclaration
++    CtorDeclaration *defaultCtor;	// default constructor
++    Dsymbol *aliasthis;			// forward unresolved lookups to aliasthis
++#endif
++
+     FuncDeclarations dtors;	// Array of destructors
+     FuncDeclaration *dtor;	// aggregate destructor
+ 
+@@ -83,6 +90,7 @@
+     FuncDeclaration *buildDtor(Scope *sc);
+ 
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+     void toDocBuffer(OutBuffer *buf);
+ 
+     // For access checking
+diff -r 6a92bcae44c5 d/dmd/attrib.h
+--- a/d/dmd/attrib.h	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/attrib.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -54,6 +54,7 @@
+     void checkCtorConstInit();
+     void addLocalClass(ClassDeclarations *);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
++    void toJsonBuffer(OutBuffer *buf);
+     AttribDeclaration *isAttribDeclaration() { return this; }
+ 
+     void toObjFile(int multiobj);			// compile to .obj file
+@@ -149,6 +150,7 @@
+     Array *include(Scope *sc, ScopeDsymbol *s);
+     void addComment(unsigned char *comment);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
++    void toJsonBuffer(OutBuffer *buf);
+     void importAll(Scope *sc);
+     void setScope(Scope *sc);
+ };
+diff -r 6a92bcae44c5 d/dmd/declaration.h
+--- a/d/dmd/declaration.h	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/declaration.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -119,6 +119,7 @@
+     void checkModify(Loc loc, Scope *sc, Type *t);
+ 
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+     void toDocBuffer(OutBuffer *buf);
+ 
+     char *mangle();
+@@ -316,6 +317,7 @@
+     void semantic(Scope *sc);
+ 
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+ 
+     Symbol *toSymbol();
+ };
+@@ -329,6 +331,7 @@
+     void semantic(Scope *sc);
+ 
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+ 
+     Symbol *toSymbol();
+ };
+@@ -342,6 +345,7 @@
+     void semantic(Scope *sc);
+ 
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+ 
+     Symbol *toSymbol();
+     void toObjFile(int multiobj);			// compile to .obj file
+@@ -711,6 +715,8 @@
+     int addPostInvariant();
+     int overloadInsert(Dsymbol *s);
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
++    void toJsonBuffer(OutBuffer *buf);
+ 
+     DtorDeclaration *isDtorDeclaration() { return this; }
+ };
+@@ -726,6 +732,7 @@
+     int addPreInvariant();
+     int addPostInvariant();
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+ 
+     StaticCtorDeclaration *isStaticCtorDeclaration() { return this; }
+@@ -742,6 +749,7 @@
+     int addPreInvariant();
+     int addPostInvariant();
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+ 
+     StaticDtorDeclaration *isStaticDtorDeclaration() { return this; }
+@@ -756,6 +764,7 @@
+     int addPreInvariant();
+     int addPostInvariant();
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+ 
+     InvariantDeclaration *isInvariantDeclaration() { return this; }
+diff -r 6a92bcae44c5 d/dmd/dsymbol.c
+--- a/d/dmd/dsymbol.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/dsymbol.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -477,7 +477,7 @@
+     parent = sd;
+     if (!isAnonymous())		// no name, so can't add it to symbol table
+     {
+-	if (!sd->symtab->insert(this))	// if name is already defined
++	if (!sd->symtabInsert(this))	// if name is already defined
+ 	{
+ 	    Dsymbol *s2;
+ 
+@@ -869,6 +869,73 @@
+     return "ScopeDsymbol";
+ }
+ 
++Dsymbol *ScopeDsymbol::symtabInsert(Dsymbol *s)
++{
++    return symtab->insert(s);
++}
++
++/***************************************
++ * Determine number of Dsymbols, folding in AttribDeclaration members.
++ */
++
++#if DMDV2
++size_t ScopeDsymbol::dim(Array *members)
++{
++    size_t n = 0;
++    if (members)
++    {
++	for (size_t i = 0; i < members->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)members->data[i];
++	    AttribDeclaration *a = s->isAttribDeclaration();
++
++	    if (a)
++	    {
++		n += dim(a->decl);
++	    }
++	    else
++		n++;
++	}
++    }
++    return n;
++}
++#endif
++
++/***************************************
++ * Get nth Dsymbol, folding in AttribDeclaration members.
++ * Returns:
++ *	Dsymbol*	nth Dsymbol
++ *	NULL		not found, *pn gets incremented by the number
++ *			of Dsymbols
++ */
++
++#if DMDV2
++Dsymbol *ScopeDsymbol::getNth(Array *members, size_t nth, size_t *pn)
++{
++    if (!members)
++	return NULL;
++
++    size_t n = 0;
++    for (size_t i = 0; i < members->dim; i++)
++    {   Dsymbol *s = (Dsymbol *)members->data[i];
++	AttribDeclaration *a = s->isAttribDeclaration();
++
++	if (a)
++	{
++	    s = getNth(a->decl, nth - n, &n);
++	    if (s)
++		return s;
++	}
++	else if (n == nth)
++	    return s;
++	else
++	    n++;
++    }
++
++    if (pn)
++	*pn += n;
++    return NULL;
++}
++#endif
+ 
+ /*******************************************
+  * Look for member of the form:
+diff -r 6a92bcae44c5 d/dmd/dsymbol.h
+--- a/d/dmd/dsymbol.h	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/dsymbol.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -143,6 +143,7 @@
+ #endif
+     virtual void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+     virtual void toDocBuffer(OutBuffer *buf);
++    virtual void toJsonBuffer(OutBuffer *buf);
+     virtual target_size_t size(Loc loc);
+     virtual int isforwardRef();
+     virtual void defineRef(Dsymbol *s);
+@@ -248,6 +249,7 @@
+     Dsymbol *nameCollision(Dsymbol *s);
+     const char *kind();
+     FuncDeclaration *findGetMembers();
++    virtual Dsymbol *symtabInsert(Dsymbol *s);
+ 
+     void emitMemberComments(Scope *sc);
+ 
+diff -r 6a92bcae44c5 d/dmd/e2ir.c
+--- a/d/dmd/e2ir.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/e2ir.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -3204,14 +3204,12 @@
+ }
+ 
+ elem *CastExp::toElem(IRState *irs)
+-{   elem *e;
++{
+     TY fty;
+     TY tty;
+     tym_t ftym;
+     tym_t ttym;
+     enum OPER eop;
+-    Type *t;
+-    Type *tfrom;
+ 
+ #if 0
+     printf("CastExp::toElem()\n");
+@@ -3220,9 +3218,9 @@
+     printf("\tto  : %s\n", to->toChars());
+ #endif
+ 
+-    e = e1->toElem(irs);
+-    tfrom = e1->type->toBasetype();
+-    t = to->toBasetype();		// skip over typedef's
++    elem *e = e1->toElem(irs);
++    Type *tfrom = e1->type->toBasetype();
++    Type *t = to->toBasetype();		// skip over typedef's
+     if (t->equals(tfrom))
+ 	goto Lret;
+ 
+@@ -3358,8 +3356,8 @@
+ 	goto Lret;
+     }
+ 
+-    ftym = e->Ety;
+-    ttym = t->totym();
++    ftym = tybasic(e->Ety);
++    ttym = tybasic(t->totym());
+     if (ftym == ttym)
+ 	goto Lret;
+ 
+@@ -3863,7 +3861,7 @@
+ 		goto Lpaint;
+ 	    //dump(0);
+ 	    //printf("fty = %d, tty = %d\n", fty, tty);
+-	    error("e2ir: cannot cast from %s to %s", e1->type->toChars(), t->toChars());
++	    error("e2ir: cannot cast %s of type %s to type %s", e1->toChars(), e1->type->toChars(), t->toChars());
+ 	    goto Lzero;
+ 
+ 	Lzero:
+diff -r 6a92bcae44c5 d/dmd/enum.h
+--- a/d/dmd/enum.h	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/enum.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -34,7 +34,8 @@
+ 
+ 
+ struct EnumDeclaration : ScopeDsymbol
+-{
++{   /* enum ident : memtype { ... }
++     */
+     Type *type;			// the TypeEnum
+     Type *memtype;		// type of the members
+     #if DMDV1
+@@ -62,6 +63,7 @@
+      int isDeprecated();			// is Dsymbol deprecated?
+ 
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+     void toDocBuffer(OutBuffer *buf);
+ 
+     EnumDeclaration *isEnumDeclaration() { return this; }
+@@ -85,6 +87,7 @@
+     const char *kind();
+ 
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+     void toDocBuffer(OutBuffer *buf);
+ 
+     EnumMember *isEnumMember() { return this; }
+diff -r 6a92bcae44c5 d/dmd/expression.c
+--- a/d/dmd/expression.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/expression.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -4437,7 +4437,13 @@
+     }
+     if (!s->isVarDeclaration())
+     {
+-	declaration->semantic(sc);
++	Scope *sc2 = sc;
++	if (sc2->stc & (STCpure | STCnothrow))
++	    sc2 = sc->push();
++	sc2->stc &= ~(STCpure | STCnothrow);
++	declaration->semantic(sc2);
++	if (sc2 != sc)
++	    sc2->pop();
+ 	s->parent = sc->parent;
+     }
+     if (!global.errors)
+diff -r 6a92bcae44c5 d/dmd/json.c
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/d/dmd/json.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -0,0 +1,412 @@
++
++// Compiler implementation of the D programming language
++// Copyright (c) 1999-2009 by Digital Mars
++// All Rights Reserved
++// written by Walter Bright
++// http://www.digitalmars.com
++// License for redistribution is by either the Artistic License
++// in artistic.txt, or the GNU General Public License in gnu.txt.
++// See the included readme.txt for details.
++
++// This implements the JSON capability.
++
++#include <stdio.h>
++#include <string.h>
++#include <time.h>
++#include <ctype.h>
++#include <assert.h>
++
++#include "rmem.h"
++#include "root.h"
++
++#include "mars.h"
++#include "dsymbol.h"
++#include "macro.h"
++#include "template.h"
++#include "lexer.h"
++#include "aggregate.h"
++#include "declaration.h"
++#include "enum.h"
++#include "id.h"
++#include "module.h"
++#include "scope.h"
++#include "hdrgen.h"
++#include "json.h"
++#include "mtype.h"
++#include "attrib.h"
++#include "cond.h"
++
++const char Pname[] = "name";
++const char Pkind[] = "kind";
++const char Pfile[] = "file";
++const char Pline[] = "line";
++const char Ptype[] = "type";
++const char Pcomment[] = "comment";
++const char Pmembers[] = "members";
++
++void json_generate(Array *modules)
++{   OutBuffer buf;
++
++    for (int i = 0; i < modules->dim; i++)
++    {	Module *m = (Module *)modules->data[i];
++	if (global.params.verbose)
++	    printf("json gen %s\n", m->toChars());
++	m->toJsonBuffer(&buf);
++    }
++
++    // Write buf to file
++    char *arg = global.params.xfilename;
++    if (!arg || !*arg)
++    {   // Generate lib file name from first obj name
++        char *n = (char *)global.params.objfiles->data[0];
++
++        n = FileName::name(n);
++        FileName *fn = FileName::forceExt(n, global.json_ext);
++        arg = fn->toChars();
++    }
++    else if (arg[0] == '-' && arg[1] == 0)
++    {	// Write to stdout
++	fwrite(buf.data, 1, buf.offset, stdout);
++	return;
++    }
++//    if (!FileName::absolute(arg))
++//        arg = FileName::combine(dir, arg);
++    FileName *jsonfilename = FileName::defaultExt(arg, global.json_ext);
++    File *jsonfile = new File(jsonfilename);
++    assert(jsonfile);
++    jsonfile->setbuffer(buf.data, buf.offset);
++    jsonfile->ref = 1;
++    char *pt = FileName::path(jsonfile->toChars());
++    if (*pt)
++	FileName::ensurePathExists(pt);
++    mem.free(pt);
++    jsonfile->writev();
++}
++
++
++/*********************************
++ * Encode string into buf, and wrap it in double quotes.
++ */
++void JsonString(OutBuffer *buf, const char *s)
++{
++    buf->writeByte('\"');
++    for (; *s; s++)
++    {
++	unsigned char c = (unsigned char) *s;
++	switch (c)
++	{
++	    case '\n':
++		buf->writestring("\\n");
++		break;
++
++	    case '\r':
++		buf->writestring("\\r");
++		break;
++
++	    case '\t':
++		buf->writestring("\\t");
++		break;
++
++	    case '\"':
++		buf->writestring("\\\"");
++		break;
++
++	    case '\\':
++		buf->writestring("\\\\");
++		break;
++
++	    case '/':
++		buf->writestring("\\/");
++		break;
++
++	    case '\b':
++		buf->writestring("\\b");
++		break;
++
++	    case '\f':
++		buf->writestring("\\f");
++		break;
++
++	    default:
++		if (c < 0x20)
++		    buf->printf("\\u%04x", c);
++		else
++		    // Note that UTF-8 chars pass through here just fine
++		    buf->writeByte(c);
++		break;
++	}
++    }
++    buf->writeByte('\"');
++}
++
++void JsonProperty(OutBuffer *buf, const char *name, const char *value)
++{
++    JsonString(buf, name);
++    buf->writestring(" : ");
++    JsonString(buf, value);
++    buf->writestring(",\n");
++}
++
++void JsonProperty(OutBuffer *buf, const char *name, int value)
++{
++    JsonString(buf, name);
++    buf->writestring(" : ");
++    buf->printf("%d", value);
++    buf->writestring(",\n");
++}
++
++void JsonRemoveComma(OutBuffer *buf)
++{
++    if (buf->offset >= 2 &&
++	buf->data[buf->offset - 2] == ',' &&
++	buf->data[buf->offset - 1] == '\n')
++	buf->offset -= 2;
++}
++
++void Dsymbol::toJsonBuffer(OutBuffer *buf)
++{
++}
++
++void Module::toJsonBuffer(OutBuffer *buf)
++{
++    buf->writestring("{\n");
++
++    JsonProperty(buf, Pname, md->toChars());
++
++    JsonProperty(buf, Pkind, kind());
++
++    JsonProperty(buf, Pfile, srcfile->toChars());
++
++    if (comment)
++	JsonProperty(buf, Pcomment, (const char *)comment);
++
++    JsonString(buf, Pmembers);
++    buf->writestring(" : [\n");
++
++    size_t offset = buf->offset;
++    for (int i = 0; i < members->dim; i++)
++    {	Dsymbol *s = (Dsymbol *)members->data[i];
++	if (offset != buf->offset)
++	{   buf->writestring(",");
++	    offset = buf->offset;
++	}
++	s->toJsonBuffer(buf);
++    }
++
++    buf->writestring("]\n");
++
++    buf->writestring("}\n");
++}
++
++void AttribDeclaration::toJsonBuffer(OutBuffer *buf)
++{
++    //printf("AttribDeclaration::toJsonBuffer()\n");
++
++    Array *d = include(NULL, NULL);
++
++    if (d)
++    {
++	for (unsigned i = 0; i < d->dim; i++)
++	{   Dsymbol *s = (Dsymbol *)d->data[i];
++	    //printf("AttribDeclaration::toJsonBuffer %s\n", s->toChars());
++	    s->toJsonBuffer(buf);
++	}
++    }
++}
++
++
++void ConditionalDeclaration::toJsonBuffer(OutBuffer *buf)
++{
++    //printf("ConditionalDeclaration::toJsonBuffer()\n");
++    if (condition->inc)
++    {
++	AttribDeclaration::toJsonBuffer(buf);
++    }
++}
++
++
++void InvariantDeclaration::toJsonBuffer(OutBuffer *buf)  { }
++void DtorDeclaration::toJsonBuffer(OutBuffer *buf)       { }
++void StaticCtorDeclaration::toJsonBuffer(OutBuffer *buf) { }
++void StaticDtorDeclaration::toJsonBuffer(OutBuffer *buf) { }
++void ClassInfoDeclaration::toJsonBuffer(OutBuffer *buf)  { }
++void ModuleInfoDeclaration::toJsonBuffer(OutBuffer *buf) { }
++void TypeInfoDeclaration::toJsonBuffer(OutBuffer *buf)   { }
++#if DMDV2
++void PostBlitDeclaration::toJsonBuffer(OutBuffer *buf)   { }
++#endif
++
++void Declaration::toJsonBuffer(OutBuffer *buf)
++{
++    //printf("Declaration::toJsonBuffer()\n");
++    buf->writestring("{\n");
++
++    JsonProperty(buf, Pname, toChars());
++    JsonProperty(buf, Pkind, kind());
++    if (type)
++	JsonProperty(buf, Ptype, type->toChars());
++
++    if (comment)
++	JsonProperty(buf, Pcomment, (const char *)comment);
++
++    if (loc.linnum)
++	JsonProperty(buf, Pline, loc.linnum);
++
++    TypedefDeclaration *td = isTypedefDeclaration();
++    if (td)
++    {
++	JsonProperty(buf, "base", td->basetype->toChars());
++    }
++
++    JsonRemoveComma(buf);
++    buf->writestring("}\n");
++}
++
++void AggregateDeclaration::toJsonBuffer(OutBuffer *buf)
++{
++    //printf("AggregateDeclaration::toJsonBuffer()\n");
++    buf->writestring("{\n");
++
++    JsonProperty(buf, Pname, toChars());
++    JsonProperty(buf, Pkind, kind());
++    if (comment)
++	JsonProperty(buf, Pcomment, (const char *)comment);
++    if (loc.linnum)
++	JsonProperty(buf, Pline, loc.linnum);
++
++    ClassDeclaration *cd = isClassDeclaration();
++    if (cd)
++    {
++	if (cd->baseClass)
++	{
++	    JsonProperty(buf, "base", cd->baseClass->toChars());
++	}
++	if (cd->interfaces_dim)
++	{
++	    JsonString(buf, "interfaces");
++	    buf->writestring(" : [\n");
++	    size_t offset = buf->offset;
++	    for (int i = 0; i < cd->interfaces_dim; i++)
++	    {	BaseClass *b = cd->interfaces[i];
++		if (offset != buf->offset)
++		{   buf->writestring(",");
++		    offset = buf->offset;
++		}
++		JsonString(buf, b->base->toChars());
++	    }
++	    buf->writestring("],\n");
++	}
++    }
++
++    JsonString(buf, Pmembers);
++    buf->writestring(" : [\n");
++    size_t offset = buf->offset;
++    for (int i = 0; i < members->dim; i++)
++    {	Dsymbol *s = (Dsymbol *)members->data[i];
++	if (offset != buf->offset)
++	{   buf->writestring(",");
++	    offset = buf->offset;
++	}
++	s->toJsonBuffer(buf);
++    }
++    buf->writestring("]\n");
++
++    buf->writestring("}\n");
++}
++
++void TemplateDeclaration::toJsonBuffer(OutBuffer *buf)
++{
++    //printf("TemplateDeclaration::toJsonBuffer()\n");
++
++    buf->writestring("{\n");
++
++    JsonProperty(buf, Pname, toChars());
++    JsonProperty(buf, Pkind, kind());
++    if (comment)
++	JsonProperty(buf, Pcomment, (const char *)comment);
++
++    if (loc.linnum)
++	JsonProperty(buf, Pline, loc.linnum);
++
++    JsonString(buf, Pmembers);
++    buf->writestring(" : [\n");
++    size_t offset = buf->offset;
++    for (int i = 0; i < members->dim; i++)
++    {	Dsymbol *s = (Dsymbol *)members->data[i];
++	if (offset != buf->offset)
++	{   buf->writestring(",");
++	    offset = buf->offset;
++	}
++	s->toJsonBuffer(buf);
++    }
++    buf->writestring("]\n");
++
++    buf->writestring("}\n");
++}
++
++void EnumDeclaration::toJsonBuffer(OutBuffer *buf)
++{
++    //printf("EnumDeclaration::toJsonBuffer()\n");
++    if (isAnonymous())
++    {
++	if (members)
++	{
++	    for (int i = 0; i < members->dim; i++)
++	    {
++		Dsymbol *s = (Dsymbol *)members->data[i];
++		s->toJsonBuffer(buf);
++		buf->writestring(",\n");
++	    }
++	    JsonRemoveComma(buf);
++	}
++	return;
++    }
++
++    buf->writestring("{\n");
++
++    JsonProperty(buf, Pname, toChars());
++    JsonProperty(buf, Pkind, kind());
++    if (comment)
++	JsonProperty(buf, Pcomment, (const char *)comment);
++
++    if (loc.linnum)
++	JsonProperty(buf, Pline, loc.linnum);
++
++    if (memtype)
++	JsonProperty(buf, "base", memtype->toChars());
++
++    JsonString(buf, Pmembers);
++    buf->writestring(" : [\n");
++    size_t offset = buf->offset;
++    for (int i = 0; i < members->dim; i++)
++    {	Dsymbol *s = (Dsymbol *)members->data[i];
++	if (offset != buf->offset)
++	{   buf->writestring(",");
++	    offset = buf->offset;
++	}
++	s->toJsonBuffer(buf);
++    }
++    buf->writestring("]\n");
++
++    buf->writestring("}\n");
++}
++
++void EnumMember::toJsonBuffer(OutBuffer *buf)
++{
++    //printf("EnumMember::toJsonBuffer()\n");
++    buf->writestring("{\n");
++
++    JsonProperty(buf, Pname, toChars());
++    JsonProperty(buf, Pkind, kind());
++
++    if (comment)
++	JsonProperty(buf, Pcomment, (const char *)comment);
++
++    if (loc.linnum)
++	JsonProperty(buf, Pline, loc.linnum);
++
++    JsonRemoveComma(buf);
++    buf->writestring("}\n");
++}
++
++
+diff -r 6a92bcae44c5 d/dmd/json.h
+--- /dev/null	Thu Jan 01 00:00:00 1970 +0000
++++ b/d/dmd/json.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -0,0 +1,24 @@
++
++
++// Compiler implementation of the D programming language
++// Copyright (c) 1999-2008 by Digital Mars
++// All Rights Reserved
++// written by Walter Bright
++// http://www.digitalmars.com
++// License for redistribution is by either the Artistic License
++// in artistic.txt, or the GNU General Public License in gnu.txt.
++// See the included readme.txt for details.
++
++#ifndef DMD_JSON_H
++#define DMD_JSON_H
++
++#ifdef __DMC__
++#pragma once
++#endif /* __DMC__ */
++
++struct Array;
++
++void json_generate(Array *);
++
++#endif /* DMD_JSON_H */
++
+diff -r 6a92bcae44c5 d/dmd/mars.c
+--- a/d/dmd/mars.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/mars.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -33,6 +33,7 @@
+ #include "expression.h"
+ #include "lexer.h"
+ #include "lib.h"
++#include "json.h"
+ 
+ #if WINDOWS_SEH
+ #include <windows.h>
+@@ -55,6 +56,7 @@
+     hdr_ext  = "di";
+     doc_ext  = "html";
+     ddoc_ext = "ddoc";
++    json_ext = "json";
+ 
+ #ifndef IN_GCC
+ #if TARGET_WINDOS
+@@ -88,7 +90,7 @@
+     "\nMSIL back-end (alpha release) by Cristian L. Vlasceanu and associates.";
+ #endif
+     ;
+-    version = "v1.049";
++    version = "v1.050";
+     global.structalign = 8;
+ 
+     memset(&params, 0, sizeof(Param));
+@@ -240,7 +242,7 @@
+   -g             add symbolic debug info\n\
+   -gc            add symbolic debug info, pretend to be C\n\
+   -H             generate 'header' file\n\
+-  -Hdhdrdir      write 'header' file to hdrdir directory\n\
++  -Hddirectory   write 'header' file to directory\n\
+   -Hffilename    write 'header' file to filename\n\
+   --help         print help\n\
+   -Ipath         where to look for imports\n\
+@@ -266,6 +268,8 @@
+   -version=level compile in version code >= level\n\
+   -version=ident compile in version code identified by ident\n\
+   -w             enable warnings\n\
++  -X             generate JSON file\n\
++  -Xffilename    write JSON file to filename\n\
+ ");
+ }
+ 
+@@ -332,6 +336,10 @@
+ #if TARGET_WINDOS
+     VersionCondition::addPredefinedGlobalIdent("Windows");
+     global.params.isWindows = 1;
++#if TARGET_NET
++    // TARGET_NET macro is NOT mutually-exclusive with TARGET_WINDOS
++    VersionCondition::addPredefinedGlobalIdent("D_NET");
++#endif
+ #elif TARGET_LINUX
+ 	VersionCondition::addPredefinedGlobalIdent("Posix");
+     VersionCondition::addPredefinedGlobalIdent("linux");
+@@ -355,11 +363,6 @@
+ #error "fix this"
+ #endif
+ 
+-#if TARGET_NET
+-    // TARGET_NET macro is NOT mutually-exclusive with TARGET_WINDOS
+-    VersionCondition::addPredefinedGlobalIdent("D_NET");
+-#endif
+-
+     VersionCondition::addPredefinedGlobalIdent("X86");
+     VersionCondition::addPredefinedGlobalIdent("LittleEndian");
+     //VersionCondition::addPredefinedGlobalIdent("D_Bits");
+@@ -513,6 +516,23 @@
+ 		}
+ 	    }
+ #endif
++	    else if (p[1] == 'X')
++	    {	global.params.doXGeneration = 1;
++		switch (p[2])
++		{
++		    case 'f':
++			if (!p[3])
++			    goto Lnoarg;
++			global.params.xfilename = p + 3;
++			break;
++
++		    case 0:
++			break;
++
++		    default:
++			goto Lerror;
++		}
++	    }
+ 	    else if (strcmp(p + 1, "ignore") == 0)
+ 		global.params.ignoreUnsupportedPragmas = 1;
+ 	    else if (strcmp(p + 1, "inline") == 0)
+@@ -895,6 +915,13 @@
+ 		continue;
+ 	    }
+ 
++	    if (FileName::equals(ext, global.json_ext))
++	    {
++		global.params.doXGeneration = 1;
++		global.params.xfilename = (char *)files.data[i];
++		continue;
++	    }
++
+ #if TARGET_WINDOS
+ 	    if (FileName::equals(ext, "res"))
+ 	    {
+@@ -1164,6 +1191,10 @@
+     }
+ 
+     // Generate output files
++
++    if (global.params.doXGeneration)
++	json_generate(&modules);
++
+     if (global.params.oneobj)
+     {
+ 	for (i = 0; i < modules.dim; i++)
+@@ -1266,34 +1297,29 @@
+ 
+ void getenv_setargv(const char *envvar, int *pargc, char** *pargv)
+ {
+-    char *env;
+     char *p;
+-    Array *argv;
+-    int argc;
+ 
+-    int wildcard;		// do wildcard expansion
+     int instring;
+     int slash;
+     char c;
+-    int j;
+ 
+-    env = getenv(envvar);
++    char *env = getenv(envvar);
+     if (!env)
+ 	return;
+ 
+     env = mem.strdup(env);	// create our own writable copy
+ 
+-    argc = *pargc;
+-    argv = new Array();
++    int argc = *pargc;
++    Array *argv = new Array();
+     argv->setDim(argc);
+ 
+     for (int i = 0; i < argc; i++)
+ 	argv->data[i] = (void *)(*pargv)[i];
+ 
+-    j = 1;			// leave argv[0] alone
++    int j = 1;			// leave argv[0] alone
+     while (1)
+     {
+-	wildcard = 1;
++	int wildcard = 1;	// do wildcard expansion
+ 	switch (*env)
+ 	{
+ 	    case ' ':
+diff -r 6a92bcae44c5 d/dmd/mars.h
+--- a/d/dmd/mars.h	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/mars.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -176,6 +176,9 @@
+     char *hdrdir;		// write 'header' file to docdir directory
+     char *hdrname;		// write 'header' file to docname
+ 
++    char doXGeneration;		// write JSON file
++    char *xfilename;		// write JSON file to xfilename
++
+     unsigned debuglevel;	// debug level
+     Array *debugids;		// debug identifiers
+ 
+@@ -186,9 +189,7 @@
+ 
+     const char *defaultlibname;	// default library for non-debug builds
+     const char *debuglibname;	// default library for debug builds
+-  
+-    const char *xmlname;	// filename for XML output
+-    
++
+     char *moduleDepsFile;	// filename for deps output
+     OutBuffer *moduleDeps;	// contents to be written to deps file
+ 
+@@ -224,6 +225,7 @@
+     const char *doc_ext;	// for Ddoc generated files
+     const char *ddoc_ext;	// for Ddoc macro include files
+     const char *hdr_ext;	// for D 'header' import files
++    const char *json_ext;	// for JSON files
+     const char *copyright;
+     const char *written;
+     Array *path;	// Array of char*'s which form the import lookup path
+diff -r 6a92bcae44c5 d/dmd/module.c
+--- a/d/dmd/module.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/module.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -109,6 +109,7 @@
+ 
+     macrotable = NULL;
+     escapetable = NULL;
++    safe = FALSE;
+     doppelganger = 0;
+     cov = NULL;
+     covb = NULL;
+@@ -829,8 +830,7 @@
+ }
+ 
+ void Module::inlineScan()
+-{   int i;
+-
++{
+     if (semanticstarted >= 4)
+ 	return;
+     assert(semanticstarted == 3);
+@@ -841,10 +841,8 @@
+     // gets imported, it is unaffected by context.
+     //printf("Module = %p\n", sc.scopesym);
+ 
+-    for (i = 0; i < members->dim; i++)
+-    {	Dsymbol *s;
+-
+-	s = (Dsymbol *)members->data[i];
++    for (int i = 0; i < members->dim; i++)
++    {	Dsymbol *s = (Dsymbol *)members->data[i];
+ 	//if (global.params.verbose)
+ 	    //printf("inline scan symbol %s\n", s->toChars());
+ 
+@@ -893,13 +891,14 @@
+ {
+     /* Since modules can be circularly referenced,
+      * need to stop infinite recursive searches.
++     * This is done with the cache.
+      */
+ 
+     //printf("%s Module::search('%s', flags = %d) insearch = %d\n", toChars(), ident->toChars(), flags, insearch);
+     Dsymbol *s;
+     if (insearch)
+ 	s = NULL;
+-    else if (searchCacheIdent == ident && searchCacheFlags == flags && searchCacheSymbol)
++    else if (searchCacheIdent == ident && searchCacheFlags == flags)
+     {
+ 	s = searchCacheSymbol;
+ 	//printf("%s Module::search('%s', flags = %d) insearch = %d searchCacheSymbol = %s\n", toChars(), ident->toChars(), flags, insearch, searchCacheSymbol ? searchCacheSymbol->toChars() : "null");
+@@ -917,6 +916,13 @@
+     return s;
+ }
+ 
++Dsymbol *Module::symtabInsert(Dsymbol *s)
++{
++    searchCacheIdent = 0;	// symbol is inserted, so invalidate cache
++    return Package::symtabInsert(s);
++}
++
++
+ /*******************************************
+  * Can't run semantic on s now, try again later.
+  */
+diff -r 6a92bcae44c5 d/dmd/module.h
+--- a/d/dmd/module.h	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/module.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -106,6 +106,7 @@
+ 
+     Macro *macrotable;		// document comment macros
+     Escape *escapetable;	// document comment escapes
++    bool safe;			// TRUE if module is marked as 'safe'
+ 
+     Module(char *arg, Identifier *ident, int doDocComment, int doHdrGen);
+     ~Module();
+@@ -113,6 +114,7 @@
+     static Module *load(Loc loc, Array *packages, Identifier *ident);
+ 
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
++    void toJsonBuffer(OutBuffer *buf);
+     const char *kind();
+     void setDocfile();	// set docfile member
+     void read(Loc loc);	// read file
+@@ -135,6 +137,7 @@
+     void gendocfile();
+     int needModuleInfo();
+     Dsymbol *search(Loc loc, Identifier *ident, int flags);
++    Dsymbol *symtabInsert(Dsymbol *s);
+     void deleteObjFile();
+     void addDeferredSemantic(Dsymbol *s);
+     void runDeferredSemantic();
+@@ -175,6 +178,7 @@
+ {
+     Identifier *id;
+     Array *packages;		// array of Identifier's representing packages
++    bool safe;
+ 
+     ModuleDeclaration(Array *packages, Identifier *id);
+ 
+diff -r 6a92bcae44c5 d/dmd/parse.c
+--- a/d/dmd/parse.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/parse.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -3226,6 +3226,7 @@
+ 	    statements = new Statements();
+ 	    while (token.value != TOKcase &&
+ 		   token.value != TOKdefault &&
++		   token.value != TOKeof &&
+ 		   token.value != TOKrcurly)
+ 	    {
+ 		statements->push(parseStatement(PSsemi | PScurlyscope));
+@@ -3252,6 +3253,7 @@
+ 	    statements = new Statements();
+ 	    while (token.value != TOKcase &&
+ 		   token.value != TOKdefault &&
++		   token.value != TOKeof &&
+ 		   token.value != TOKrcurly)
+ 	    {
+ 		statements->push(parseStatement(PSsemi | PScurlyscope));
+diff -r 6a92bcae44c5 d/dmd/scope.c
+--- a/d/dmd/scope.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/scope.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -290,7 +290,7 @@
+ 	    //printf("\t\tsc->scopesym = %p\n", sc->scopesym);
+ 	    if (!sc->scopesym->symtab)
+ 		sc->scopesym->symtab = new DsymbolTable();
+-	    return sc->scopesym->symtab->insert(s);
++	    return sc->scopesym->symtabInsert(s);
+ 	}
+     }
+     assert(0);
+diff -r 6a92bcae44c5 d/dmd/statement.c
+--- a/d/dmd/statement.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/statement.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -167,6 +167,13 @@
+     return FALSE;
+ }
+ 
++// Return TRUE if statement has no code in it
++int Statement::isEmpty()
++{
++    //printf("Statement::isEmpty()\n");
++    return FALSE;
++}
++
+ /****************************************
+  * If this statement has code that needs to run in a finally clause
+  * at the end of the current scope, return that code in the form of
+@@ -335,6 +342,11 @@
+      return s->semantic(sc);
+  }
+ 
++int ExpStatement::isEmpty()
++{
++    return exp == NULL;
++}
++
+ 
+ /******************************** DeclarationStatement ***************************/
+ 
+@@ -595,13 +607,15 @@
+  //printf("%s\n", s->toChars());
+  	    if (!(result & BEfallthru) && !s->comeFrom())
+ 	    {
+-		if (s->blockExit() != BEhalt)
+- 		s->warning("statement is not reachable");
++		if (s->blockExit() != BEhalt && !s->isEmpty())
++		    s->warning("statement is not reachable");
+  	    }
+- 
+- 	    result &= ~BEfallthru;
+- 	    result |= s->blockExit();
+- 	}
++	    else
++	    {
++		result &= ~BEfallthru;
++		result |= s->blockExit();
++	    }
++	}
+      }
+      return result;
+  }
+@@ -697,6 +711,16 @@
+         buf->writenl();
+ }
+ 
++int CompoundStatement::isEmpty()
++{
++    for (int i = 0; i < statements->dim; i++)
++    {	Statement *s = (Statement *) statements->data[i];
++	if (s && !s->isEmpty())
++	    return FALSE;
++    }
++    return TRUE;
++}
++
+ 
+ /**************************** UnrolledLoopStatement ***************************/
+ 
+@@ -890,12 +914,19 @@
+      return statement ? statement->blockExit() : BEfallthru;
+  }
+ 
++
+ int ScopeStatement::comeFrom()
+ {
+     //printf("ScopeStatement::comeFrom()\n");
+     return statement ? statement->comeFrom() : FALSE;
+ }
+ 
++int ScopeStatement::isEmpty()
++{
++    //printf("ScopeStatement::isEmpty() %d\n", statement ? statement->isEmpty() : TRUE);
++    return statement ? statement->isEmpty() : TRUE;
++}
++
+ void ScopeStatement::toCBuffer(OutBuffer *buf, HdrGenState *hgs)
+ {
+     buf->writeByte('{');
+@@ -1133,8 +1164,9 @@
+     condition = condition->checkToBoolean();
+    }
+     if (increment)
+-	{	increment = increment->semantic(sc);
++    {	increment = increment->semantic(sc);
+  	increment = resolveProperties(sc, increment);
++	increment = increment->optimize(0);
+     }
+ 
+     sc->sbreak = this;
+@@ -3864,6 +3896,11 @@
+ 		error("catch at %s hides catch at %s", sj, si);
+ 	}
+     }
++
++    if (!body || body->isEmpty())
++    {
++	return NULL;
++    }
+     return this;
+ }
+ 
+diff -r 6a92bcae44c5 d/dmd/statement.h
+--- a/d/dmd/statement.h	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/statement.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -104,6 +104,7 @@
+     virtual int usesEH();
+     virtual int blockExit();
+     virtual int comeFrom();
++    virtual int isEmpty();
+     virtual void scopeCode(Scope *sc, Statement **sentry, Statement **sexit, Statement **sfinally);
+     virtual Statements *flatten(Scope *sc);
+     virtual Expression *interpret(InterState *istate);
+@@ -140,6 +141,7 @@
+     Statement *semantic(Scope *sc);
+     Expression *interpret(InterState *istate);
+     int blockExit();
++    int isEmpty();
+ 
+     int inlineCost(InlineCostState *ics);
+     Expression *doInline(InlineDoState *ids);
+@@ -185,6 +187,7 @@
+     int usesEH();
+     int blockExit();
+     int comeFrom();
++    int isEmpty();
+     Statements *flatten(Scope *sc);
+     ReturnStatement *isReturnStatement();
+     Expression *interpret(InterState *istate);
+@@ -244,6 +247,7 @@
+     int usesEH();
+     int blockExit();
+     int comeFrom();
++    int isEmpty();
+     Expression *interpret(InterState *istate);
+ 
+     Statement *inlineScan(InlineScanState *iss);
+diff -r 6a92bcae44c5 d/dmd/template.c
+--- a/d/dmd/template.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/template.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -4030,6 +4030,7 @@
+ 	{   sinteger_t v;
+ 	    real_t r;
+ 
++	    ea = ea->optimize(WANTvalue | WANTinterpret);
+ 	    if (ea->op == TOKvar)
+ 	    {
+ 		sa = ((VarExp *)ea)->var;
+diff -r 6a92bcae44c5 d/dmd/template.h
+--- a/d/dmd/template.h	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/template.h	Sat Jun 26 21:05:38 2010 +0100
+@@ -73,6 +73,7 @@
+     char *toChars();
+ 
+     void emitComment(Scope *sc);
++    void toJsonBuffer(OutBuffer *buf);
+ //    void toDocBuffer(OutBuffer *buf);
+ 
+     MATCH matchWithInstance(TemplateInstance *ti, Objects *atypes, int flag);
+diff -r 6a92bcae44c5 d/dmd/typinf.c
+--- a/d/dmd/typinf.c	Tue Jun 22 15:17:14 2010 -0400
++++ b/d/dmd/typinf.c	Sat Jun 26 21:05:38 2010 +0100
+@@ -441,8 +441,8 @@
+ 
+     TypeDelegate *tc = (TypeDelegate *)tinfo;
+ 
+-    tc->next->next->getTypeInfo(NULL);
+-    dtxoff(pdt, tc->next->next->vtinfo->toSymbol(), 0, TYnptr); // TypeInfo for delegate return value
++    tc->next->nextOf()->getTypeInfo(NULL);
++    dtxoff(pdt, tc->next->nextOf()->vtinfo->toSymbol(), 0, TYnptr); // TypeInfo for delegate return value
+ }
+ 
+ void TypeInfoStructDeclaration::toDt(dt_t **pdt)
+@@ -865,7 +865,7 @@
+ 	ai->type = t;
+ 	v = new VarDeclaration(0, t, id, ai);
+ 	m->members->push(v);
+-	m->symtab->insert(v);
++	m->symtabInsert(v);
+ 	sc = sc->push();
+ 	sc->linkage = LINKc;
+ 	sc->stc = STCstatic | STCcomdat;

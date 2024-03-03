@@ -1,0 +1,42 @@
+diff -r b2b0dae5dec2 d/d-asm-i386.h
+--- a/d/d-asm-i386.h	Mon Jun 20 00:07:23 2011 -0400
++++ b/d/d-asm-i386.h	Mon Jun 20 01:23:41 2011 -0400
+@@ -2192,18 +2192,6 @@
+                         writeReg(operand->segmentPrefix);
+                         insnTemplate->writebyte(':');
+                     }
+-                    if ((operand->segmentPrefix != Reg_Invalid && operand->symbolDisplacement.dim == 0) ||
+-                        operand->constDisplacement)
+-                    {
+-                        addOperand("%a", Arg_Integer, newIntExp(operand->constDisplacement), asmcode);
+-                        if (operand->symbolDisplacement.dim)
+-                        {
+-                            insnTemplate->writebyte('+');
+-                        }
+-                        operand->constDisplacement = 0;
+-                        if (opInfo->operands[i] & Opr_Dest)
+-                            asmcode->clobbersMemory = 1;
+-                    }
+                     if (operand->symbolDisplacement.dim)
+                     {
+                         Expression * e = (Expression *) operand->symbolDisplacement.data[0];
+@@ -2341,6 +2329,19 @@
+                         if (opInfo->operands[i] & Opr_Dest)
+                             asmcode->clobbersMemory = 1;
+                     }
++                    if ((operand->segmentPrefix != Reg_Invalid && operand->symbolDisplacement.dim == 0) ||
++                        operand->constDisplacement)
++                    {
++                        if (operand->symbolDisplacement.dim)
++                        {
++                            insnTemplate->writebyte('+');
++                        }
++                        addOperand("%a", Arg_Integer, newIntExp(operand->constDisplacement), asmcode);
++                        operand->constDisplacement = 0;
++                        if (opInfo->operands[i] & Opr_Dest)
++                            asmcode->clobbersMemory = 1;
++                    }
++                    
+                     break;
+                 }
+                 case Opr_Invalid:

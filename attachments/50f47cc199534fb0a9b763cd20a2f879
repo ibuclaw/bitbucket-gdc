@@ -1,0 +1,16 @@
+TARGET = main
+
+FLAGS=
+
+SEMITWIST = semitwist/util semitwist
+GOLDIE = goldie/grmc goldie/langs/grm goldie/langs goldie
+
+SRCDIR = $(SEMITWIST) $(GOLDIE)
+
+SRC =  $(foreach dir, $(SRCDIR), $(wildcard $(dir)/*.d)) tools/util.d main.d
+
+all:
+	gdc $(FLAGS) $(SRC)
+
+dmd:
+	dmd -of$(TARGET) $(SRC)

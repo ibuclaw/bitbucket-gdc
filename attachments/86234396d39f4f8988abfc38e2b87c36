@@ -1,0 +1,420 @@
+Index: build/script/bob.sh
+===================================================================
+--- build/script/bob.sh	(revision 5517)
++++ build/script/bob.sh	(working copy)
+@@ -100,10 +100,23 @@
+     then
+         return 1
+     fi
++    
++    if [ "`echo $FILE | grep posix`" -o "`echo $FILE | grep Posix`" ]
++    then
++        if [ "$UNAME" == "MINGW32_NT-6.1" ]
++        then
++            return 1
++        fi
++    fi
+ 
+     if [ "`echo $FILE | grep win32`" -o "`echo $FILE | grep Win32`" -o "`echo $FILE | grep windows`" ]
+     then
+-        return 1
++        if [ ! "$UNAME" == "MINGW32_NT-6.1" ]
++        then
++            return 1
++        else
++            return 0
++        fi
+     fi
+ 
+     if [ "`echo $FILE | grep darwin`" ]
+@@ -283,7 +296,6 @@
+             build dmd $LIBNAME
+             ;;
+         gdc)
+-            POSIXFLAG="-version=Posix"
+             build gdmd $LIBNAME
+             ;;
+         ldc)
+Index: object.di
+===================================================================
+--- object.di	(revision 5517)
++++ object.di	(working copy)
+@@ -43,6 +43,9 @@
+ }
+ 
+ version (GNU){
++    static if (__VERSION__ >= 1045) {
++        version=ClassInfoHasTypeInfo;
++    }
+ }else version (DigitalMars)
+ {
+     static if (__VERSION__ >= 1045) {
+Index: tango/core/rt/compiler/gdc/aApply.d
+===================================================================
+--- tango/core/rt/compiler/gdc/aApply.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/aApply.d	(working copy)
+@@ -34,7 +34,7 @@
+  * and dchar, and 2 of each of those.
+  */
+ module aApply;
+-private import rt.util.utf;
++private import rt.compiler.util.utf;
+ 
+ /**********************************************
+  */
+Index: tango/core/rt/compiler/gdc/aApplyR.d
+===================================================================
+--- tango/core/rt/compiler/gdc/aApplyR.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/aApplyR.d	(working copy)
+@@ -35,7 +35,7 @@
+  * and dchar, and 2 of each of those.
+  */
+ module aApplyR;
+-private import rt.util.utf;
++private import rt.compiler.util.utf;
+ 
+ /**********************************************/
+ /* 1 argument versions */
+Index: tango/core/rt/compiler/gdc/adi.d
+===================================================================
+--- tango/core/rt/compiler/gdc/adi.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/adi.d	(working copy)
+@@ -45,7 +45,7 @@
+ {
+     import tango.stdc.string;
+     import tango.stdc.stdlib;
+-    import rt.util.utf;
++    import rt.compiler.util.utf;
+ 
+     enum BlkAttr : uint
+     {
+Index: tango/core/rt/compiler/gdc/dgccmain2.d
+===================================================================
+--- tango/core/rt/compiler/gdc/dgccmain2.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/dgccmain2.d	(working copy)
+@@ -10,7 +10,7 @@
+ private
+ {
+     import memory;
+-    import rt.util.console;
++    import rt.compiler.util.console;
+ 
+     import tango.stdc.stddef;
+     import tango.stdc.stdlib;
+Index: tango/core/rt/compiler/gdc/genobj.d
+===================================================================
+--- tango/core/rt/compiler/gdc/genobj.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/genobj.d	(working copy)
+@@ -172,7 +172,7 @@
+     void*       deallocator;
+     OffsetTypeInfo[] offTi;
+     void * defaultConstructor;   // default Constructor
+-    //TypeInfo typeinfo;
++    TypeInfo typeinfo;
+ 
+     /**
+      * Search all modules for ClassInfo corresponding to classname.
+Index: tango/core/rt/compiler/gdc/Makefile.am
+===================================================================
+--- tango/core/rt/compiler/gdc/Makefile.am	(revision 5517)
++++ tango/core/rt/compiler/gdc/Makefile.am	(working copy)
+@@ -18,7 +18,7 @@
+ # AUTOMAKE_OPTIONS = 1.9.6 foreign no-dependencies
+ 
+ OUR_CFLAGS=@DEFS@ -I.
+-D_EXTRA_DFLAGS=-nostdinc -pipe -I../../.. -I../shared -fversion=Posix
++D_EXTRA_DFLAGS=-nostdinc -pipe -I../../../../.. -I../../..
+ ALL_DFLAGS = $(DFLAGS) $(D_MEM_FLAGS) $(D_EXTRA_DFLAGS) $(MULTIFLAGS)
+ 
+ host_alias=.
+@@ -92,18 +92,18 @@
+     switch.o
+ 
+ OBJ_UTIL= \
+-    ../shared/rt/util/console.o \
+-    ../shared/rt/util/ctype.o \
+-    ../shared/rt/util/string.o \
+-    ../shared/rt/util/utf.o \
+-    ../shared/rt/util/hash.o
++    ../util/console.o \
++    ../util/ctype.o \
++    ../util/string.o \
++    ../util/utf.o \
++    ../util/hash.o
+ 
+ OBJ_EXT = \
+     std/intrinsic.o
+ 
+ OBJ_MEM = @D_MEM_MODULES@
+ 
+-MAIN_OBJS=$(subst ti_,../shared/rt/typeinfo/ti_,$(TI))
++MAIN_OBJS=$(subst ti_,typeinfo/ti_,$(TI))
+ 
+ # This should not be linked into a shared library.
+ CMAIN_OBJS=
+Index: tango/core/rt/compiler/gdc/Makefile.in
+===================================================================
+--- tango/core/rt/compiler/gdc/Makefile.in	(revision 5517)
++++ tango/core/rt/compiler/gdc/Makefile.in	(working copy)
+@@ -228,7 +228,7 @@
+ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+ OUR_CFLAGS = @DEFS@ -I.
+-D_EXTRA_DFLAGS = -nostdinc -pipe -I../../.. -I../shared -fversion=Posix
++D_EXTRA_DFLAGS = -nostdinc -pipe -I../../../../.. -I../../..
+ ALL_DFLAGS = $(DFLAGS) $(D_MEM_FLAGS) $(D_EXTRA_DFLAGS) $(MULTIFLAGS)
+ toolexecdir = $(phobos_toolexecdir)
+ toolexeclibdir = $(phobos_toolexeclibdir)
+@@ -273,17 +273,17 @@
+     switch.o
+ 
+ OBJ_UTIL = \
+-    ../shared/rt/util/console.o \
+-    ../shared/rt/util/ctype.o \
+-    ../shared/rt/util/string.o \
+-    ../shared/rt/util/utf.o \
+-    ../shared/rt/util/hash.o
++    ../util/console.o \
++    ../util/ctype.o \
++    ../util/string.o \
++    ../util/utf.o \
++    ../util/hash.o
+ 
+ OBJ_EXT = \
+     std/intrinsic.o
+ 
+ OBJ_MEM = @D_MEM_MODULES@
+-MAIN_OBJS = $(subst ti_,../shared/rt/typeinfo/ti_,$(TI))
++MAIN_OBJS = $(subst ti_,typeinfo/ti_,$(TI))
+ 
+ # This should not be linked into a shared library.
+ CMAIN_OBJS =
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_Acdouble.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_Acdouble.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_Acdouble.d	(working copy)
+@@ -21,9 +21,9 @@
+  *     distribution.
+  */
+ 
+-module rt.compiler.typeinfo.ti_Acdouble;
++module typeinfo.ti_Acdouble;
+ 
+-private import rt.compiler.typeinfo.ti_cdouble;
++private import typeinfo.ti_cdouble;
+ private import rt.compiler.util.hash;
+ // cdouble[]
+ 
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_Acfloat.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_Acfloat.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_Acfloat.d	(working copy)
+@@ -21,9 +21,9 @@
+  *     distribution.
+  */
+ 
+-module rt.compiler.typeinfo.ti_Acfloat;
++module typeinfo.ti_Acfloat;
+ 
+-private import rt.compiler.typeinfo.ti_cfloat;
++private import typeinfo.ti_cfloat;
+ private import rt.compiler.util.hash;
+ 
+ // cfloat[]
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_Acreal.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_Acreal.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_Acreal.d	(working copy)
+@@ -21,9 +21,9 @@
+  *     distribution.
+  */
+ 
+-module rt.compiler.typeinfo.ti_Acreal;
++module typeinfo.ti_Acreal;
+ 
+-private import rt.compiler.typeinfo.ti_creal;
++private import typeinfo.ti_creal;
+ private import rt.compiler.util.hash;
+ 
+ // creal[]
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_Adouble.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_Adouble.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_Adouble.d	(working copy)
+@@ -21,9 +21,9 @@
+  *     distribution.
+  */
+ 
+-module rt.compiler.typeinfo.ti_Adouble;
++module typeinfo.ti_Adouble;
+ 
+-private import rt.compiler.typeinfo.ti_double;
++private import typeinfo.ti_double;
+ private import rt.compiler.util.hash;
+ 
+ // double[]
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_Afloat.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_Afloat.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_Afloat.d	(working copy)
+@@ -21,9 +21,9 @@
+  *     distribution.
+  */
+ 
+-module rt.compiler.typeinfo.ti_Afloat;
++module typeinfo.ti_Afloat;
+ 
+-private import rt.compiler.typeinfo.ti_float;
++private import typeinfo.ti_float;
+ private import rt.compiler.util.hash;
+ 
+ // float[]
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_Areal.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_Areal.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_Areal.d	(working copy)
+@@ -21,9 +21,9 @@
+  *     distribution.
+  */
+ 
+-module rt.compiler.typeinfo.ti_Areal;
++module typeinfo.ti_Areal;
+ 
+-private import rt.compiler.typeinfo.ti_real;
++private import typeinfo.ti_real;
+ private import rt.compiler.util.hash;
+ 
+ // real[]
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_double.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_double.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_double.d	(working copy)
+@@ -1,7 +1,7 @@
+ 
+ // double
+ 
+-module rt.compiler.typeinfo.ti_double;
++module typeinfo.ti_double;
+ private import rt.compiler.util.hash;
+ 
+ class TypeInfo_d : TypeInfo
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_idouble.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_idouble.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_idouble.d	(working copy)
+@@ -1,9 +1,9 @@
+ 
+ // idouble
+ 
+-module rt.compiler.typeinfo.ti_idouble;
++module typeinfo.ti_idouble;
+ 
+-private import rt.compiler.typeinfo.ti_double;
++private import typeinfo.ti_double;
+ 
+ class TypeInfo_p : TypeInfo_d
+ {
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_ifloat.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_ifloat.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_ifloat.d	(working copy)
+@@ -1,9 +1,9 @@
+ 
+ // ifloat
+ 
+-module rt.compiler.typeinfo.ti_ifloat;
++module typeinfo.ti_ifloat;
+ 
+-private import rt.compiler.typeinfo.ti_float;
++private import typeinfo.ti_float;
+ 
+ class TypeInfo_o : TypeInfo_f
+ {
+Index: tango/core/rt/compiler/gdc/typeinfo/ti_ireal.d
+===================================================================
+--- tango/core/rt/compiler/gdc/typeinfo/ti_ireal.d	(revision 5517)
++++ tango/core/rt/compiler/gdc/typeinfo/ti_ireal.d	(working copy)
+@@ -1,9 +1,9 @@
+ 
+ // ireal
+ 
+-module rt.compiler.typeinfo.ti_ireal;
++module typeinfo.ti_ireal;
+ 
+-private import rt.compiler.typeinfo.ti_real;
++private import typeinfo.ti_real;
+ 
+ class TypeInfo_j : TypeInfo_e
+ {
+Index: tango/core/Traits.d
+===================================================================
+--- tango/core/Traits.d	(revision 5517)
++++ tango/core/Traits.d	(working copy)
+@@ -254,7 +254,7 @@
+ /**
+  * Evaluates to true if T is a static array type.
+  */
+-version( GNU )
++version( None )
+ {
+     // GDC should also be able to use the other version, but it probably
+     // relies on a frontend fix in one of the latest DMD versions - will
+Index: tango/math/internal/BiguintCore.d
+===================================================================
+--- tango/math/internal/BiguintCore.d	(revision 5517)
++++ tango/math/internal/BiguintCore.d	(working copy)
+@@ -570,7 +570,7 @@
+             }
+             y0 = y/p;
+             finalMultiplier = intpow(x0, y - y0*p);
+-            x0 = intpow(x0, p);
++            x0 = intpow(x0, cast(ulong)p);
+         }
+         xlength = 1;
+     }
+Index: tango/stdc/stdarg.d
+===================================================================
+--- tango/stdc/stdarg.d	(revision 5517)
++++ tango/stdc/stdarg.d	(working copy)
+@@ -9,7 +9,7 @@
+ module tango.stdc.stdarg;
+ 
+ 
+-version( GNU )
++version( None )
+ {
+     public import std.c.stdarg;
+ }
+Index: tango/text/convert/Float.d
+===================================================================
+--- tango/text/convert/Float.d	(revision 5517)
++++ tango/text/convert/Float.d	(working copy)
+@@ -115,8 +115,8 @@
+ char[] toString (NumType d, uint decimals=Dec, int e=Exp)
+ {
+         char[64] tmp = void;
+-        
+-        return format (tmp, d, decimals, e).dup;
++
++        return format (tmp, d, cast(int)decimals, e).dup;
+ }
+                
+ /******************************************************************************
+@@ -132,7 +132,7 @@
+ {
+         wchar[64] tmp = void;
+         
+-        return format (tmp, d, decimals, e).dup;
++        return format (tmp, d, cast(int)decimals, e).dup;
+ }
+                
+ /******************************************************************************
+@@ -148,7 +148,7 @@
+ {
+         dchar[64] tmp = void;
+         
+-        return format (tmp, d, decimals, e).dup;
++        return format (tmp, d, cast(int)decimals, e).dup;
+ }
+                
+ /******************************************************************************

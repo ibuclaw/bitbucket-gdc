@@ -1,0 +1,2258 @@
+diff -r 67365c9f7b52 d/d-glue.cc
+--- a/d/d-glue.cc	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/d-glue.cc	Sun Oct 24 23:44:33 2010 +0000
+@@ -1984,6 +1984,9 @@
+ 	    // Constructor call
+ 	    if ( member ) {
+ 		new_call = irs->call(member, new_call, arguments);
++#if STRUCTTHISREF
++		new_call = irs->addressOf(new_call);
++#endif
+ 	    }
+ #if V2
+ 	    // %% D2.0 nested structs
+@@ -4656,7 +4659,7 @@
+ 	abort();
+     }
+ #if V2
+-    CLASSINFO_SIZE = (19 * PTRSIZE) + 4;
++    CLASSINFO_SIZE = (19 * PTRSIZE) + PTRSIZE;
+ #else
+     CLASSINFO_SIZE = 19 * PTRSIZE;
+ #endif
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/adi.d
+--- a/d/druntime/compiler/gdc/adi.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/adi.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -577,11 +577,10 @@
+   }
+   else
+   {
+-    int len;
+     int c;
+ 
+     debug(adi) printf("adCmpChar()\n");
+-    len = a1.length;
++    size_t len = a1.length;
+     if (a2.length < len)
+         len = a2.length;
+     c = memcmp(cast(char *)a1.ptr, cast(char *)a2.ptr, len);
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/arrayassign.d
+--- a/d/druntime/compiler/gdc/arrayassign.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/arrayassign.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -64,7 +64,7 @@
+     }
+     else
+     {
+-        for (int i = to.length; i--; )
++        for (auto i = to.length; i--; )
+         {
+             void* pto   = to.ptr   + i * element_size;
+             void* pfrom = from.ptr + i * element_size;
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/dgccmain2.d
+--- a/d/druntime/compiler/gdc/dgccmain2.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/dgccmain2.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -71,7 +71,7 @@
+ 
+         for (i = 0; i < argc; i++)
+         {
+-            int len = strlen(argv[i]);
++            auto len = strlen(argv[i]);
+             am[i] = argv[i][0 .. len];
+         }
+ 
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/dmain2.d
+--- a/d/druntime/compiler/gdc/dmain2.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/dmain2.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -339,6 +339,7 @@
+             }
+             catch (Throwable e)
+             {
++                /+
+                 while (e)
+                 {
+                     if (e.file)
+@@ -361,6 +362,8 @@
+                         console ("\n");
+                     e = e.next;
+                 }
++                +/
++                console (e.toString)("\n");
+                 result = EXIT_FAILURE;
+             }
+             catch (Object o)
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/lifetime.d
+--- a/d/druntime/compiler/gdc/lifetime.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/lifetime.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -231,6 +231,7 @@
+ 
+ Loverflow:
+     onOutOfMemoryError();
++    assert(0);
+ }
+ 
+ /**
+@@ -298,6 +299,7 @@
+ 
+ Loverflow:
+     onOutOfMemoryError();
++    assert(0);
+ }
+ 
+ /**
+@@ -644,6 +646,7 @@
+ 
+ Loverflow:
+     onOutOfMemoryError();
++    assert(0);
+ }
+ 
+ 
+@@ -769,6 +772,7 @@
+ 
+ Loverflow:
+     onOutOfMemoryError();
++    assert(0);
+ }
+ 
+ 
+@@ -1008,10 +1012,7 @@
+         }
+     }
+ 
+-    byte[] result;
+-    *cast(int *)&result = length;       // jam length
+-    (cast(void **)&result)[1] = a;      // jam ptr
+-    return result;
++    return (cast(byte*)a)[0..length];
+ }
+ 
+ 
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/object_.d
+--- a/d/druntime/compiler/gdc/object_.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/object_.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -38,11 +38,13 @@
+ {
+     alias ulong size_t;
+     alias long  ptrdiff_t;
++    alias long  sizediff_t;
+ }
+ else
+ {
+     alias uint  size_t;
+     alias int   ptrdiff_t;
++    alias int   sizediff_t;
+ }
+ 
+ alias size_t hash_t;
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/qsort.d
+--- a/d/druntime/compiler/gdc/qsort.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/qsort.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -56,8 +56,8 @@
+   byte*[40] stack;              // stack
+   byte** sp;                    // stack pointer
+   byte* i, j, limit;            // scan and limit pointers
+-  uint thresh;                  // size of _maxspan elements in bytes
+-  uint width = ti.tsize();
++  size_t thresh;                // size of _maxspan elements in bytes
++  size_t width = ti.tsize();
+ 
+   base = cast(byte *)a.ptr;
+   thresh = _maxspan * width;             // init threshold
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/switch_.d
+--- a/d/druntime/compiler/gdc/switch_.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/switch_.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -38,8 +38,8 @@
+ 
+     for (j = 1; j < table.length; j++)
+     {
+-        int len1 = table[j - 1].length;
+-        int len2 = table[j].length;
++        auto len1 = table[j - 1].length;
++        auto len2 = table[j].length;
+ 
+         assert(len1 <= len2);
+         if (len1 == len2)
+@@ -89,14 +89,8 @@
+ body
+ {
+     //printf("body _d_switch_string(%.*s)\n", ca);
+-    int low;
+-    int high;
+-    int mid;
+-    int c;
+-    char[] pca;
+-
+-    low = 0;
+-    high = table.length;
++    size_t low = 0;
++    auto high = table.length;
+ 
+     version (none)
+     {
+@@ -121,9 +115,9 @@
+         // Do binary search
+         while (low < high)
+         {
+-            mid = (low + high) >> 1;
+-            pca = table[mid];
+-            c = ca.length - pca.length;
++            auto mid = (low + high) >> 1;
++            auto pca = table[mid];
++            int c = cast(int)(ca.length - pca.length);
+             if (c == 0)
+             {
+                 c = cast(ubyte)c1 - cast(ubyte)pca[0];
+@@ -132,7 +126,7 @@
+                     c = memcmp(ca.ptr, pca.ptr, ca.length);
+                     if (c == 0)
+                     {   //printf("found %d\n", mid);
+-                        return mid;
++                        return cast(int)mid;
+                     }
+                 }
+             }
+@@ -177,15 +171,13 @@
+ 
+     for (j = 1; j < table.length; j++)
+     {
+-        int len1 = table[j - 1].length;
+-        int len2 = table[j].length;
++        auto len1 = table[j - 1].length;
++        auto len2 = table[j].length;
+ 
+         assert(len1 <= len2);
+         if (len1 == len2)
+         {
+-            int c;
+-
+-            c = memcmp(table[j - 1].ptr, table[j].ptr, len1 * wchar.sizeof);
++            auto c = memcmp(table[j - 1].ptr, table[j].ptr, len1 * wchar.sizeof);
+             assert(c < 0);  // c==0 means a duplicate
+         }
+     }
+@@ -228,14 +220,8 @@
+ body
+ {
+     //printf("body _d_switch_ustring()\n");
+-    int low;
+-    int high;
+-    int mid;
+-    int c;
+-    wchar[] pca;
+-
+-    low = 0;
+-    high = table.length;
++    size_t low = 0;
++    auto high = table.length;
+ 
+ /*
+     // Print table
+@@ -250,15 +236,15 @@
+     // Do binary search
+     while (low < high)
+     {
+-        mid = (low + high) >> 1;
+-        pca = table[mid];
+-        c = ca.length - pca.length;
++        auto mid = (low + high) >> 1;
++        auto pca = table[mid];
++        int c = cast(int)(ca.length - pca.length);
+         if (c == 0)
+         {
+             c = memcmp(ca.ptr, pca.ptr, ca.length * wchar.sizeof);
+             if (c == 0)
+             {   //printf("found %d\n", mid);
+-                return mid;
++                return cast(int)mid;
+             }
+         }
+         if (c < 0)
+@@ -302,15 +288,13 @@
+ 
+     for (j = 1; j < table.length; j++)
+     {
+-        int len1 = table[j - 1].length;
+-        int len2 = table[j].length;
++        auto len1 = table[j - 1].length;
++        auto len2 = table[j].length;
+ 
+         assert(len1 <= len2);
+         if (len1 == len2)
+         {
+-            int c;
+-
+-            c = memcmp(table[j - 1].ptr, table[j].ptr, len1 * dchar.sizeof);
++            auto c = memcmp(table[j - 1].ptr, table[j].ptr, len1 * dchar.sizeof);
+             assert(c < 0);  // c==0 means a duplicate
+         }
+     }
+@@ -353,14 +337,8 @@
+ body
+ {
+     //printf("body _d_switch_ustring()\n");
+-    int low;
+-    int high;
+-    int mid;
+-    int c;
+-    dchar[] pca;
+-
+-    low = 0;
+-    high = table.length;
++    size_t low = 0;
++    auto high = table.length;
+ 
+ /*
+     // Print table
+@@ -375,15 +353,15 @@
+     // Do binary search
+     while (low < high)
+     {
+-        mid = (low + high) >> 1;
+-        pca = table[mid];
+-        c = ca.length - pca.length;
++        auto mid = (low + high) >> 1;
++        auto pca = table[mid];
++        int c = cast(int)(ca.length - pca.length);
+         if (c == 0)
+         {
+             c = memcmp(ca.ptr, pca.ptr, ca.length * dchar.sizeof);
+             if (c == 0)
+             {   //printf("found %d\n", mid);
+-                return mid;
++                return cast(int)mid;
+             }
+         }
+         if (c < 0)
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/typeinfo/ti_AC.d
+--- a/d/druntime/compiler/gdc/typeinfo/ti_AC.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/typeinfo/ti_AC.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -87,7 +87,7 @@
+             c = -1;
+         else if (c > 0)
+             c = 1;
+-        return c;
++        return cast(int)c;
+     }
+ 
+     override size_t tsize()
+diff -r 67365c9f7b52 d/druntime/compiler/gdc/util/string.d
+--- a/d/druntime/compiler/gdc/util/string.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/compiler/gdc/util/string.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -15,7 +15,7 @@
+ 
+ private import core.stdc.string;
+ 
+-char[] intToString( char[] buf, uint val )
++char[] intToString( char[] buf, size_t val )
+ {
+     assert( buf.length > 9 );
+     auto p = buf.ptr + buf.length;
+diff -r 67365c9f7b52 d/druntime/import/core/sys/posix/sys/select.d
+--- a/d/druntime/import/core/sys/posix/sys/select.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/import/core/sys/posix/sys/select.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -48,14 +48,14 @@
+     private
+     {
+         alias c_long __fd_mask;
+-        enum __NFDBITS = 8 * __fd_mask.sizeof;
++        enum uint __NFDBITS = 8 * __fd_mask.sizeof;
+ 
+-        extern (D) int __FDELT( int d )
++        extern (D) auto __FDELT( int d )
+         {
+             return d / __NFDBITS;
+         }
+ 
+-        extern (D) int __FDMASK( int d )
++        extern (D) auto __FDMASK( int d )
+         {
+             return cast(__fd_mask) 1 << ( d % __NFDBITS );
+         }
+@@ -73,7 +73,7 @@
+         fdset.fds_bits[__FDELT( fd )] &= ~__FDMASK( fd );
+     }
+ 
+-    extern (D) int  FD_ISSET( int fd, fd_set* fdset )
++    extern (D) sizediff_t FD_ISSET( int fd, fd_set* fdset )
+     {
+         return fdset.fds_bits[__FDELT( fd )] & __FDMASK( fd );
+     }
+diff -r 67365c9f7b52 d/druntime/import/object.di
+--- a/d/druntime/import/object.di	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/druntime/import/object.di	Sun Oct 24 23:44:33 2010 +0000
+@@ -14,6 +14,7 @@
+ 
+ alias typeof(int.sizeof)                    size_t;
+ alias typeof(cast(void*)0 - cast(void*)0)   ptrdiff_t;
++alias typeof(cast(void*)0 - cast(void*)0)   sizediff_t;
+ 
+ alias size_t hash_t;
+ alias bool equals_t;
+diff -r 67365c9f7b52 d/phobos2/gcc/deh.d
+--- a/d/phobos2/gcc/deh.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/gcc/deh.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -38,7 +38,7 @@
+ 
+ struct Phase1Info
+ {
+-    int handlerSwitchValue;
++    _Unwind_Word handlerSwitchValue;
+     ubyte *languageSpecificData;
+     _Unwind_Ptr landingPad;
+ }
+diff -r 67365c9f7b52 d/phobos2/gcc/unwind_pe.d
+--- a/d/phobos2/gcc/unwind_pe.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/gcc/unwind_pe.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -74,6 +74,7 @@
+ 	  return 8;
+ 	}
+       abort ();
++      return -1;
+     }
+ }
+ 
+@@ -105,6 +106,7 @@
+ 	  return _Unwind_GetRegionStart (context);
+ 	}
+       abort ();
++      return cast(_Unwind_Ptr)-1;
+     }
+ }
+ 
+diff -r 67365c9f7b52 d/phobos2/std/base64.d
+--- a/d/phobos2/std/base64.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/base64.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -68,10 +68,9 @@
+  * Returns the number of bytes needed to encode a string of length slen.
+  */
+ 
+-uint encodeLength(uint slen)
++size_t encodeLength(size_t slen)
+ {
+-	uint result;
+-	result = slen / 3;
++	auto result = slen / 3;
+ 	if(slen % 3)
+ 		result++;
+ 	return result * 4;
+@@ -97,8 +96,8 @@
+ 		return buf[0 .. 0];
+ 	
+ 	uint stri;
+-	uint strmax = str.length / 3;
+-	uint strleft = str.length % 3;
++	auto strmax = str.length / 3;
++	auto strleft = str.length % 3;
+ 	uint x;
+ 	const(char)* sp;
+ 	char* bp;
+@@ -168,7 +167,7 @@
+  * Returns the number of bytes needed to decode an encoded string of this
+  * length.
+  */
+-uint decodeLength(uint elen)
++size_t decodeLength(size_t elen)
+ {
+ 	return elen / 4 * 3;
+ }
+@@ -229,7 +228,7 @@
+ 		throw new Base64Exception("Invalid encoded base64 string");
+ 	
+ 	uint estri;
+-	uint estrmax = estr.length / 4;
++	auto estrmax = estr.length / 4;
+ 	uint x;
+ 	const(char)* sp;
+ 	char* bp;
+diff -r 67365c9f7b52 d/phobos2/std/bigint.d
+--- a/d/phobos2/std/bigint.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/bigint.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -1409,7 +1409,7 @@
+     {
+         auto array = x.dup.reverse;
+     }
+-    for (int i=array.length; i<4; ++i)
++    for (auto i=array.length; i<4; ++i)
+     {
+         r ~= "----------, ";
+     }
+diff -r 67365c9f7b52 d/phobos2/std/bitmanip.d
+--- a/d/phobos2/std/bitmanip.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/bitmanip.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -335,7 +335,7 @@
+     }
+     body
+     {
+-        return cast(bool) bt(ptr, i);
++        return cast(bool) bt(ptr, cast(uint)i);
+     }
+ 
+     unittest
+@@ -360,9 +360,9 @@
+     body
+     {
+         if (b)
+-            bts(ptr, i);
++            bts(ptr, cast(uint)i);
+         else
+-            btr(ptr, i);
++            btr(ptr, cast(uint)i);
+         return b;
+     }
+ 
+@@ -580,7 +580,7 @@
+             return 0;                // not equal
+         byte *p1 = cast(byte*)this.ptr;
+         byte *p2 = cast(byte*)a2.ptr;
+-        uint n = this.length / 8;
++        auto n = this.length / 8;
+         for (i = 0; i < n; i++)
+         {
+             if (p1[i] != p2[i])
+@@ -623,15 +623,14 @@
+ 
+     int opCmp(BitArray a2)
+     {
+-        uint len;
+         uint i;
+ 
+-        len = this.length;
++        auto len = this.length;
+         if (a2.length < len)
+             len = a2.length;
+         ubyte* p1 = cast(ubyte*)this.ptr;
+         ubyte* p2 = cast(ubyte*)a2.ptr;
+-        uint n = len / 8;
++        auto n = len / 8;
+         for (i = 0; i < n; i++)
+         {
+             if (p1[i] != p2[i])
+diff -r 67365c9f7b52 d/phobos2/std/conv.d
+--- a/d/phobos2/std/conv.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/conv.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -2353,7 +2353,7 @@
+  */
+ private bool getComplexStrings(in string s, out string s1, out string s2)
+ {
+-    int len = s.length;
++    sizediff_t len = s.length;
+ 
+     if (!len)
+         goto Lerr;
+diff -r 67365c9f7b52 d/phobos2/std/encoding.d
+--- a/d/phobos2/std/encoding.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/encoding.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -679,7 +679,7 @@
+         return c < 0x80;
+     }
+     
+-    uint encodedLength(dchar c)
++    size_t encodedLength(dchar c)
+     in
+     {
+     	assert(canEncode(c));
+@@ -762,7 +762,7 @@
+         return true;
+     }
+ 
+-    uint encodedLength(dchar c)
++    size_t encodedLength(dchar c)
+     in
+     {
+     	assert(canEncode(c));
+@@ -849,7 +849,7 @@
+         return (charMap[c-0x80] != 0xFFFD);
+     }
+ 
+-    uint encodedLength(dchar c)
++    size_t encodedLength(dchar c)
+     in
+     {
+     	assert(canEncode(c));
+@@ -865,7 +865,7 @@
+         else if (c >= 0xFFFD) { c = '?'; }
+         else
+         {
+-            int n = -1;
++            sizediff_t n = -1;
+             foreach(i,wchar d;charMap)
+             {
+                 if (c == d)
+@@ -874,7 +874,7 @@
+                     break;
+                 }
+             }
+-            c = n == -1 ? '?' : 0x80 + n;
++            c = n == -1 ? '?' : 0x80 + cast(dchar)n;
+         }
+         write(cast(Windows1252Char)c);
+     }
+@@ -957,7 +957,7 @@
+         return tailTable[c-0x80];
+     }
+ 
+-    uint encodedLength(dchar c)
++    size_t encodedLength(dchar c)
+     in
+     {
+     	assert(canEncode(c));
+@@ -1101,7 +1101,7 @@
+         return true;
+     }
+ 
+-    uint encodedLength(dchar c)
++    size_t encodedLength(dchar c)
+     in
+     {
+     	assert(canEncode(c));
+@@ -1198,7 +1198,7 @@
+         return isValidCodePoint(c);
+     }
+ 
+-    uint encodedLength(dchar c)
++    size_t encodedLength(dchar c)
+     in
+     {
+     	assert(canEncode(c));
+@@ -1380,9 +1380,9 @@
+  Params:
+     s = the string to be tested
+  */
+-uint validLength(E)(const(E)[] s)
++size_t validLength(E)(const(E)[] s)
+ {
+-    uint result, before = void;
++    size_t result, before = void;
+     while ((before = s.length) > 0)
+     {
+         if (EncoderInstance!(E).safeDecode(s) == INVALID_SEQUENCE)
+@@ -1493,7 +1493,7 @@
+  Params:
+     s = the string to be sliced
+  */
+-uint lastSequence(E)(const(E)[] s)
++size_t lastSequence(E)(const(E)[] s)
+ in
+ {
+     assert(s.length != 0);
+@@ -1559,7 +1559,7 @@
+  Params:
+     s = the string to be counted
+  */
+-int index(E)(const(E)[] s,int n)
++sizediff_t index(E)(const(E)[] s,int n)
+ in
+ {
+     assert(isValid(s));
+@@ -1671,7 +1671,7 @@
+  Params:
+     c = the code point to be encoded
+  */
+-uint encodedLength(E)(dchar c)
++size_t encodedLength(E)(dchar c)
+ in
+ {
+     assert(isValidCodePoint(c));
+@@ -1737,7 +1737,7 @@
+  Returns:
+ 	  the number of code units written to the array
+  */
+-uint encode(E)(dchar c, E[] array)
++size_t encode(E)(dchar c, E[] array)
+ in
+ {
+     assert(isValidCodePoint(c));
+@@ -1985,7 +1985,7 @@
+ output range $(D R). Returns the number of $(D E)s written.
+  */
+ 
+-uint encode(Tgt, Src, R)(in Src[] s, R range)
++size_t encode(Tgt, Src, R)(in Src[] s, R range)
+ {
+     uint result;
+     foreach (c; s)
+@@ -2176,7 +2176,7 @@
+          * Returns:
+          *    the number of ubytes required.
+          */
+-        abstract uint encodedLength(dchar c);
++        abstract size_t encodedLength(dchar c);
+ 
+         /**
+          * Encodes a single code point into a user-supplied, fixed-size buffer.
+@@ -2194,7 +2194,7 @@
+          * Returns:
+          *    the number of ubytes written.
+          */
+-        abstract uint encode(dchar c, ubyte[] buffer);
++        abstract size_t encode(dchar c, ubyte[] buffer);
+ 
+         /**
+          * Decodes a single code point.
+@@ -2258,7 +2258,7 @@
+      * Params:
+      *    s = the array to be tested
+      */
+-    uint validLength(const(ubyte)[] s)
++    size_t validLength(const(ubyte)[] s)
+     {
+         const(ubyte)[] r = s;
+         const(ubyte)[] t = s;
+@@ -2284,14 +2284,14 @@
+      */
+     immutable(ubyte)[] sanitize(immutable(ubyte)[] s)
+     {
+-		uint n = validLength(s);
++		auto n = validLength(s);
+ 		if (n == s.length) return s;
+ 
+ 		auto repSeq = replacementSequence;
+ 
+ 		// Count how long the string needs to be.
+ 		// Overestimating is not a problem
+-		uint len = s.length;
++		auto len = s.length;
+ 		const(ubyte)[] t = s[n..$];
+ 		while (t.length != 0)
+ 		{
+@@ -2304,7 +2304,7 @@
+ 		// Now do the write
+ 		ubyte[] array = new ubyte[len];
+ 		array[0..n] = s[0..n];
+-		uint offset = n;
++		auto offset = n;
+ 
+ 		t = s[n..$];
+ 		while (t.length != 0)
+@@ -2330,7 +2330,7 @@
+      * Params:
+      *    s = the array to be sliced
+      */
+-    uint firstSequence(const(ubyte)[] s)
++    size_t firstSequence(const(ubyte)[] s)
+     in
+     {
+         assert(s.length != 0);
+@@ -2378,7 +2378,7 @@
+      * Params:
+      *    s = the string to be counted
+      */
+-    int index(const(ubyte)[] s,int n)
++    sizediff_t index(const(ubyte)[] s,int n)
+     in
+     {
+         assert(isValid(s));
+@@ -2448,12 +2448,12 @@
+             return std.encoding.canEncode!(AsciiChar)(c);
+         }
+         
+-        override uint encodedLength(dchar c)
++        override size_t encodedLength(dchar c)
+         {
+         	return std.encoding.encodedLength!(AsciiChar)(c);
+         }
+ 
+-        override uint encode(dchar c, ubyte[] buffer)
++        override size_t encode(dchar c, ubyte[] buffer)
+         {
+         	auto r = cast(AsciiChar[])buffer;
+             return std.encoding.encode(c,r);
+@@ -2532,12 +2532,12 @@
+             return std.encoding.canEncode!(Latin1Char)(c);
+         }
+ 
+-        override uint encodedLength(dchar c)
++        override size_t encodedLength(dchar c)
+         {
+         	return std.encoding.encodedLength!(Latin1Char)(c);
+         }
+ 
+-        override uint encode(dchar c, ubyte[] buffer)
++        override size_t encode(dchar c, ubyte[] buffer)
+         {
+         	auto r = cast(Latin1Char[])buffer;
+             return std.encoding.encode(c,r);
+@@ -2600,12 +2600,12 @@
+             return std.encoding.canEncode!(Windows1252Char)(c);
+         }
+ 
+-        override uint encodedLength(dchar c)
++        override size_t encodedLength(dchar c)
+         {
+         	return std.encoding.encodedLength!(Windows1252Char)(c);
+         }
+ 
+-        override uint encode(dchar c, ubyte[] buffer)
++        override size_t encode(dchar c, ubyte[] buffer)
+         {
+         	auto r = cast(Windows1252Char[])buffer;
+             return std.encoding.encode(c,r);
+@@ -2668,12 +2668,12 @@
+             return std.encoding.canEncode!(char)(c);
+         }
+ 
+-        override uint encodedLength(dchar c)
++        override size_t encodedLength(dchar c)
+         {
+         	return std.encoding.encodedLength!(char)(c);
+         }
+ 
+-        override uint encode(dchar c, ubyte[] buffer)
++        override size_t encode(dchar c, ubyte[] buffer)
+         {
+         	auto r = cast(char[])buffer;
+             return std.encoding.encode(c,r);
+@@ -2736,12 +2736,12 @@
+             return std.encoding.canEncode!(wchar)(c);
+         }
+ 
+-        override uint encodedLength(dchar c)
++        override size_t encodedLength(dchar c)
+         {
+         	return std.encoding.encodedLength!(wchar)(c);
+         }
+ 
+-        override uint encode(dchar c, ubyte[] buffer)
++        override size_t encode(dchar c, ubyte[] buffer)
+         {
+         	auto r = cast(wchar[])buffer;
+             return wchar.sizeof * std.encoding.encode(c,r);
+@@ -2814,12 +2814,12 @@
+             return std.encoding.canEncode!(dchar)(c);
+         }
+ 
+-        override uint encodedLength(dchar c)
++        override size_t encodedLength(dchar c)
+         {
+         	return std.encoding.encodedLength!(dchar)(c);
+         }
+ 
+-        override uint encode(dchar c, ubyte[] buffer)
++        override size_t encode(dchar c, ubyte[] buffer)
+         {
+         	auto r = cast(dchar[])buffer;
+             return dchar.sizeof * std.encoding.encode(c,r);
+diff -r 67365c9f7b52 d/phobos2/std/format.d
+--- a/d/phobos2/std/format.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/format.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -472,9 +472,9 @@
+ 	void putstr(const char[] s)
+ 	{
+ 	    //printf("flags = x%x\n", flags);
+-	    int prepad = 0;
+-	    int postpad = 0;
+-	    int padding = field_width - (strlen(prefix) + toUCSindex(s, s.length));
++	    sizediff_t prepad = 0;
++	    sizediff_t postpad = 0;
++	    sizediff_t padding = field_width - (strlen(prefix) + toUCSindex(s, s.length));
+ 	    if (padding > 0)
+ 	    {
+ 		if (flags & FLdash)
+@@ -543,7 +543,7 @@
+ 	    }
+ 	    else
+ 	    {
+-            int sl;
++            sizediff_t sl;
+             char[] fbuf = tmpbuf;
+             char[12] format;
+             format[0] = '%';
+@@ -1246,7 +1246,7 @@
+ 	    }
+ 	}
+ 
+-	int n = tmpbuf.length;
++	sizediff_t n = tmpbuf.length;
+ 	char c;
+ 	int hexoffset = uc ? ('A' - ('9' + 1)) : ('a' - ('9' + 1));
+ 
+@@ -1260,7 +1260,7 @@
+ 	}
+ 	if (tmpbuf.length - n < precision && precision < tmpbuf.length)
+ 	{
+-	    int m = tmpbuf.length - precision;
++	    sizediff_t m = tmpbuf.length - precision;
+ 	    tmpbuf[m .. n] = '0';
+ 	    n = m;
+ 	}
+@@ -1804,13 +1804,13 @@
+     /** Special values for width and precision, DYNAMIC width or
+      * precision means that they were specified with '*' in the format
+      * string. */
+-    enum short DYNAMIC = short.max;
++    enum int DYNAMIC = int.max;
+     /** Special value for precision */
+-    enum short UNSPECIFIED = DYNAMIC - 1;
++    enum int UNSPECIFIED = DYNAMIC - 1;
+     /** minimum width, default 0.  */
+-    short width = 0;
++    int width = 0;
+     /** precision. */
+-    short precision = UNSPECIFIED; 
++    int precision = UNSPECIFIED; 
+     /** The actual format specifier, 's' by default. */
+     char spec = 's';
+     /** Index of the argument for positional parameters, from 1 to
+@@ -2105,12 +2105,13 @@
+     // write left pad; write sign; write 0x or 0X; write digits;
+     //   write right pad
+     // Writing left pad
+-    int spacesToPrint = 
++    Select!(size_t.sizeof > 4, long, int)
++    spacesToPrint =
+         f.width // start with the minimum width
+         - digits.length  // take away digits to print
+         - (forcedPrefix != 0) // take away the sign if any
+         - (base == 16 && f.flHash() && arg ? 2 : 0); // 0x or 0X
+-    int delta = f.precision - digits.length;
++    const int delta = cast(int)(f.precision - digits.length);
+     if (delta > 0) spacesToPrint -= delta;
+     //writeln(spacesToPrint);
+     if (spacesToPrint > 0) // need to do some padding
+@@ -2136,7 +2137,7 @@
+     // write the digits
+     if (arg || f.precision)
+     {
+-        int zerosToPrint = f.precision - digits.length;
++        int zerosToPrint = cast(int)(f.precision - digits.length);
+         foreach (i ; 0 .. zerosToPrint) w.put('0');
+         w.put(digits);
+     }
+diff -r 67365c9f7b52 d/phobos2/std/math.d
+--- a/d/phobos2/std/math.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/math.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -3111,7 +3111,7 @@
+     }
+     else
+     {
+-        int i = A.length - 1;
++        sizediff_t i = A.length - 1;
+         real r = A[i];
+         while (--i >= 0)
+         {
+diff -r 67365c9f7b52 d/phobos2/std/md5.d
+--- a/d/phobos2/std/md5.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/md5.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -261,7 +261,7 @@
+     void update(const void[] input)
+     {
+       uint i, index, partLen;
+-      uint inputLen = input.length;
++      auto inputLen = input.length;
+ 
+       /* Compute number of bytes mod 64 */
+       index = (cast(uint)count >> 3) & (64 - 1);
+diff -r 67365c9f7b52 d/phobos2/std/openrj.d
+--- a/d/phobos2/std/openrj.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/openrj.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -519,7 +519,7 @@
+     /**
+      *
+      */
+-    uint numFields()
++    size_t numFields()
+     {
+         return m_fields.length;
+     }
+@@ -527,7 +527,7 @@
+     /**
+      *
+      */
+-    uint length()
++    size_t length()
+     {
+         return numFields();
+     }
+@@ -755,7 +755,7 @@
+                     }
+                     else
+                     {
+-                        int colon   =   find(nextLine, ':');
++                        auto colon   =   find(nextLine, ':');
+ 
+                         if(-1 == colon)
+                         {
+@@ -894,7 +894,7 @@
+     /**
+      *
+      */
+-    uint length()
++    size_t length()
+     {
+         return numRecords();
+     }
+diff -r 67365c9f7b52 d/phobos2/std/outbuffer.d
+--- a/d/phobos2/std/outbuffer.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/outbuffer.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -69,7 +69,7 @@
+      */
+ 
+ 
+-    void reserve(uint nbytes)
++    void reserve(size_t nbytes)
+ 	in
+ 	{
+ 	    assert(offset + nbytes >= offset);
+@@ -328,7 +328,7 @@
+      * all data past index.
+      */
+ 
+-    void spread(uint index, uint nbytes)
++    void spread(size_t index, size_t nbytes)
+ 	in
+ 	{
+ 	    assert(index <= offset);
+diff -r 67365c9f7b52 d/phobos2/std/path.d
+--- a/d/phobos2/std/path.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/path.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -1165,7 +1165,7 @@
+  * is joined to path[char_pos .. length] if char_pos is smaller
+  * than length, otherwise path is not appended to c_path.
+  */
+-private string combineCPathWithDPath(char* c_path, string path, int char_pos)
++private string combineCPathWithDPath(char* c_path, string path, size_t char_pos)
+ {
+     assert(c_path != null);
+     assert(path.length > 0);
+@@ -1199,12 +1199,12 @@
+ 
+     // Extract username, searching for path separator.
+     string username;
+-    int last_char = indexOf(path, sep[0]);
++    auto last_char = indexOf(path, sep[0]);
+ 
+     if (last_char == -1)
+     {
+         username = path[1 .. length] ~ '\0';
+-	last_char = username.length + 1;
++	last_char = cast(int)username.length + 1;
+     }
+     else
+     {
+diff -r 67365c9f7b52 d/phobos2/std/regexp.d
+--- a/d/phobos2/std/regexp.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/regexp.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -177,8 +177,8 @@
+ 
+ struct regmatch_t
+ {
+-    int rm_so;			// index of start of match
+-    int rm_eo;			// index past end of match
++    sizediff_t rm_so;			// index of start of match
++    sizediff_t rm_eo;			// index past end of match
+ }
+ 
+ private alias char rchar;	// so we can make a wchar version
+@@ -252,7 +252,7 @@
+ {
+     auto r = new RegExp(pattern, attributes);
+     string result;
+-    int lastindex;
++    sizediff_t lastindex;
+     int offset;
+ 
+     result = s;
+@@ -260,8 +260,8 @@
+     offset = 0;
+     while (r.test(s, lastindex))
+     {
+-        int so = r.pmatch[0].rm_so;
+-        int eo = r.pmatch[0].rm_eo;
++        auto so = r.pmatch[0].rm_so;
++        auto eo = r.pmatch[0].rm_eo;
+ 
+         string replacement = dg(r);
+ 
+@@ -335,7 +335,7 @@
+  * ---
+  */
+ 
+-int find(string s, RegExp pattern)
++sizediff_t find(string s, RegExp pattern)
+ {
+     return pattern.test(s)
+         ? pattern.pmatch[0].rm_so
+@@ -365,17 +365,11 @@
+    find(s, RegExp(p, a))).
+ */
+ 
+-int find(string s, string pattern, string attributes = null)
++sizediff_t find(string s, string pattern, string attributes = null)
+ {
+-    int i = -1;
+-
+     auto r = new RegExp(pattern, attributes);
+-    if (r.test(s))
+-    {
+-        i = r.pmatch[0].rm_so;
+-    }
+-    delete r;
+-    return i;
++    scope(exit) delete r;
++    return r.test(s) ? r.pmatch[0].rm_so : -1;
+ }
+ 
+ unittest
+@@ -403,13 +397,12 @@
+  * ---
+  */
+ 
+-int rfind(string s, RegExp pattern)
++sizediff_t rfind(string s, RegExp pattern)
+ {
+-    int i = -1;
+-    int lastindex = 0;
++    sizediff_t i = -1, lastindex = 0;
+ 
+     while (pattern.test(s, lastindex))
+-    {   int eo = pattern.pmatch[0].rm_eo;
++    {   auto eo = pattern.pmatch[0].rm_eo;
+         i = pattern.pmatch[0].rm_so;
+         if (lastindex == eo)
+             lastindex++;		// always consume some source
+@@ -449,14 +442,13 @@
+ rfind(s, RegExp(p, a))).
+ */
+ 
+-int rfind(string s, string pattern, string attributes = null)
++sizediff_t rfind(string s, string pattern, string attributes = null)
+ {
+-    int i = -1;
+-    int lastindex = 0;
++    sizediff_t i = -1, lastindex = 0;
+ 
+     auto r = new RegExp(pattern, attributes);
+     while (r.test(s, lastindex))
+-    {   int eo = r.pmatch[0].rm_eo;
++    {   auto eo = r.pmatch[0].rm_eo;
+         i = r.pmatch[0].rm_so;
+         if (lastindex == eo)
+             lastindex++;		// always consume some source
+@@ -968,22 +960,21 @@
+ 
+         if (s.length)
+         {
+-            int p = 0;
+-            int q;
++            sizediff_t p, q;
+             for (q = p; q != s.length;)
+             {
+                 if (test(s, q))
+-                {	int e;
++                {
+ 
+                     q = pmatch[0].rm_so;
+-                    e = pmatch[0].rm_eo;
++                    auto e = pmatch[0].rm_eo;
+                     if (e != p)
+                     {
+                         result ~= s[p .. q];
+                         for (int i = 1; i < pmatch.length; i++)
+                         {
+-                            int so = pmatch[i].rm_so;
+-                            int eo = pmatch[i].rm_eo;
++                            auto so = pmatch[i].rm_so;
++                            auto eo = pmatch[i].rm_eo;
+                             if (so == eo)
+                             {   so = 0;	// -1 gives array bounds error
+                                 eo = 0;
+@@ -1059,9 +1050,9 @@
+  *	index of match if successful, -1 if not found
+  */
+ 
+-    public int find(string string)
++    public sizediff_t find(string string)
+     {
+-        int i;
++        sizediff_t i;
+ 
+         i = test(string);
+         if (i)
+@@ -1099,10 +1090,10 @@
+ 
+         if (attributes & REA.global)
+         {
+-            int lastindex = 0;
++            sizediff_t lastindex = 0;
+ 
+             while (test(s, lastindex))
+-            {   int eo = pmatch[0].rm_eo;
++            {   auto eo = pmatch[0].rm_eo;
+ 
+                 result ~= input[pmatch[0].rm_so .. eo];
+                 if (lastindex == eo)
+@@ -1152,7 +1143,7 @@
+     public string replace(string s, string format)
+     {
+         string result;
+-        int lastindex;
++        sizediff_t lastindex;
+         int offset;
+ 
+         result = s;
+@@ -1163,8 +1154,8 @@
+             if (!test(s, lastindex))
+                 break;
+ 
+-            int so = pmatch[0].rm_so;
+-            int eo = pmatch[0].rm_eo;
++            auto so = pmatch[0].rm_so;
++            auto eo = pmatch[0].rm_eo;
+ 
+             string replacement = replace(format);
+ 
+@@ -1308,10 +1299,9 @@
+  * Returns: 0 for no match, !=0 for match
+  */
+ 
+-    public int test(string s, int startindex)
++    public int test(string s, size_t startindex)
+     {
+         char firstc;
+-        uint si;
+ 
+         input = s;
+         debug (regexp) printf("RegExp.test(input[] = '%.*s', startindex = %d)\n", input, startindex);
+@@ -1332,7 +1322,7 @@
+                 firstc = 0;
+         }
+ 
+-        for (si = startindex; ; si++)
++        for (auto si = startindex; ; si++)
+         {
+             if (firstc)
+             {
+@@ -1392,7 +1382,7 @@
+         assert("abc" != RegExp(".b.."));
+     }
+ 
+-    int chr(inout uint si, rchar c)
++    int chr(ref size_t si, rchar c)
+     {
+         for (; si < input.length; si++)
+         {
+@@ -1612,24 +1602,24 @@
+  *	0 no match
+  */
+ 
+-    int trymatch(int pc, int pcend)
+-    {   int srcsave;
+-        uint len;
+-        uint n;
+-        uint m;
+-        uint count;
+-        uint pop;
+-        uint ss;
++    int trymatch(size_t pc, size_t pcend)
++    {
++        size_t len;
++        size_t n;
++        size_t m;
++        size_t count;
++        size_t pop;
++        size_t ss;
+         regmatch_t *psave;
+-        uint c1;
+-        uint c2;
++        size_t c1;
++        size_t c2;
+         ushort* pu;
+         uint* puint;
+ 
+         debug(regexp)
+                  printf("RegExp.trymatch(pc = %d, src = '%.*s', pcend = %d)\n",
+                          pc, input[src .. input.length], pcend);
+-        srcsave = src;
++        auto srcsave = src;
+         psave = null;
+         for (;;)
+         {
+@@ -1840,9 +1830,8 @@
+                 if (trymatch(pop, pcend))
+                 {
+                     if (pcend != program.length)
+-                    {	int s;
+-
+-                        s = src;
++                    {
++                        auto s = src;
+                         if (trymatch(pcend, program.length))
+                         {   debug(regexp) printf("\tfirst operand matched\n");
+                             src = s;
+@@ -1879,16 +1868,14 @@
+                 debug(regexp) printf("\tREanystar\n");
+                 pc++;
+                 for (;;)
+-                {   int s1;
+-                    int s2;
+-
+-                    s1 = src;
++                {
++                    auto s1 = src;
+                     if (src == input.length)
+                         break;
+                     if (!(attributes & REA.dotmatchlf) && input[src] == '\n')
+                         break;
+                     src++;
+-                    s2 = src;
++                    auto s2 = src;
+ 
+                     // If no match after consumption, but it
+                     // did match before, then no match
+@@ -1930,10 +1917,9 @@
+                 if (program[pc] == REnmq)	// if minimal munch
+                 {
+                     for (; count < m; count++)
+-                    {   int s1;
+-
++                    {
+                         memcpy(psave, pmatch.ptr, (re_nsub + 1) * regmatch_t.sizeof);
+-                        s1 = src;
++                        auto s1 = src;
+ 
+                         if (trymatch(pop + len, program.length))
+                         {
+@@ -1958,16 +1944,14 @@
+                 else	// maximal munch
+                 {
+                     for (; count < m; count++)
+-                    {   int s1;
+-                        int s2;
+-
++                    {
+                         memcpy(psave, pmatch.ptr, (re_nsub + 1) * regmatch_t.sizeof);
+-                        s1 = src;
++                        auto s1 = src;
+                         if (!trymatch(pop, pop + len))
+                         {   debug(regexp) printf("\tdoesn't match subexpression\n");
+                             break;
+                         }
+-                        s2 = src;
++                        auto s2 = src;
+ 
+                         // If source is not consumed, don't
+                         // infinite loop on the match
+@@ -2109,8 +2093,8 @@
+                 n = program[pc + 1];
+                 debug(regexp) printf("\tREbackref %d\n", n);
+ 
+-                int so = pmatch[n + 1].rm_so;
+-                int eo = pmatch[n + 1].rm_eo;
++                auto so = pmatch[n + 1].rm_so;
++                auto eo = pmatch[n + 1].rm_eo;
+                 len = eo - so;
+                 if (src + len > input.length)
+                     goto Lnomatch;
+@@ -2140,10 +2124,11 @@
+ /* =================== Compiler ================== */
+ 
+     int parseRegexp()
+-    {   uint offset;
+-        uint gotooffset;
+-        uint len1;
+-        uint len2;
++    {
++        size_t offset;
++        size_t gotooffset;
++        size_t len1;
++        size_t len2;
+ 
+         //printf("parseRegexp() '%.*s'\n", pattern[p .. pattern.length]);
+         offset = buf.offset;
+@@ -2170,8 +2155,8 @@
+                 parseRegexp();
+                 len2 = buf.offset - (gotooffset + 1 + uint.sizeof);
+                 buf.data[offset] = REor;
+-                (cast(uint *)&buf.data[offset + 1])[0] = len1;
+-                (cast(uint *)&buf.data[gotooffset + 1])[0] = len2;
++                (cast(size_t *)&buf.data[offset + 1])[0] = len1;
++                (cast(size_t *)&buf.data[gotooffset + 1])[0] = len2;
+                 break;
+ 
+             default:
+@@ -2187,7 +2172,7 @@
+         uint n;
+         uint m;
+         ubyte op;
+-        int plength = pattern.length;
++        auto plength = pattern.length;
+ 
+         //printf("parsePiece() '%.*s'\n", pattern[p .. pattern.length]);
+         offset = buf.offset;
+@@ -2315,7 +2300,7 @@
+                 buf.write(re_nsub);
+                 re_nsub++;
+                 parseRegexp();
+-                *cast(uint *)&buf.data[offset] =
++                *cast(size_t *)&buf.data[offset] =
+                     buf.offset - (offset + uint.sizeof * 2);
+                 if (p == pattern.length || pattern[p] != ')')
+                 {
+@@ -2417,10 +2402,8 @@
+                 {
+                     // Look ahead and see if we can make this into
+                     // an REstring
+-                    int q;
+-                    int len;
+-
+-                    for (q = p; q < pattern.length; ++q)
++                    auto q = p;
++                    for (; q < pattern.length; ++q)
+                     {	rchar qc = pattern[q];
+ 
+                         switch (qc)
+@@ -2447,7 +2430,7 @@
+                         }
+                         break;
+                     }
+-                    len = q - p;
++                    auto len = q - p;
+                     if (len > 0)
+                     {
+                         debug(regexp) printf("writing string len %d, c = '%c', pattern[p] = '%c'\n", len+1, c, pattern[p]);
+@@ -2505,9 +2488,8 @@
+                 maxc = u;
+                 b = u / 8;
+                 if (b >= maxb)
+-                {	uint u2;
+-
+-                    u2 = base ? base - &buf.data[0] : 0;
++                {
++                    auto u2 = base ? base - &buf.data[0] : 0;
+                     buf.fill0(b - maxb + 1);
+                     base = &buf.data[u2];
+                     maxb = b + 1;
+@@ -2901,9 +2883,7 @@
+             {
+                 auto bitbuf = new OutBuffer;
+                 auto r = new Range(bitbuf);
+-                uint offset;
+-
+-                offset = i;
++                auto offset = i;
+                 if (starrchars(r, prog[i .. prog.length]))
+                 {
+                     debug(regexp) printf("\tfilter built\n");
+@@ -3123,10 +3103,8 @@
+     public static string replace3(string format, string input, regmatch_t[] pmatch)
+     {
+         string result;
+-        uint c2;
+-        int rm_so;
+-        int rm_eo;
+-        int i;
++        size_t c2;
++        sizediff_t rm_so, rm_eo, i;
+ 
+ //    printf("replace3(format = '%.*s', input = '%.*s')\n", format, input);
+         result.length = format.length;
+diff -r 67365c9f7b52 d/phobos2/std/socket.d
+--- a/d/phobos2/std/socket.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/socket.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -36,7 +36,8 @@
+ 
+ module std.socket;
+ 
+-import core.stdc.stdint, std.string, std.c.string, std.c.stdlib, std.conv;
++import core.stdc.stdint, std.string, std.c.string, std.c.stdlib, std.conv,
++    std.traits;
+ 
+ version(unittest)
+ {
+@@ -901,14 +902,14 @@
+ 		remove(s.sock);
+ 	}
+ 
+-	int isSet(socket_t s)
++	sizediff_t isSet(socket_t s)
+ 	{
+ 		return FD_ISSET(s, &set);
+ 	}
+ 
+ 
+ 	/// Returns nonzero if this Socket is in the collection.
+-	int isSet(Socket s)
++	sizediff_t isSet(Socket s)
+ 	{
+ 		return isSet(s.sock);
+ 	}
+@@ -1322,15 +1323,15 @@
+ 	 * buffer space left, send waits.
+ 	 */
+ 	//returns number of bytes actually sent, or -1 on error
+-	int send(const(void)[] buf, SocketFlags flags)
++	sizediff_t send(const(void)[] buf, SocketFlags flags)
+ 	{
+                 flags |= SocketFlags.NOSIGNAL;
+-		int sent = .send(sock, buf.ptr, buf.length, cast(int)flags);
++		auto sent = .send(sock, buf.ptr, buf.length, cast(int)flags);
+ 		return sent;
+ 	}
+ 
+ 	/// ditto
+-	int send(const(void)[] buf)
++	sizediff_t send(const(void)[] buf)
+ 	{
+ 		return send(buf, SocketFlags.NOSIGNAL);
+ 	}
+@@ -1338,15 +1339,15 @@
+ 	/**
+ 	 * Send data to a specific destination Address. If the destination address is not specified, a connection must have been made and that address is used. If the socket is blocking and there is no buffer space left, sendTo waits.
+ 	 */
+-	int sendTo(const(void)[] buf, SocketFlags flags, Address to)
++	sizediff_t sendTo(const(void)[] buf, SocketFlags flags, Address to)
+ 	{
+                 flags |= SocketFlags.NOSIGNAL;
+-		int sent = .sendto(sock, buf.ptr, buf.length, cast(int)flags, to.name(), to.nameLen());
++		auto sent = .sendto(sock, buf.ptr, buf.length, cast(int)flags, to.name(), to.nameLen());
+ 		return sent;
+ 	}
+ 
+ 	/// ditto
+-	int sendTo(const(void)[] buf, Address to)
++	sizediff_t sendTo(const(void)[] buf, Address to)
+ 	{
+ 		return sendTo(buf, SocketFlags.NONE, to);
+ 	}
+@@ -1354,17 +1355,17 @@
+ 
+ 	//assumes you connect()ed
+ 	/// ditto
+-	int sendTo(const(void)[] buf, SocketFlags flags)
++	sizediff_t sendTo(const(void)[] buf, SocketFlags flags)
+ 	{
+                 flags |= SocketFlags.NOSIGNAL;
+-		int sent = .sendto(sock, buf.ptr, buf.length, cast(int)flags, null, 0);
++		auto sent = .sendto(sock, buf.ptr, buf.length, cast(int)flags, null, 0);
+ 		return sent;
+ 	}
+ 
+ 
+ 	//assumes you connect()ed
+ 	/// ditto
+-	int sendTo(const(void)[] buf)
++	sizediff_t sendTo(const(void)[] buf)
+ 	{
+ 		return sendTo(buf, SocketFlags.NONE);
+ 	}
+@@ -1377,17 +1378,15 @@
+ 	 * to be received.
+ 	 */
+ 	//returns number of bytes actually received, 0 on connection closure, or -1 on error
+-	int receive(void[] buf, SocketFlags flags)
++	ptrdiff_t receive(void[] buf, SocketFlags flags)
+ 	{
+-		if(!buf.length) //return 0 and don't think the connection closed
+-			return 0;
+-		int read = .recv(sock, buf.ptr, buf.length, cast(int)flags);
+-		// if(!read) //connection closed
+-		return read;
++		return buf.length
++		    ? recv(sock, buf.ptr, buf.length, cast(int)flags)
++		    : 0;
+ 	}
+ 
+ 	/// ditto
+-	int receive(void[] buf)
++	ptrdiff_t receive(void[] buf)
+ 	{
+ 		return receive(buf, SocketFlags.NONE);
+ 	}
+@@ -1399,13 +1398,13 @@
+ 	 * Returns: the number of bytes actually received,
+ 	 * 0 if the remote side has closed the connection, or ERROR on failure.
+ 	 */
+-	int receiveFrom(void[] buf, SocketFlags flags, out Address from)
++	sizediff_t receiveFrom(void[] buf, SocketFlags flags, out Address from)
+ 	{
+ 		if(!buf.length) //return 0 and don't think the connection closed
+ 			return 0;
+ 		from = newFamilyObject();
+ 		socklen_t nameLen = cast(socklen_t) from.nameLen();
+-		int read = .recvfrom(sock, buf.ptr, buf.length, cast(int)flags, from.name(), &nameLen);
++		auto read = .recvfrom(sock, buf.ptr, buf.length, cast(int)flags, from.name(), &nameLen);
+ 		assert(from.addressFamily() == _family);
+ 		// if(!read) //connection closed
+ 		return read;
+@@ -1413,7 +1412,7 @@
+ 
+ 
+ 	/// ditto
+-	int receiveFrom(void[] buf, out Address from)
++	ptrdiff_t receiveFrom(void[] buf, out Address from)
+ 	{
+ 		return receiveFrom(buf, SocketFlags.NONE, from);
+ 	}
+@@ -1421,11 +1420,11 @@
+ 
+ 	//assumes you connect()ed
+ 	/// ditto
+-	int receiveFrom(void[] buf, SocketFlags flags)
++	sizediff_t receiveFrom(void[] buf, SocketFlags flags)
+ 	{
+ 		if(!buf.length) //return 0 and don't think the connection closed
+ 			return 0;
+-		int read = .recvfrom(sock, buf.ptr, buf.length, cast(int)flags, null, null);
++		auto read = .recvfrom(sock, buf.ptr, buf.length, cast(int)flags, null, null);
+ 		// if(!read) //connection closed
+ 		return read;
+ 	}
+@@ -1433,7 +1432,7 @@
+ 
+ 	//assumes you connect()ed
+ 	/// ditto
+-	int receiveFrom(void[] buf)
++	ptrdiff_t receiveFrom(void[] buf)
+ 	{
+ 		return receiveFrom(buf, SocketFlags.NONE);
+ 	}
+@@ -1467,7 +1466,8 @@
+ 	// Set a socket option.
+ 	void setOption(SocketOptionLevel level, SocketOption option, void[] value)
+ 	{
+-		if(_SOCKET_ERROR == .setsockopt(sock, cast(int)level, cast(int)option, value.ptr, value.length))
++		if(_SOCKET_ERROR == .setsockopt(sock, cast(int)level,
++			cast(int)option, value.ptr, cast(uint)value.length))
+ 			throw new SocketException("Unable to set socket option", _lasterr());
+ 	}
+ 
+diff -r 67365c9f7b52 d/phobos2/std/stream.d
+--- a/d/phobos2/std/stream.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/stream.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -1472,10 +1472,10 @@
+  */
+ class BufferedStream : FilterStream {
+   ubyte[] buffer;       // buffer, if any
+-  uint bufferCurPos;    // current position in buffer
+-  uint bufferLen;       // amount of data in buffer
++  size_t bufferCurPos;    // current position in buffer
++  size_t bufferLen;       // amount of data in buffer
+   bool bufferDirty = false;
+-  uint bufferSourcePos; // position in buffer of source stream position
++  size_t bufferSourcePos; // position in buffer of source stream position
+   ulong streamPos;      // absolute position in source stream
+ 
+   /* Example of relationship between fields:
+@@ -1647,7 +1647,7 @@
+ 
+         L0:
+           for(;;) {
+-              uint start = bufferCurPos;
++              size_t start = bufferCurPos;
+             L1:
+               foreach(ubyte b; buffer[start .. bufferLen]) {
+                   bufferCurPos++;
+@@ -2263,7 +2263,7 @@
+       if (j == bom.length) // found a match
+ 	result = i;
+     }
+-    int m = 0;
++    sizediff_t m = 0;
+     if (result != -1) {
+       endian = BOMEndian[result]; // set stream endianness
+       m = ByteOrderMarks[result].length;
+@@ -2288,7 +2288,7 @@
+    * Correct the byte order of buffer to match native endianness.
+    * size must be even.
+    */
+-  final void fixBO(const(void)* buffer, uint size) {
++  final void fixBO(const(void)* buffer, size_t size) {
+     if (endian != std.system.endian) {
+       ubyte* startb = cast(ubyte*)buffer;
+       uint* start = cast(uint*)buffer;
+@@ -2315,7 +2315,7 @@
+ 	}
+ 	startb = cast(ubyte*)start;
+ 	ubyte* endb = cast(ubyte*)end;
+-	int len = uint.sizeof - (startb - endb);
++	auto len = uint.sizeof - (startb - endb);
+ 	if (len > 0)
+ 	  fixBO(startb,len);
+       }
+diff -r 67365c9f7b52 d/phobos2/std/string.d
+--- a/d/phobos2/std/string.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/string.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -140,7 +140,7 @@
+  * ditto
+  */
+ 
+-int icmp(in char[] s1, in char[] s2)
++sizediff_t icmp(in char[] s1, in char[] s2)
+ {
+     size_t i1, i2;
+     for (;;)
+@@ -278,7 +278,7 @@
+ Returns: Index in $(D s) where $(D c) is found, -1 if not found.
+  */
+ 
+-int indexOf(in char[] s, dchar c, CaseSensitive cs = CaseSensitive.yes)
++sizediff_t indexOf(in char[] s, dchar c, CaseSensitive cs = CaseSensitive.yes)
+ {
+     if (cs == CaseSensitive.yes)
+     {
+@@ -380,7 +380,7 @@
+  * ditto
+  */
+ 
+-int lastIndexOf(in char[] s, dchar c, CaseSensitive cs = CaseSensitive.yes)
++ptrdiff_t lastIndexOf(in char[] s, dchar c, CaseSensitive cs = CaseSensitive.yes)
+ {
+     if (cs == CaseSensitive.yes)
+     {
+@@ -492,7 +492,7 @@
+  *  Index in s where c is found, -1 if not found.
+  */
+ 
+-int indexOf(in char[] s, in char[] sub, CaseSensitive cs = CaseSensitive.yes)
++sizediff_t indexOf(in char[] s, in char[] sub, CaseSensitive cs = CaseSensitive.yes)
+ out (result)
+ {
+     // if (result == -1)
+@@ -546,7 +546,7 @@
+     else
+     {
+         auto sublength = sub.length;
+-        int i;
++        sizediff_t i;
+ 
+         if (sublength == 0)
+             return 0;
+@@ -664,7 +664,7 @@
+  * ditto
+  */
+ 
+-int lastIndexOf(in char[] s, in char[] sub, CaseSensitive cs = CaseSensitive.yes)
++ptrdiff_t lastIndexOf(in char[] s, in char[] sub, CaseSensitive cs = CaseSensitive.yes)
+ out (result)
+ {
+     // if (result == -1)
+@@ -687,7 +687,7 @@
+         c = sub[0];
+         if (sub.length == 1)
+             return lastIndexOf(s, c);
+-        for (int i = s.length - sub.length; i >= 0; i--)
++        for (auto i = s.length - sub.length; i >= 0; i--)
+         {
+             if (s[i] == c)
+             {
+@@ -709,7 +709,7 @@
+         if (c <= 0x7F)
+         {
+             c = std.ctype.tolower(c);
+-            for (int i = s.length - sub.length; i >= 0; i--)
++            for (auto i = s.length - sub.length; i >= 0; i--)
+             {
+                 if (std.ctype.tolower(s[i]) == c)
+                 {
+@@ -720,7 +720,7 @@
+         }
+         else
+         {
+-            for (int i = s.length - sub.length; i >= 0; i--)
++            for (auto i = s.length - sub.length; i >= 0; i--)
+             {
+                 if (icmp(s[i .. i + sub.length], sub) == 0)
+                     return i;
+@@ -1927,7 +1927,7 @@
+  * in field width chars wide.
+  */
+ 
+-string ljustify(string s, int width)
++string ljustify(string s, size_t width)
+ {
+     if (s.length >= width)
+     return s;
+@@ -1938,7 +1938,7 @@
+ }
+ 
+ /// ditto
+-string rjustify(string s, int width)
++string rjustify(string s, size_t width)
+ {
+     if (s.length >= width)
+     return s;
+@@ -1954,7 +1954,7 @@
+     if (s.length >= width)
+     return s;
+     char[] r = new char[width];
+-    int left = (width - s.length) / 2;
++    sizediff_t left = (width - s.length) / 2;
+     r[0 .. left] = cast(char)' ';
+     r[left .. left + s.length] = s;
+     r[left + s.length .. width] = cast(char)' ';
+@@ -2008,7 +2008,6 @@
+ string replace(string s, string from, string to)
+ {
+     char[] p;
+-    int i;
+     size_t istart;
+ 
+     //printf("replace('%.*s','%.*s','%.*s')\n", s, from, to);
+@@ -2017,7 +2016,7 @@
+     istart = 0;
+     while (istart < s.length)
+     {
+-        i = indexOf(s[istart .. s.length], from);
++        auto i = indexOf(s[istart .. s.length], from);
+         if (i == -1)
+         {
+             p ~= s[istart .. s.length];
+@@ -2057,7 +2056,7 @@
+ in
+ {
+     // Verify that slice[] really is a slice of s[]
+-    int so = cast(char*)slice - cast(char*)s;
++    ptrdiff_t so = cast(char*)slice - cast(char*)s;
+     assert(so >= 0);
+     //printf("s.length = %d, so = %d, slice.length = %d\n", s.length,
+     //so, slice.length);
+@@ -2066,7 +2065,7 @@
+ body
+ {
+     char[] result;
+-    int so = cast(char*)slice - cast(char*)s;
++    ptrdiff_t so = cast(char*)slice - cast(char*)s;
+ 
+     result.length = s.length - slice.length + replacement.length;
+ 
+@@ -2108,7 +2107,7 @@
+     if (s.length == 0)
+     return sub;
+ 
+-    int newlength = s.length + sub.length;
++    auto newlength = s.length + sub.length;
+     char[] result = new char[newlength];
+ 
+     result[0 .. index] = s[0 .. index];
+@@ -2152,7 +2151,7 @@
+ size_t count(string s, string sub)
+ {
+     size_t i;
+-    int j;
++    ptrdiff_t j;
+     int count = 0;
+ 
+     for (i = 0; i < s.length; i += j + sub.length)
+@@ -2206,7 +2205,7 @@
+             result[i .. i + nspaces] = ' ';
+         }
+         else
+-        {   int j = result.length;
++        {   sizediff_t j = result.length;
+             result.length = j + nspaces;
+             result[j .. j + nspaces] = ' ';
+         }
+@@ -2302,7 +2301,7 @@
+             if (!changes)
+             change();
+ 
+-            int j = result.length - nspaces;
++            sizediff_t j = result.length - nspaces;
+             int ntabs = (((column - nspaces) % tabsize) + nspaces) / tabsize;
+             result.length = j + ntabs;
+             result[j .. j + ntabs] = '\t';
+@@ -2331,7 +2330,7 @@
+             if (!changes)
+             change();
+ 
+-            int j = result.length - nspaces;
++            sizediff_t j = result.length - nspaces;
+             int ntabs = (nspaces + tabsize - 1) / tabsize;
+             result.length = j + ntabs;
+             result[j .. j + ntabs] = '\t';
+@@ -3363,7 +3362,7 @@
+ 
+ final bool isNumeric(string s, in bool bAllowSep = false)
+ {
+-    int    iLen = s.length;
++    sizediff_t iLen = s.length;
+     bool   bDecimalPoint = false;
+     bool   bExponent = false;
+     bool   bComplex = false;
+@@ -3956,7 +3955,6 @@
+     string indent = null, int tabsize = 8)
+ {
+     char[] result;
+-    int col;
+     int spaces;
+     bool inword;
+     bool first = true;
+@@ -3965,7 +3963,7 @@
+     result.length = firstindent.length + s.length;
+     result.length = firstindent.length;
+     result[] = firstindent[];
+-    col = column(result.idup, tabsize);
++    auto col = column(result.idup, tabsize);
+     foreach (size_t i, dchar c; s)
+     {
+     if (iswhite(c))
+@@ -4138,16 +4136,17 @@
+ 
+ // For backwards compatibility
+ 
+-deprecated int find(in char[] s, dchar c)
++deprecated size_t find(in char[] s, dchar c)
+ {
+     return indexOf(s, c, CaseSensitive.yes);
+ }
+ 
+-deprecated int find(in char[] str, in char[] sub)
++deprecated size_t find(in char[] str, in char[] sub)
+ {
+     return indexOf(str, sub, CaseSensitive.yes);
+ }
+ 
++deprecated
+ unittest
+ {
+     string a = "abc";
+@@ -4155,32 +4154,32 @@
+     assert(find(a, b) == 1);
+ }
+ 
+-deprecated int ifind(in char[] s, dchar c)
++deprecated size_t ifind(in char[] s, dchar c)
+ {
+     return indexOf(s, c, CaseSensitive.no);
+ }
+ 
+-deprecated int rfind(in char[] s, dchar c)
++deprecated size_t rfind(in char[] s, dchar c)
+ {
+     return lastIndexOf(s, c, CaseSensitive.yes);
+ }
+ 
+-deprecated int irfind(in char[] s, dchar c)
++deprecated size_t irfind(in char[] s, dchar c)
+ {
+     return lastIndexOf(s, c, CaseSensitive.no);
+ }
+ 
+-deprecated int ifind(in char[] s, in char[] c)
++deprecated size_t ifind(in char[] s, in char[] c)
+ {
+     return indexOf(s, c, CaseSensitive.no);
+ }
+ 
+-deprecated int rfind(in char[] s, in char[] c)
++deprecated size_t rfind(in char[] s, in char[] c)
+ {
+     return lastIndexOf(s, c, CaseSensitive.yes);
+ }
+ 
+-deprecated int irfind(in char[] s, in char[] c)
++deprecated size_t irfind(in char[] s, in char[] c)
+ {
+     return lastIndexOf(s, c, CaseSensitive.no);
+ }
+diff -r 67365c9f7b52 d/phobos2/std/uri.d
+--- a/d/phobos2/std/uri.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/uri.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -95,7 +95,7 @@
+ 
+ 
+ private string URI_Encode(dstring string, uint unescapedSet)
+-{   uint len;
++{
+     uint j;
+     uint k;
+     dchar V;
+@@ -107,7 +107,7 @@
+     uint Rlen;
+     uint Rsize; // alloc'd size
+ 
+-    len = string.length;
++    auto len = string.length;
+ 
+     R = buffer.ptr;
+     Rsize = buffer.length;
+@@ -234,7 +234,7 @@
+ }
+ 
+ private dstring URI_Decode(string string, uint reservedSet)
+-{   uint len;
++{
+     uint j;
+     uint k;
+     uint V;
+@@ -245,13 +245,12 @@
+     // Result array, allocated on stack
+     dchar* R;
+     uint Rlen;
+-    uint Rsize; // alloc'd size
+ 
+-    len = string.length;
++    auto len = string.length;
+     auto s = string.ptr;
+ 
+     // Preallocate result buffer R guaranteed to be large enough for result
+-    Rsize = len;
++    auto Rsize = len;
+     if (Rsize > 1024 / dchar.sizeof)
+     R = (new dchar[Rsize]).ptr;
+     else
+diff -r 67365c9f7b52 d/phobos2/std/variant.d
+--- a/d/phobos2/std/variant.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/variant.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -740,7 +740,7 @@
+      * Computes the hash of the held value.
+      */
+ 
+-    uint toHash()
++    size_t toHash()
+     {
+         return type.getHash(&store);
+     }
+diff -r 67365c9f7b52 d/phobos2/std/xml.d
+--- a/d/phobos2/std/xml.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/xml.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -374,7 +374,7 @@
+     if (mode == DecodeMode.NONE) return s;
+ 
+     char[] buffer;
+-    for (int i=0; i<s.length; ++i)
++    foreach (i; 0 .. s.length)
+     {
+         char c = s[i];
+         if (c != '&')
+@@ -759,9 +759,9 @@
+     override bool opEquals(Object o)
+     {
+         const element = toType!(const Element)(o);
+-        uint len = items.length;
++        auto len = items.length;
+         if (len != element.items.length) return false;
+-        for (uint i=0; i<len; ++i)
++        foreach (i; 0 .. len)
+         {
+             if (!items[i].opEquals(element.items[i])) return false;
+         }
+@@ -2006,8 +2006,8 @@
+      */
+     const override string toString()
+     {
+-        int n = elementStart.length - s.length;
+-        return elementStart[0..n];
++        assert(elementStart.length >= s.length);
++        return elementStart[0 .. elementStart.length - s.length];
+     }
+ 
+ }
+@@ -2150,7 +2150,7 @@
+         mixin Check!("Comment");
+ 
+         try { checkLiteral("<!--",s); } catch(Err e) { fail(e); }
+-        int n = s.indexOf("--");
++        sizediff_t n = s.indexOf("--");
+         if (n == -1) fail("unterminated comment");
+         s = s[0..n];
+         try { checkLiteral("-->",s); } catch(Err e) { fail(e); }
+@@ -2490,7 +2490,7 @@
+     {
+         // Deliberately no mixin Check here.
+ 
+-        int n = s.indexOf(end);
++        auto n = s.indexOf(end);
+         if (n == -1) throw new Err(s,"Unable to find terminating \""~end~"\"");
+         s = s[n..$];
+         checkLiteral(end,s);
+@@ -2667,8 +2667,8 @@
+      * or specific error message
+      */
+     string msg;
+-    uint line = 0; /// Line number at which parse failure occurred
+-    uint column = 0; /// Column number at which parse failure occurred
++    size_t line = 0; /// Line number at which parse failure occurred
++    size_t column = 0; /// Column number at which parse failure occurred
+ 
+     private this(string tail,string msg,Err err=null)
+     {
+@@ -2681,7 +2681,7 @@
+     private void complete(string entire)
+     {
+         string head = entire[0..$-tail.length];
+-        int n = head.lastIndexOf('\n') + 1;
++        sizediff_t n = head.lastIndexOf('\n') + 1;
+         line = head.count("\n") + 1;
+         dstring t;
+         transcode(head[n..$],t);
+@@ -2717,7 +2717,7 @@
+         return t;
+     }
+ 
+-    string chop(ref string s, int n)
++    string chop(ref string s, size_t n)
+     {
+         if (n == -1) n = s.length;
+         string t = s[0..n];
+@@ -2821,7 +2821,7 @@
+     {
+         while (table.length != 0)
+         {
+-            int m = (table.length >> 1) & ~1;
++            auto m = (table.length >> 1) & ~1;
+             if (c < table[m])
+             {
+                 table = table[0..m];
+diff -r 67365c9f7b52 d/phobos2/std/zip.d
+--- a/d/phobos2/std/zip.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/zip.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -25,6 +25,7 @@
+ private import std.zlib;
+ private import std.date;
+ private import std.intrinsic;
++import std.conv;
+ 
+ //debug=print;
+ 
+@@ -174,7 +175,7 @@
+ 	uint directorySize = 0;
+ 	foreach (ArchiveMember de; directory)
+ 	{
+-	    de.expandedSize = de.expandedData.length;
++	    de.expandedSize = to!uint(de.expandedData.length);
+ 	    switch (de.compressionMethod)
+ 	    {
+ 		case 0:
+@@ -189,8 +190,8 @@
+ 		default:
+ 		    throw new ZipException("unsupported compression method");
+ 	    }
+-	    de.compressedSize = de.compressedData.length;
+-	    de.crc32 = std.zlib.crc32(0, cast(void[])de.expandedData);
++	    de.compressedSize = to!uint(de.compressedData.length);
++	    de.crc32 = to!uint(std.zlib.crc32(0, cast(void[])de.expandedData));
+ 
+ 	    archiveSize += 30 + de.name.length +
+ 				de.extra.length +
+@@ -216,7 +217,7 @@
+ 	    putUint  (i + 10, cast(uint)de.time);
+ 	    putUint  (i + 14, de.crc32);
+ 	    putUint  (i + 18, de.compressedSize);
+-	    putUint  (i + 22, de.expandedData.length);
++	    putUint  (i + 22, to!uint(de.expandedData.length));
+ 	    putUshort(i + 26, cast(ushort)de.name.length);
+ 	    putUshort(i + 28, cast(ushort)de.extra.length);
+ 	    i += 30;
+@@ -308,10 +309,10 @@
+ 	this.data = cast(ubyte[]) buffer;
+ 
+ 	// Find 'end record index' by searching backwards for signature
+-	iend = data.length - 66000;
++	iend = to!uint(data.length - 66000);
+ 	if (iend < 0)
+ 	    iend = 0;
+-	for (i = data.length - 22; 1; i--)
++	for (i = to!uint(data.length - 22); 1; i--)
+ 	{
+ 	    if (i < iend)
+ 		throw new ZipException("no end record");
+diff -r 67365c9f7b52 d/phobos2/std/zlib.d
+--- a/d/phobos2/std/zlib.d	Sat Oct 23 02:49:30 2010 +0100
++++ b/d/phobos2/std/zlib.d	Sun Oct 24 23:44:33 2010 +0000
+@@ -21,7 +21,7 @@
+ 
+ //debug=zlib;		// uncomment to turn on debugging printf's
+ 
+-private import etc.c.zlib;
++private import etc.c.zlib, std.conv;
+ 
+ // Values for 'mode'
+ 
+@@ -63,9 +63,10 @@
+  * value when computing a cumulative checksum.
+  */
+ 
+-uint adler32(uint adler, const(void)[] buf)
++size_t adler32(uint adler, const(void)[] buf)
+ {
+-    return etc.c.zlib.adler32(adler, cast(ubyte *)buf.ptr, buf.length);
++    return etc.c.zlib.adler32(adler, cast(ubyte *)buf.ptr,
++	    to!uint(buf.length));
+ }
+ 
+ unittest
+@@ -85,9 +86,9 @@
+  * when computing a cumulative checksum.
+  */
+ 
+-uint crc32(uint crc, const(void)[] buf)
++size_t crc32(uint crc, const(void)[] buf)
+ {
+-    return etc.c.zlib.crc32(crc, cast(ubyte *)buf.ptr, buf.length);
++    return etc.c.zlib.crc32(crc, cast(ubyte *)buf.ptr, to!uint(buf.length));
+ }
+ 
+ unittest
+@@ -155,7 +156,7 @@
+     ubyte[] destbuf;
+ 
+     if (!destlen)
+-	destlen = srcbuf.length * 2 + 1;
++	destlen = to!uint(srcbuf.length) * 2 + 1;
+ 
+     while (1)
+     {
+@@ -164,7 +165,7 @@
+ 	destbuf = new ubyte[destlen];
+ 	
+ 	zs.next_in = cast(ubyte*) srcbuf;
+-	zs.avail_in = srcbuf.length;
++	zs.avail_in = to!uint(srcbuf.length);
+ 
+ 	zs.next_out = destbuf.ptr;
+ 	zs.avail_out = destlen;
+@@ -179,7 +180,7 @@
+ 	{
+ 	    case Z_OK:
+ 		etc.c.zlib.inflateEnd(&zs);
+-		destlen = destbuf.length * 2;
++		destlen = to!uint(destbuf.length) * 2;
+ 		continue;
+ 
+ 	    case Z_STREAM_END:
+@@ -304,13 +305,13 @@
+ 
+ 	destbuf = new ubyte[zs.avail_in + buf.length];
+ 	zs.next_out = destbuf.ptr;
+-	zs.avail_out = destbuf.length;
++	zs.avail_out = to!uint(destbuf.length);
+ 
+ 	if (zs.avail_in)
+ 	    buf = cast(void[])zs.next_in[0 .. zs.avail_in] ~ buf;
+ 
+ 	zs.next_in = cast(ubyte*) buf.ptr;
+-	zs.avail_in = buf.length;
++	zs.avail_in = to!uint(buf.length);
+ 
+ 	err = deflate(&zs, Z_NO_FLUSH);
+ 	if (err != Z_STREAM_END && err != Z_OK)
+@@ -466,16 +467,16 @@
+ 	}
+ 
+ 	if (!destbufsize)
+-	    destbufsize = buf.length * 2;
++	    destbufsize = to!uint(buf.length) * 2;
+ 	destbuf = new ubyte[zs.avail_in * 2 + destbufsize];
+ 	zs.next_out = destbuf.ptr;
+-	zs.avail_out = destbuf.length;
++	zs.avail_out = to!uint(destbuf.length);
+ 
+ 	if (zs.avail_in)
+ 	    buf = cast(void[])zs.next_in[0 .. zs.avail_in] ~ buf;
+ 
+ 	zs.next_in = cast(ubyte*) buf;
+-	zs.avail_in = buf.length;
++	zs.avail_in = to!uint(buf.length);
+ 
+ 	err = inflate(&zs, Z_NO_FLUSH);
+ 	if (err != Z_STREAM_END && err != Z_OK)
+@@ -513,7 +514,7 @@
+       L1:
+ 	destbuf = new ubyte[zs.avail_in * 2 + 100];
+ 	zs.next_out = destbuf.ptr;
+-	zs.avail_out = destbuf.length;
++	zs.avail_out = to!uint(destbuf.length);
+ 
+ 	err = etc.c.zlib.inflate(&zs, Z_NO_FLUSH);
+ 	if (err == Z_OK && zs.avail_out == 0)

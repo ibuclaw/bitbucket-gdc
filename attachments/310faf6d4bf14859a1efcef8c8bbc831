@@ -1,0 +1,20 @@
+diff -pcr d-orig/dmd/func.c d/dmd/func.c
+*** d-orig/dmd/func.c	2010-02-05 20:55:07.000000000 +0000
+--- d/dmd/func.c	2010-02-28 04:04:32.000000000 +0000
+*************** int fp2(void *param, FuncDeclaration *f)
+*** 1581,1587 ****
+  
+      if (f != m->lastf)		// skip duplicates
+      {
+! 
+  	TypeFunction *tf = (TypeFunction *)f->type;
+  	tf = (TypeFunction *)f->type;
+  	match = (MATCH) tf->callMatch(arguments);
+--- 1581,1587 ----
+  
+      if (f != m->lastf)		// skip duplicates
+      {
+! 	m->anyf = f;
+  	TypeFunction *tf = (TypeFunction *)f->type;
+  	tf = (TypeFunction *)f->type;
+  	match = (MATCH) tf->callMatch(arguments);

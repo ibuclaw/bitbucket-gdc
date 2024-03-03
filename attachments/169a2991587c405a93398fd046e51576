@@ -1,0 +1,459 @@
+diff -r 6b7397510e33 d/d-codegen.cc
+--- a/d/d-codegen.cc	Sat Sep 11 18:39:38 2010 +0100
++++ b/d/d-codegen.cc	Sat Sep 11 23:38:56 2010 +0100
+@@ -2927,8 +2927,7 @@
+ 
+ void
+ IRState::startLoop(Statement * stmt) {
+-    Flow *f = beginFlow(stmt, expand_start_loop_continue_elsewhere(1));
+-    f->continueLabel = label(stmt ? stmt->loc : 0);
++    beginFlow(stmt, expand_start_loop_continue_elsewhere(1));
+ }
+ 
+ void
+@@ -2961,7 +2960,7 @@
+     g.ofile->doLineNote(stmt->loc);
+     expand_start_case( 1, t_cond, TREE_TYPE( t_cond ), "switch statement" );
+     Flow * f = beginFlow(stmt, NULL);
+-    f->condition = t_cond;
++    f->kind = level_switch;
+ }
+ 
+ void
+@@ -3014,12 +3013,15 @@
+ void
+ IRState::startTry(Statement * stmt)
+ {
++    beginFlow(stmt, NULL);
++    currentFlow()->kind = level_try;
+     expand_eh_region_start();
+ }
+ 
+ void
+ IRState::startCatches()
+ {
++    currentFlow()->kind = level_catch;
+     expand_start_all_catch();
+ }
+ 
+@@ -3039,6 +3041,7 @@
+ IRState::endCatches()
+ {
+     expand_end_all_catch();
++    endFlow();
+ }
+ 
+ void
+@@ -3069,7 +3072,7 @@
+     if (stmt)
+ 	g.ofile->doLineNote(stmt->loc);
+     expand_goto(t_label);
+-    D_LABEL_IS_USED(t_label) = 1 ;
++    D_LABEL_IS_USED(t_label) = 1;
+ }
+ 
+ tree
+@@ -3164,6 +3167,7 @@
+ {
+     Flow * f = beginFlow(stmt);
+     f->condition = t_cond;
++    f->kind = level_switch;
+ }
+ 
+ void
+@@ -3212,12 +3216,14 @@
+ IRState::startTry(Statement * stmt)
+ {
+     beginFlow(stmt);
++    currentFlow()->kind = level_try;
+ }
+ 
+ void
+ IRState::startCatches()
+ {
+     currentFlow()->tryBody = popStatementList();
++    currentFlow()->kind = level_catch;
+     pushStatementList();
+ }
+ 
+@@ -3253,6 +3259,7 @@
+ IRState::startFinally()
+ {
+     currentFlow()->tryBody = popStatementList();
++    currentFlow()->kind = level_finally;
+     pushStatementList();
+ }
+ 
+@@ -3309,6 +3316,106 @@
+ #endif
+ }
+ 
++
++void
++IRState::checkSwitchCase(Statement * stmt, int default_flag)
++{
++    Flow * flow = currentFlow();
++
++    assert(flow);
++    if (flow->kind != level_switch && flow->kind != level_block)
++    {
++	stmt->error("%s cannot be in different try block level from switch",
++		    default_flag ? "default" : "case");
++    }
++}
++
++void
++IRState::checkGoto(Statement * stmt, LabelDsymbol * label)
++{
++    Statement * curBlock = NULL;
++    unsigned curLevel = loops.dim;
++    int found = 0;
++
++    if (curLevel)
++	curBlock = currentFlow()->statement;
++
++    for (unsigned i = 0; i < Labels.dim; i++)
++    {
++	Label * linfo = (Label *)Labels.data[i];
++	assert(linfo);
++
++	if (label == linfo->label)
++	{
++	    // No need checking for finally, should have already been handled.
++	    if (linfo->kind == level_try &&
++		curLevel <= linfo->level && curBlock != linfo->block)
++	    {
++		stmt->error("cannot goto into try block");
++	    }
++	    // %% doc: It is illegal for goto to be used to skip initializations,
++	    // %%      so this should include all gotos into catches...
++	    if (linfo->kind == level_catch && curBlock != linfo->block)
++		stmt->error("cannot goto into catch block");
++
++	    found = 1;
++	    break;
++	}
++    }
++#if V1
++    // Push forward referenced gotos.
++    if (! found)
++    {
++	if (! label->statement->fwdrefs)
++	    label->statement->fwdrefs = new Array();
++	label->statement->fwdrefs->push(getLabelBlock(label, stmt));
++    }
++#endif
++}
++
++void
++IRState::checkPreviousGoto(Array * refs)
++{
++    Statement * stmt;
++
++    for (unsigned i = 0; i < refs->dim; i++)
++    {
++	Label * ref = (Label *)refs->data[i];
++	int found = 0;
++
++	assert(ref && ref->from);
++	stmt = ref->from;
++
++	for (unsigned i = 0; i < Labels.dim; i++)
++	{
++	    Label * linfo = (Label *)Labels.data[i];
++	    assert(linfo);
++
++	    if (ref->label == linfo->label)
++	    {
++		// No need checking for finally, should have already been handled.
++		if (linfo->kind == level_try &&
++		    ref->level <= linfo->level && ref->block != linfo->block)
++		{
++		    stmt->error("cannot goto into try block");
++		}
++		// %% doc: It is illegal for goto to be used to skip initializations,
++		// %%      so this should include all gotos into catches...
++		if (linfo->kind == level_catch &&
++		    (ref->block != linfo->block || ref->kind != linfo->kind))
++		    stmt->error("cannot goto into catch block");
++
++		found = 1;
++		break;
++	    }
++	}
++	// %% BUG: Either us or dmd creates 2 __returnLabel's for the same return.
++	// !ref->block works around assertion failure for now...
++	assert(found || !ref->block);
++    }
++}
++
++
+ WrappedExp::WrappedExp(Loc loc, enum TOK op, tree exp_node, Type * type)
+     : Expression(loc, op, sizeof(WrappedExp))
+ {
+diff -r 6b7397510e33 d/d-codegen.h
+--- a/d/d-codegen.h	Sat Sep 11 18:39:38 2010 +0100
++++ b/d/d-codegen.h	Sat Sep 11 23:38:56 2010 +0100
+@@ -527,6 +527,13 @@
+     void doExp(Expression * e) { doExp(e->toElem(this)); } // %% should handle volatile...?
+     void doAsm(tree insn_tmpl, tree outputs, tree inputs, tree clobbers);
+ 
++    // ** Goto/Label statement evaluation
++
++    void pushLabel(LabelDsymbol * l) { Labels.push(getLabelBlock(l)); }
++    void checkSwitchCase(Statement * stmt, int default_flag = 0);
++    void checkGoto(Statement * stmt, LabelDsymbol * label);
++    void checkPreviousGoto(Array * refs);
++
+     // ** Callback statement evalutation
+ 
+     static Array stmtExprList;
+diff -r 6b7397510e33 d/d-glue.cc
+--- a/d/d-glue.cc	Sat Sep 11 18:39:38 2010 +0100
++++ b/d/d-glue.cc	Sat Sep 11 23:38:56 2010 +0100
+@@ -3695,7 +3695,7 @@
+     // %% Safe to use lblock as first choice?
+     if ( (t_label = lblock) || (t_label = irs->getLabelTree(label)) )
+     {
+-	D_LABEL_IS_USED(t_label) = 1;
++	irs->pushLabel(label);
+ 	irs->doLabel(t_label);
+ 	if (label->asmLabelNum)
+ 	    d_expand_priv_asm_label(irs, label->asmLabelNum);
+@@ -3706,6 +3706,14 @@
+ #endif
+ 	if (statement)
+ 	    statement->toIR(irs);
++#if V1
++	if (fwdrefs)
++	{
++	    irs->checkPreviousGoto(fwdrefs);
++	    delete fwdrefs;
++	    fwdrefs = NULL;
++	}
++#endif
+     }
+     // else, there was an error
+ }
+@@ -3721,6 +3729,8 @@
+ 	error("label %s is undefined", label->toChars());
+     else if (tf != label->statement->tf)
+ 	error("cannot goto forward out of or into finally block");
++    else
++	irs->checkGoto(this, label);
+ 
+     if ( (t_label = irs->getLabelTree(label)) )
+ 	irs->doJump(this, t_label);
+@@ -3995,9 +4005,7 @@
+ void
+ DefaultStatement::toIR(IRState * irs)
+ {
+-    if(! irs->currentFlow()->condition )
+-	error("default cannot be in different try block level from switch");
+-
++    irs->checkSwitchCase(this, 1);
+     irs->doCase(NULL_TREE, cblock);
+     if (statement)
+ 	statement->toIR( irs );
+@@ -4007,13 +4015,13 @@
+ CaseStatement::toIR(IRState * irs)
+ {
+     tree case_value;
+-    if(! irs->currentFlow()->condition )
+-	error("case cannot be in different try block level from switch");
+ 
+     if ( exp->type->isscalar() )
+ 	case_value = exp->toElem(irs);
+     else
+ 	case_value = irs->integerConstant(index, Type::tint32);
++
++    irs->checkSwitchCase(this);
+     irs->doCase(case_value, cblock);
+     if (statement)
+ 	statement->toIR( irs );
+diff -r 6b7397510e33 d/d-irstate.cc
+--- a/d/d-irstate.cc	Sat Sep 11 18:39:38 2010 +0100
++++ b/d/d-irstate.cc	Sat Sep 11 23:38:56 2010 +0100
+@@ -144,8 +144,6 @@
+ void
+ IRBase::addExp(tree e)
+ {
+-    enum tree_code code = TREE_CODE (e);
+-
+     /* Need to check that this is actually an expression; it
+        could be an integer constant (statement with no effect.)
+        Maybe should filter those out anyway... */
+@@ -207,25 +205,52 @@
+     if (! label->statement)
+ 	return NULL_TREE;
+ 
+-    if (! label->statement->lblock) {
++    if (! label->statement->lblock)
++    {
+ 	tree label_decl = build_decl (LABEL_DECL, get_identifier(label->ident->string), void_type_node);
+ 
+ 	assert(func != 0);
+ 	DECL_CONTEXT( label_decl ) = getLocalContext();
+ 	DECL_MODE( label_decl ) = VOIDmode; // Not sure why or if this is needed
++	D_LABEL_IS_USED( label_decl ) = 1;
+ 	// Not setting this doesn't seem to cause problems (unlike VAR_DECLs)
+ 	if (label->statement->loc.filename)
+ 	    g.ofile->setDeclLoc( label_decl, label->statement->loc ); // %% label->loc okay?
+ 	label->statement->lblock = label_decl;
+-#if 0 /* V1 */
+-	if (! label->statement->fwdrefs)
+-	    label->statement->fwdrefs = new Array();
+-	label->statement->fwdrefs->push(label_decl); // %% what to push?
+-#endif
+     }
+     return label->statement->lblock;
+ }
+ 
++IRBase::Label *
++IRBase::getLabelBlock(LabelDsymbol * label, Statement * from)
++{
++    Label * l = new Label;
++    l->block = NULL;
++    l->from = NULL;
++    l->kind = level_block;
++    l->level = 0;
++
++    for (int i = loops.dim - 1; i >= 0; i--)
++    {
++	Flow * flow = (Flow *)loops.data[i];
++
++	if (flow->kind != level_block &&
++	    flow->kind != level_switch)
++	{
++	    l->block = flow->statement;
++	    l->kind  = flow->kind;
++	    l->level = i + 1;
++	    break;
++	}
++    }
++    if (from)
++	l->from = from;
++
++    l->label = label;
++    return l;
++}
++
++
+ IRBase::Flow *
+ IRBase::getLoopForLabel(Identifier * ident, bool want_continue)
+ {
+@@ -269,6 +294,7 @@
+ 
+     flow->statement = stmt;
+     flow->loop = loop;
++    flow->kind = level_block;
+     flow->exitLabel = NULL;
+     flow->overrideContinueLabel = NULL;
+ 
+@@ -304,6 +330,7 @@
+     Flow * flow = new Flow;
+ 
+     flow->statement = stmt;
++    flow->kind = level_block;
+     flow->exitLabel = NULL_TREE;
+     flow->condition = NULL_TREE;
+     flow->trueBranch = NULL_TREE;
+@@ -361,7 +388,7 @@
+     unsigned * p_count;
+ 
+     assert(scopes.dim);
+-    p_count = (unsigned *) scopes.tos();
++    p_count = currentScope();
+ 
+     //endBindings();
+ 
+@@ -389,8 +416,8 @@
+ #endif
+ 
+     assert(scopes.dim);
+-    ++( * (unsigned *) scopes.tos() );
+-    //printf("%*s  start -> %d\n", scopes.dim, "", * (unsigned *) scopes.tos() );
++    ++( * currentScope() );
++    //printf("%*s  start -> %d\n", scopes.dim, "", * currentScope() );
+ 
+ }
+ 
+@@ -413,8 +440,8 @@
+     insert_block(block);
+ 
+     assert(scopes.dim);
+-    --( * (unsigned *) scopes.tos() );
+-    assert( * (int *) scopes.tos() >= 0 );
+-    //printf("%*s  end -> %d\n", scopes.dim, "", * (unsigned *) scopes.tos() );
++    --( * currentScope() );
++    assert( * (int *) currentScope() >= 0 );
++    //printf("%*s  end -> %d\n", scopes.dim, "", * currentScope() );
+ 
+ }
+diff -r 6b7397510e33 d/d-irstate.h
+--- a/d/d-irstate.h	Sat Sep 11 18:39:38 2010 +0100
++++ b/d/d-irstate.h	Sat Sep 11 23:38:56 2010 +0100
+@@ -71,37 +71,52 @@
+     tree popStatementList();
+ #endif
+ 
++    // ** Scope kinds.
++
++    /* The kinds of levels we recognize. */
++    typedef enum LevelKind {
++	level_block = 0,    /* An ordinary block scope. */
++	level_switch,	    /* A switch-block */
++	level_try,	    /* A try-block. */
++	level_catch,	    /* A catch-block. */
++	level_finally,	    /* A finally-block. */
++    } LevelKind;
++
+     // ** Labels
+ 
++    typedef struct
++    {
++	LabelDsymbol * label;
++	Statement * block;
++	Statement * from;
++	LevelKind kind;
++	unsigned level;
++    } Label;
++
++    Array Labels; // of Label.
++
+     // It is only valid to call this while the function in which the label is defined
+     // is being compiled.
+-    tree getLabelTree(LabelDsymbol * label);
+-
++    tree    getLabelTree(LabelDsymbol * label);
++    Label * getLabelBlock(LabelDsymbol * label, Statement * from = NULL);
+ 
+     // ** Loops (and case statements)
+ #if D_GCC_VER < 40
+     typedef struct
+     {
+ 	Statement * statement;
++	LevelKind   kind;
+ 	// expand_start_case doesn't return a nesting structure, so
+ 	// we have to generate our own label for 'break'
+ 	nesting * loop;
+ 	tree      exitLabel;
+ 	tree      overrideContinueLabel;
+-	// Copied for information purposes. Not actually used.
+-	union {
+-	    struct {
+-		tree continueLabel;
+-	    };
+-	    struct {
+-		tree condition;
+-	    };
+-	};
+     } Flow;
+ #else
+     typedef struct
+     {
+ 	Statement * statement;
++	LevelKind   kind;
+ 	tree exitLabel;
+ 	union {
+ 	    struct {

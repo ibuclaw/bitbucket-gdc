@@ -1,0 +1,166 @@
+Only in d.orig/phobos/etc/c: zlib
+Only in d.orig/phobos2/etc/c: zlib
+Only in d: zlib
+diff -ur d.orig/phobos/Makefile.am d/phobos/Makefile.am
+--- d.orig/phobos/Makefile.am	2010-08-09 23:15:58.520048656 +0100
++++ d/phobos/Makefile.am	2010-09-18 13:10:01.243917000 +0100
+@@ -111,12 +111,10 @@
+ # This should not be linked into a shared library.
+ CMAIN_OBJS=internal/cmain.o
+ 
+-ZLIB_OBJS= etc/c/zlib/adler32.o etc/c/zlib/compress.o \
+-	etc/c/zlib/crc32.o etc/c/zlib/gzio.o \
+-	etc/c/zlib/uncompr.o etc/c/zlib/deflate.o \
+-	etc/c/zlib/trees.o etc/c/zlib/zutil.o \
+-	etc/c/zlib/inflate.o etc/c/zlib/infback.o \
+-	etc/c/zlib/inftrees.o etc/c/zlib/inffast.o
++ZLIB_OBJS= zlib/adler32.o zlib/compress.o zlib/crc32.o \
++	zlib/gzio.o zlib/uncompr.o zlib/deflate.o \
++	zlib/trees.o zlib/zutil.o zlib/inflate.o \
++	zlib/infback.o zlib/inftrees.o zlib/inffast.o
+ 
+ GC_OBJS= internal/gc/gc.o internal/gc/gcx.o internal/gc/gcosxc.o \
+ 	internal/gc/gcbits.o
+@@ -207,12 +205,11 @@
+ 
+ install-data-local: $(D_PREREQ_SRCS) libgphobos.a
+ 	for i in etc etc/c \
+-		etc/c/zlib \
+ 		gcc std std/c \
+                 std/c/darwin std/c/linux std/c/mach std/c/skyos std/c/unix std/c/windows std/c/freebsd std/c/osx std/c/posix std/c/solaris \
+ 		std/typeinfo std/windows; do \
+ 		$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)/$$i; \
+-		for f in $(srcdir)/$$i/*.[hd]; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
++		for f in $(srcdir)/$$i/*.d; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
+ 	done
+ 	for i in crc32.d gcstats.d object.d; do \
+ 		$(INSTALL_HEADER) $(srcdir)/$$i $(DESTDIR)$(gdc_include_dir); done
+diff -ur d.orig/phobos/Makefile.in d/phobos/Makefile.in
+--- d.orig/phobos/Makefile.in	2010-08-09 23:15:58.528045901 +0100
++++ d/phobos/Makefile.in	2010-09-18 13:11:38.691917000 +0100
+@@ -260,12 +260,10 @@
+ 
+ # This should not be linked into a shared library.
+ CMAIN_OBJS = internal/cmain.o
+-ZLIB_OBJS = etc/c/zlib/adler32.o etc/c/zlib/compress.o \
+-	etc/c/zlib/crc32.o etc/c/zlib/gzio.o \
+-	etc/c/zlib/uncompr.o etc/c/zlib/deflate.o \
+-	etc/c/zlib/trees.o etc/c/zlib/zutil.o \
+-	etc/c/zlib/inflate.o etc/c/zlib/infback.o \
+-	etc/c/zlib/inftrees.o etc/c/zlib/inffast.o
++ZLIB_OBJS = zlib/adler32.o zlib/compress.o zlib/crc32.o \
++	zlib/gzio.o zlib/uncompr.o zlib/deflate.o \
++	zlib/trees.o zlib/zutil.o zlib/inflate.o \
++	zlib/infback.o zlib/inftrees.o zlib/inffast.o
+ 
+ GC_OBJS = internal/gc/gc.o internal/gc/gcx.o internal/gc/gcbits.o internal/gc/gcosxc.o \
+ 	@D_GC_MODULES@ $(am__empty)
+@@ -738,12 +736,11 @@
+ 
+ install-data-local: $(D_PREREQ_SRCS) libgphobos.a
+ 	for i in etc etc/c \
+-		etc/c/zlib \
+ 		gcc std std/c \
+                 std/c/darwin std/c/linux std/c/mach std/c/skyos std/c/unix std/c/windows std/c/osx std/c/freebsd std/c/solaris std/c/posix \
+ 		std/typeinfo std/windows; do \
+ 		$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)/$$i; \
+-		for f in $(srcdir)/$$i/*.[hd]; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
++		for f in $(srcdir)/$$i/*.d; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
+ 	done
+ 	for i in crc32.d gcstats.d object.d; do \
+ 		$(INSTALL_HEADER) $(srcdir)/$$i $(DESTDIR)$(gdc_include_dir); done
+diff -ur d.orig/phobos2/Makefile.am d/phobos2/Makefile.am
+--- d.orig/phobos2/Makefile.am	2010-09-17 19:02:38.812306157 +0100
++++ d/phobos2/Makefile.am	2010-09-18 13:13:38.147917000 +0100
+@@ -197,12 +197,10 @@
+ 	std/cover.o std/complex.o std/encoding.o std/iterator.o std/xml.o \
+ 	std/atomics.o std/bigint.o
+ 
+-ZLIB_OBJS= etc/c/zlib/adler32.o etc/c/zlib/compress.o \
+-	etc/c/zlib/crc32.o etc/c/zlib/gzio.o \
+-	etc/c/zlib/uncompr.o etc/c/zlib/deflate.o \
+-	etc/c/zlib/trees.o etc/c/zlib/zutil.o \
+-	etc/c/zlib/inflate.o etc/c/zlib/infback.o \
+-	etc/c/zlib/inftrees.o etc/c/zlib/inffast.o
++ZLIB_OBJS= zlib/adler32.o zlib/compress.o zlib/crc32.o \
++	zlib/gzio.o zlib/uncompr.o zlib/deflate.o \
++	zlib/trees.o zlib/zutil.o zlib/inflate.o \
++	zlib/infback.o zlib/inftrees.o zlib/inffast.o
+ 
+ # modules which require some kind of operating system	
+ OS_OBJS = std/file.o std/mmfile.o std/path.o std/perf.o std/process.o std/socket.o std/socketstream.o
+@@ -245,16 +243,15 @@
+ 
+ install-data-local: $(D_PREREQ_SRCS) libgphobos2.a libgdruntime.a
+ 	for i in etc etc/c \
+-		etc/c/zlib \
+ 		gcc std std/c \
+                 std/c/darwin std/c/linux std/c/mach std/c/skyos std/c/unix std/c/windows \
+ 		std/typeinfo std/windows; do \
+ 		$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)/$$i; \
+-		for f in $(srcdir)/$$i/*.[hd]; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
++		for f in $(srcdir)/$$i/*.d; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
+ 	done
+ 	for i in core; do \
+ 		$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)/$$i; \
+-		for f in $(srcdir)/common/$$i/*.[hd]; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
++		for f in $(srcdir)/common/$$i/*.d; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
+ 	done
+ 	for i in crc32.d object.di; do \
+ 		$(INSTALL_HEADER) $(srcdir)/$$i $(DESTDIR)$(gdc_include_dir); done
+diff -ur d.orig/phobos2/Makefile.in d/phobos2/Makefile.in
+--- d.orig/phobos2/Makefile.in	2010-09-17 19:02:38.816306157 +0100
++++ d/phobos2/Makefile.in	2010-09-18 13:12:44.387917001 +0100
+@@ -300,12 +300,10 @@
+ 	std/cover.o std/complex.o std/encoding.o std/iterator.o std/xml.o \
+ 	std/atomics.o std/bigint.o
+ 
+-ZLIB_OBJS = etc/c/zlib/adler32.o etc/c/zlib/compress.o \
+-	etc/c/zlib/crc32.o etc/c/zlib/gzio.o \
+-	etc/c/zlib/uncompr.o etc/c/zlib/deflate.o \
+-	etc/c/zlib/trees.o etc/c/zlib/zutil.o \
+-	etc/c/zlib/inflate.o etc/c/zlib/infback.o \
+-	etc/c/zlib/inftrees.o etc/c/zlib/inffast.o
++ZLIB_OBJS = zlib/adler32.o zlib/compress.o zlib/crc32.o \
++	zlib/gzio.o zlib/uncompr.o zlib/deflate.o \
++	zlib/trees.o zlib/zutil.o zlib/inflate.o \
++	zlib/infback.o zlib/inftrees.o zlib/inffast.o
+ 
+ 
+ # modules which require some kind of operating system	
+@@ -779,16 +777,15 @@
+ 
+ install-data-local: $(D_PREREQ_SRCS) libgphobos2.a libgdruntime.a
+ 	for i in etc etc/c \
+-		etc/c/zlib \
+ 		gcc std std/c \
+                 std/c/darwin std/c/linux std/c/mach std/c/skyos std/c/unix std/c/windows \
+ 		std/typeinfo std/windows; do \
+ 		$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)/$$i; \
+-		for f in $(srcdir)/$$i/*.[hd]; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
++		for f in $(srcdir)/$$i/*.d; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
+ 	done
+ 	for i in core; do \
+ 		$(mkinstalldirs) $(DESTDIR)$(gdc_include_dir)/$$i; \
+-		for f in $(srcdir)/common/$$i/*.[hd]; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
++		for f in $(srcdir)/common/$$i/*.d; do $(INSTALL_HEADER) $$f $(DESTDIR)$(gdc_include_dir)/$$i; done; \
+ 	done
+ 	for i in crc32.d object.di; do \
+ 		$(INSTALL_HEADER) $(srcdir)/$$i $(DESTDIR)$(gdc_include_dir); done
+diff -ur d.orig/setup-gcc.sh d/setup-gcc.sh
+--- d.orig/setup-gcc.sh	2010-09-17 19:02:38.960306157 +0100
++++ d/setup-gcc.sh	2010-09-18 13:05:18.735917001 +0100
+@@ -102,6 +102,13 @@
+     cd "$top" || exit 1
+ fi
+ 
++# 1.2 Create a directory of links to the Zlib sources in the libphobos
++# directory.
++mkdir libphobos/zlib && \
++    cd libphobos/zlib && \
++    ../../symlink-tree ../../gcc/d/zlib > /dev/null && \
++    cd "$top" || exit 1
++
+ # 2. Patch the top-level directory
+ #
+ # If the patch for the top-level Makefile.in doesn't take, you can regenerate

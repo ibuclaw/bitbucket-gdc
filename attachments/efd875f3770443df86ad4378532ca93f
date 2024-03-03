@@ -1,0 +1,10 @@
+--- a/d/phobos2/std/bitmanip.d
++++ b/d/phobos2/std/bitmanip.d
+@@ -306,6 +306,8 @@ version(X86)
+     enum bitsPerSizeT = 32;
+ else version(X86_64)
+     enum bitsPerSizeT = 64;
++else version(ARM)
++    enum bitsPerSizeT = 32;
+ else
+     static assert(false, "unknown platform");

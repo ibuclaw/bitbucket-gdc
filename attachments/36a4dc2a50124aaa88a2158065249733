@@ -1,0 +1,41 @@
+diff -r 584a5f3a7dce d/phobos/internal/gc/win32.d
+--- a/d/phobos/internal/gc/win32.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/phobos/internal/gc/win32.d	Sun May 08 01:53:07 2011 -0400
+@@ -106,10 +106,10 @@
+     extern int _bss_end__;
+ }
+ 
+-void os_query_staticdataseg(void **base, uint *nbytes)
++void os_query_staticdataseg(void **base, size_t *nbytes)
+ {
+     *base = cast(void *)&_data_start__;
+-    *nbytes = cast(uint)(cast(char *)&_bss_end__ - cast(char *)&_data_start__);
++    *nbytes = cast(size_t)(cast(char *)&_bss_end__ - cast(char *)&_data_start__);
+ }
+ 
+ }
+diff -r 584a5f3a7dce d/phobos/std/stream.d
+--- a/d/phobos/std/stream.d	Fri Apr 29 14:13:02 2011 +0100
++++ b/d/phobos/std/stream.d	Sun May 08 01:53:07 2011 -0400
+@@ -1964,7 +1964,9 @@
+   override size_t readBlock(void* buffer, size_t size) {
+     assertReadable();
+     version (Win32) {
+-      ReadFile(hFile, buffer, size, &size, null);
++	  DWORD dwSize = cast(DWORD) size;
++	  ReadFile(hFile, buffer, size, &size, null);
++	  size = dwSize;
+     } else version (Unix) {
+       size = std.c.unix.unix.read(hFile, buffer, size);
+       if (size == -1)
+@@ -1977,7 +1979,9 @@
+   override size_t writeBlock(void* buffer, size_t size) {
+     assertWriteable();
+     version (Win32) {
+-      WriteFile(hFile, buffer, size, &size, null);
++	  DWORD dwSize = cast(DWORD) size;
++	  WriteFile(hFile, buffer, dwSize, &dwSize, null);
++	  size = dwSize;
+     } else version (Unix) {
+       size = std.c.unix.unix.write(hFile, buffer, size);
+       if (size == -1)

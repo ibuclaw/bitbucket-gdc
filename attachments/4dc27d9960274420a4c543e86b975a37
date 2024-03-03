@@ -1,0 +1,203 @@
+diff -r d89c3b7d495a d/d-codegen.cc
+--- a/d/d-codegen.cc	Sun Oct 30 22:39:44 2011 +0000
++++ b/d/d-codegen.cc	Fri Nov 04 02:43:10 2011 +0000
+@@ -4040,6 +4040,40 @@
+ }
+ 
+ 
++tree
++AggLayout::doField(record_layout_info rli, VarDeclaration * var,
++                   tree aggType, tree fcontext, bool inherited)
++{
++    tree ident;
++    tree field;
++
++    gcc_assert(var && var->storage_class & STCfield);
++
++    ident = var->ident ? get_identifier(var->ident->string) : NULL_TREE;
++    field= d_build_decl(FIELD_DECL, ident, gen.trueDeclarationType(var));
++    g.ofile->setDeclLoc(field, var);
++    var->csym = new Symbol;
++    var->csym->Stree = field;
++
++    DECL_CONTEXT(field) = aggType;
++    DECL_FCONTEXT(field) = fcontext;
++
++    DECL_ARTIFICIAL(field) = DECL_IGNORED_P(field) = inherited;
++
++    layout_decl(field, 0);
++
++    // get_inner_reference doesn't check these, leaves a variable unitialized
++    // DECL_SIZE is NULL if size is zero.
++    if (var->size(var->loc))
++    {
++        gcc_assert(DECL_MODE(field) != VOIDmode);
++        gcc_assert(DECL_SIZE(field) != NULL_TREE);
++    }
++
++    place_field(rli, field);
++    return field;
++}
++
+ void
+ AggLayout::doFields(VarDeclarations * fields, AggregateDeclaration * agg)
+ {
+@@ -4050,42 +4084,47 @@
+     if (POINTER_TYPE_P(fcontext))
+         fcontext = TREE_TYPE(fcontext);
+ 
+-    // tree new_field_chain = NULL_TREE;
+     for (size_t i = 0; i < fields->dim; i++)
+-    {   // %% D anonymous unions just put the fields into the outer struct...
+-        // does this cause problems?
+-        VarDeclaration * var_decl = fields->tdata()[i];
+-        gcc_assert(var_decl && var_decl->storage_class & STCfield);
+-
+-        tree ident = var_decl->ident ? get_identifier(var_decl->ident->string) : NULL_TREE;
+-        tree field_decl = d_build_decl(FIELD_DECL, ident,
+-            gen.trueDeclarationType(var_decl));
+-        g.ofile->setDeclLoc(field_decl, var_decl);
+-        var_decl->csym = new Symbol;
+-        var_decl->csym->Stree = field_decl;
+-
+-        DECL_CONTEXT(field_decl) = aggType;
+-        DECL_FCONTEXT(field_decl) = fcontext;
+-        DECL_FIELD_OFFSET (field_decl) = size_int(var_decl->offset);
+-        DECL_FIELD_BIT_OFFSET (field_decl) = bitsize_zero_node;
+-
+-        DECL_ARTIFICIAL(field_decl) = DECL_IGNORED_P(field_decl) = inherited;
+-
+-        // GCC 4.0 requires DECL_OFFSET_ALIGN to be set
+-        // %% .. using TYPE_ALIGN may not be same as DMD..
+-        SET_DECL_OFFSET_ALIGN(field_decl, TYPE_ALIGN(TREE_TYPE(field_decl)));
+-
+-        //SET_DECL_OFFSET_ALIGN (field_decl, BIGGEST_ALIGNMENT); // ?
+-        layout_decl(field_decl, 0);
+-
+-        // get_inner_reference doesn't check these, leaves a variable unitialized
+-        // DECL_SIZE is NULL if size is zero.
+-        if (var_decl->size(var_decl->loc))
++    {
++        VarDeclaration * var = fields->tdata()[i];
++        tree field;
++
++        size_t unionSize = agg->numFieldsInUnion(i);
++        if (unionSize == 1)
+         {
+-            gcc_assert(DECL_MODE(field_decl) != VOIDmode);
+-            gcc_assert(DECL_SIZE(field_decl) != NULL_TREE);
++            field = doField(recLayout, var, aggType, fcontext, inherited);
+         }
+-        fieldList.chain(field_decl);
++        else
++        {
++            tree unionType = make_node(UNION_TYPE);
++            ListMaker unionList = & TYPE_FIELDS(unionType);
++            record_layout_info rli = start_record_layout(unionType);
++
++            // As above in doField.
++            field = d_build_decl(FIELD_DECL, NULL_TREE, unionType);
++            g.ofile->setDeclLoc(field, var);
++            DECL_CONTEXT(field) = aggType;
++            DECL_FCONTEXT(field) = fcontext;
++            DECL_ARTIFICIAL(field) = DECL_IGNORED_P(field) = inherited;
++
++            // Add each union field to decl.
++            for (size_t j = 0; j < unionSize; j++)
++            {
++                tree unionField = NULL_TREE;
++                var = fields->tdata()[i+j];
++
++                unionField = doField(rli, var, unionType, fcontext, inherited);
++                unionList.chain(unionField);
++            }
++            finish_record_layout(rli, false);
++
++            // Add completed anonymous union type.
++            layout_decl(field, 0);
++            place_field(recLayout, field);
++
++            i += (unionSize-1);
++        }
++        fieldList.chain(field);
+     }
+ }
+ 
+@@ -4106,19 +4145,17 @@
+ }
+ 
+ void
+-AggLayout::addField(tree field_decl, size_t offset)
++AggLayout::addField(tree field, size_t offset)
+ {
+-    DECL_CONTEXT(field_decl) = aggType;
+-    // DECL_FCONTEXT(field_decl) = aggType; // caller needs to set this
+-    SET_DECL_OFFSET_ALIGN(field_decl, TYPE_ALIGN(TREE_TYPE(field_decl)));
+-    DECL_FIELD_OFFSET (field_decl) = size_int(offset);
+-    DECL_FIELD_BIT_OFFSET (field_decl) = bitsize_zero_node;
++    DECL_CONTEXT(field) = aggType;
++    // DECL_FCONTEXT(field) = aggType; // caller needs to set this
+     Loc l(aggDecl->getModule(), 1); // Must set this or we crash with DWARF debugging
+-    // gen.setDeclLoc(field_decl, aggDecl->loc); // aggDecl->loc isn't set
+-    g.ofile->setDeclLoc(field_decl, l);
+-
+-    layout_decl(field_decl, 0);
+-    fieldList.chain(field_decl);
++    // gen.setDeclLoc(field, aggDecl->loc); // aggDecl->loc isn't set
++    g.ofile->setDeclLoc(field, l);
++
++    layout_decl(field, 0);
++    place_field(recLayout, field);
++    fieldList.chain(field);
+ }
+ 
+ void
+@@ -4145,16 +4182,10 @@
+             ATTR_FLAG_TYPE_IN_PLACE);
+     }
+ 
+-    compute_record_mode (aggType);
+-    // %%  stor-layout.c:finalize_type_size ... it's private to that file
+-    // c-decl.c -- set up variants ? %%
+-    for (tree x = TYPE_MAIN_VARIANT(aggType); x; x = TYPE_NEXT_VARIANT(x))
+-    {
+-        TYPE_FIELDS (x) = TYPE_FIELDS (aggType);
+-        TYPE_LANG_SPECIFIC (x) = TYPE_LANG_SPECIFIC (aggType);
+-        TYPE_ALIGN (x) = TYPE_ALIGN (aggType);
+-        TYPE_USER_ALIGN (x) = TYPE_USER_ALIGN (aggType);
+-    }
++    if (TYPE_PACKED(aggType))
++        recLayout->packed_maybe_necessary = true;
++    /* Let backend lay out type. */
++    finish_record_layout (recLayout, false);
+ }
+ 
+ 
+diff -r d89c3b7d495a d/d-codegen.h
+--- a/d/d-codegen.h	Sun Oct 30 22:39:44 2011 +0000
++++ b/d/d-codegen.h	Fri Nov 04 02:43:10 2011 +0000
+@@ -818,7 +818,6 @@
+ public:
+     AggregateDeclaration * aggDecl;
+     FieldVisitor(AggregateDeclaration * decl) : aggDecl(decl) { }
+-    //virtual doField(VarDeclaration * field) = 0;
+     virtual void doFields(VarDeclarations * fields, AggregateDeclaration * agg) = 0;
+     virtual void doInterfaces(BaseClasses * bases, AggregateDeclaration * agg) = 0;
+ 
+@@ -834,12 +833,16 @@
+ {
+ public:
+     tree aggType;
++    record_layout_info recLayout;
+     ListMaker fieldList;
+     AggLayout(AggregateDeclaration * ini_agg_decl, tree ini_agg_type) :
+         FieldVisitor(ini_agg_decl),
+         aggType(ini_agg_type),
++        recLayout(start_record_layout(aggType)),
+         fieldList(& TYPE_FIELDS(aggType)) { }
+     void doFields(VarDeclarations * fields, AggregateDeclaration * agg);
++    tree doField(record_layout_info rli, VarDeclaration * var,
++                 tree aggType, tree fcontext, bool inherited);
+     void doInterfaces(BaseClasses * bases, AggregateDeclaration * agg);
+     void addField(tree field_decl, size_t offset);
+     void finish(Expressions * attrs);

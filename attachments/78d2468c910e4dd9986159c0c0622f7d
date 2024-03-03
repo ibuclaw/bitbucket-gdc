@@ -1,0 +1,488 @@
+diff -r ce524a58cf7a d/dmd2/mars.h
+--- a/d/dmd2/mars.h	Mon Sep 27 20:11:12 2010 +0100
++++ b/d/dmd2/mars.h	Mon Sep 27 20:11:25 2010 +0100
+@@ -41,7 +41,7 @@
+ #define V1	0
+ #define V2	1	// Version 2.0 features
+ #define BREAKABI 1	// 0 if not ready to break the ABI just yet
+-#define STRUCTTHISREF 0	// if 'this' for struct is a reference, not a pointer
++#define STRUCTTHISREF V2	// if 'this' for struct is a reference, not a pointer
+ 
+ struct Array;
+ 
+diff -r ce524a58cf7a d/druntime/compiler/gdc/util/console.d
+--- a/d/druntime/compiler/gdc/util/console.d	Mon Sep 27 20:11:12 2010 +0100
++++ b/d/druntime/compiler/gdc/util/console.d	Mon Sep 27 20:11:25 2010 +0100
+@@ -35,7 +35,7 @@
+         {
+             write( 2, val.ptr, val.length );
+         }
+-        return *this;
++        return this;
+     }
+ 
+ 
+diff -r ce524a58cf7a d/phobos2/std/bigint.d
+--- a/d/phobos2/std/bigint.d	Mon Sep 27 20:11:12 2010 +0100
++++ b/d/phobos2/std/bigint.d	Mon Sep 27 20:11:25 2010 +0100
+@@ -150,7 +150,7 @@
+     ///
+     void castTo(out ulong r) const
+     {
+-        mixin(setUp("x","*this"));
++        mixin(setUp("x","this"));
+         r = peek(xp);
+         xp = next(xp);
+         if (xp != xe) r += cast(ulong)(peek(xp)) << 32;
+@@ -159,7 +159,7 @@
+     ///
+     void castTo(out string r) const
+     {
+-        r = decimal(*this);
++        r = decimal(this);
+     }
+ 
+     // Unary operator overloads
+@@ -175,19 +175,19 @@
+     ///
+     BigInt opNeg() const
+     {
+-        return neg(*this);
++        return neg(this);
+     }
+ 
+     ///
+     BigInt opCom() const
+     {
+-        return com(*this);
++        return com(this);
+     }
+ 
+     ///
+     BigInt opPostInc()
+     {
+-        BigInt n = *this;
++        BigInt n = this;
+         opAddAssign(1);
+         return n;
+     }
+@@ -195,7 +195,7 @@
+     ///
+     BigInt opPostDec()
+     {
+-        BigInt n = *this;
++        BigInt n = this;
+         opSubAssign(1);
+         return n;
+     }
+@@ -211,13 +211,13 @@
+     ///
+     BigInt opAdd(T:int)(T n) const
+     {
+-        return add(*this,cast(Digit)n);
++        return add(this,cast(Digit)n);
+     }
+ 
+     ///
+     BigInt opAdd(T:const(BigInt))(T n) const
+     {
+-        return add(*this,n);
++        return add(this,n);
+     }
+ 
+     ///
+@@ -236,13 +236,13 @@
+     ///
+     BigInt opSub(T:int)(T n) const
+     {
+-        return sub(*this,cast(Digit)n);
++        return sub(this,cast(Digit)n);
+     }
+ 
+     ///
+     BigInt opSub(T:const(BigInt))(T n) const
+     {
+-        return sub(*this,n);
++        return sub(this,n);
+     }
+ 
+     ///
+@@ -397,7 +397,7 @@
+     ///
+     BigInt opAnd(T:int)(T n) const
+     {
+-        return and(*this,cast(Digit)n);
++        return and(this,cast(Digit)n);
+     }
+ 
+     ///
+@@ -411,7 +411,7 @@
+     ///
+     BigInt opAnd(T:const(BigInt))(T n) const
+     {
+-        return and(*this,n);
++        return and(this,n);
+     }
+ 
+     ///
+@@ -437,13 +437,13 @@
+     ///
+     BigInt opOr(T:int)(T n) const
+     {
+-        return or(*this,cast(Digit)n);
++        return or(this,cast(Digit)n);
+     }
+ 
+     ///
+     BigInt opOr(T:const(BigInt))(T n) const
+     {
+-        return or(*this,n);
++        return or(this,n);
+     }
+ 
+     ///
+@@ -462,13 +462,13 @@
+     ///
+     BigInt opXor(T:int)(T n) const
+     {
+-        return xor(*this,cast(Digit)n);
++        return xor(this,cast(Digit)n);
+     }
+ 
+     ///
+     BigInt opXor(T:const(BigInt))(T n) const
+     {
+-        return xor(*this,n);
++        return xor(this,n);
+     }
+ 
+     ///
+@@ -483,7 +483,7 @@
+     {
+         uint hi = n >> 5;
+         uint lo = n & 0x1F;
+-        Big r = *this;
++        Big r = this;
+         if (lo != 0) r = shl(r,lo);
+         if (hi != 0) r = shlDigits(r,hi);
+         return r;
+@@ -501,7 +501,7 @@
+     {
+         uint hi = n >> 5;
+         uint lo = n & 0x1F;
+-        Big r = *this;
++        Big r = this;
+         if (lo != 0) r = shr(r,lo).q;
+         if (hi != 0) r = shrDigits(r,hi);
+         return r;
+@@ -555,21 +555,21 @@
+     ///
+     int opCmp(T:int)(T n) const
+     {
+-        int t = cmp(*this,n);
++        int t = cmp(this,n);
+         return t == 0 ? 0 : (t > 0 ? 1 : -1);
+     }
+ 
+     ///
+     int opCmp(T:const(BigInt))(T n) const
+     {
+-        int t = cmp(*this,n);
++        int t = cmp(this,n);
+         return t == 0 ? 0 : (t > 0 ? 1 : -1);
+     }
+ 
+     ///
+     string toString() const
+     {
+-        return decimal(*this);
++        return decimal(this);
+     }
+ 
+     ///
+@@ -582,7 +582,7 @@
+ 
+     private int sgn() const
+     {
+-        int t = cmp(*this,0);
++        int t = cmp(this,0);
+         return t == 0 ? 0 : (t > 0 ? 1 : -1);
+     }
+ 
+diff -r ce524a58cf7a d/phobos2/std/bitmanip.d
+--- a/d/phobos2/std/bitmanip.d	Mon Sep 27 20:11:12 2010 +0100
++++ b/d/phobos2/std/bitmanip.d	Mon Sep 27 20:11:25 2010 +0100
+@@ -381,7 +381,7 @@
+         for (size_t i = 0; i < len; i++)
+         {   bool b = opIndex(i);
+             result = dg(b);
+-            (*this)[i] = b;
++            (this)[i] = b;
+             if (result)
+                 break;
+         }
+@@ -396,7 +396,7 @@
+         for (size_t i = 0; i < len; i++)
+         {   bool b = opIndex(i);
+             result = dg(i, b);
+-            (*this)[i] = b;
++            (this)[i] = b;
+             if (result)
+                 break;
+         }
+@@ -442,7 +442,7 @@
+     BitArray reverse()
+         out (result)
+         {
+-            assert(result == *this);
++            assert(result == this);
+         }
+         body
+         {
+@@ -455,12 +455,12 @@
+                 hi = len - 1;
+                 for (; lo < hi; lo++, hi--)
+                 {
+-                    t = (*this)[lo];
+-                    (*this)[lo] = (*this)[hi];
+-                    (*this)[hi] = t;
++                    t = (this)[lo];
++                    (this)[lo] = (this)[hi];
++                    (this)[hi] = t;
+                 }
+             }
+-            return *this;
++            return this;
+         }
+ 
+     unittest
+@@ -487,7 +487,7 @@
+     BitArray sort()
+         out (result)
+         {
+-            assert(result == *this);
++            assert(result == this);
+         }
+         body
+         {
+@@ -503,7 +503,7 @@
+                     {
+                         if (lo >= hi)
+                             goto Ldone;
+-                        if ((*this)[lo] == true)
++                        if ((this)[lo] == true)
+                             break;
+                         lo++;
+                     }
+@@ -512,13 +512,13 @@
+                     {
+                         if (lo >= hi)
+                             goto Ldone;
+-                        if ((*this)[hi] == false)
++                        if ((this)[hi] == false)
+                             break;
+                         hi--;
+                     }
+ 
+-                    (*this)[lo] = false;
+-                    (*this)[hi] = true;
++                    (this)[lo] = false;
++                    (this)[hi] = true;
+ 
+                     lo++;
+                     hi--;
+@@ -526,7 +526,7 @@
+             Ldone:
+                 ;
+             }
+-            return *this;
++            return this;
+         }
+ 
+     unittest
+@@ -675,7 +675,7 @@
+         length = ba.length;
+         foreach (i, b; ba)
+         {
+-            (*this)[i] = b;
++            (this)[i] = b;
+         }
+     }
+ 
+@@ -953,7 +953,7 @@
+ 
+         for (size_t i = 0; i < dim; i++)
+             ptr[i] &= e2.ptr[i];
+-        return *this;
++        return this;
+     }
+ 
+     unittest
+@@ -989,7 +989,7 @@
+ 
+         for (size_t i = 0; i < dim; i++)
+             ptr[i] |= e2.ptr[i];
+-        return *this;
++        return this;
+     }
+ 
+     unittest
+@@ -1024,7 +1024,7 @@
+ 
+         for (size_t i = 0; i < dim; i++)
+             ptr[i] ^= e2.ptr[i];
+-        return *this;
++        return this;
+     }
+ 
+     unittest
+@@ -1061,7 +1061,7 @@
+ 
+         for (size_t i = 0; i < dim; i++)
+             ptr[i] &= ~e2.ptr[i];
+-        return *this;
++        return this;
+     }
+ 
+     unittest
+@@ -1089,8 +1089,8 @@
+     BitArray opCatAssign(bool b)
+     {
+         length = len + 1;
+-        (*this)[len - 1] = b;
+-        return *this;
++        (this)[len - 1] = b;
++        return this;
+     }
+ 
+     unittest
+@@ -1122,8 +1122,8 @@
+         auto istart = len;
+         length = len + b.length;
+         for (auto i = istart; i < len; i++)
+-            (*this)[i] = b[i - istart];
+-        return *this;
++            (this)[i] = b[i - istart];
++        return this;
+     }
+ 
+     unittest
+@@ -1169,7 +1169,7 @@
+         r.length = len + 1;
+         r[0] = b;
+         for (size_t i = 0; i < len; i++)
+-            r[1 + i] = (*this)[i];
++            r[1 + i] = (this)[i];
+         return r;
+     }
+ 
+diff -r ce524a58cf7a d/phobos2/std/boxer.d
+--- a/d/phobos2/std/boxer.d	Mon Sep 27 20:11:12 2010 +0100
++++ b/d/phobos2/std/boxer.d	Mon Sep 27 20:11:25 2010 +0100
+@@ -322,7 +322,7 @@
+             {
+                 if (inverted)
+                     return false;
+-                return other.opEqualsInternal(*this, true);
++                return other.opEqualsInternal(this, true);
+             }
+             
+             TypeClass ta = findTypeClass(type), tb = findTypeClass(other.type);
+@@ -332,15 +332,15 @@
+                 string na = type.toString, nb = other.type.toString;
+                 
+                 if (na == "ulong" || nb == "ulong")
+-                    return unbox!(ulong)(*this) == unbox!(ulong)(other);
+-                return unbox!(long)(*this) == unbox!(long)(other);
++                    return unbox!(ulong)(this) == unbox!(ulong)(other);
++                return unbox!(long)(this) == unbox!(long)(other);
+             }
+             else if (tb == TypeClass.Float)
+-                return unbox!(real)(*this) == unbox!(real)(other);
++                return unbox!(real)(this) == unbox!(real)(other);
+             else if (tb == TypeClass.Complex)
+-                return unbox!(creal)(*this) == unbox!(creal)(other);
++                return unbox!(creal)(this) == unbox!(creal)(other);
+             else if (tb == TypeClass.Imaginary)
+-                return unbox!(ireal)(*this) == unbox!(ireal)(other);
++                return unbox!(ireal)(this) == unbox!(ireal)(other);
+             
+             assert (0);
+         }
+@@ -365,7 +365,7 @@
+             {
+                 if (inverted)
+                     return 0;
+-                return other.opCmpInternal(*this, true);
++                return other.opCmpInternal(this, true);
+             }
+             
+             TypeClass ta = findTypeClass(type), tb = findTypeClass(other.type);
+@@ -374,26 +374,26 @@
+             {
+                 if (type == typeid(ulong) || other.type == typeid(ulong))
+                 {
+-                    ulong va = unbox!(ulong)(*this), vb = unbox!(ulong)(other);
++                    ulong va = unbox!(ulong)(this), vb = unbox!(ulong)(other);
+                     return va > vb ? 1 : va < vb ? -1 : 0;
+                 }
+                 
+-                long va = unbox!(long)(*this), vb = unbox!(long)(other);
++                long va = unbox!(long)(this), vb = unbox!(long)(other);
+                 return va > vb ? 1 : va < vb ? -1 : 0;
+             }
+             else if (tb == TypeClass.Float)
+             {
+-                real va = unbox!(real)(*this), vb = unbox!(real)(other);
++                real va = unbox!(real)(this), vb = unbox!(real)(other);
+                 return va > vb ? 1 : va < vb ? -1 : va == vb ? 0 : float.nan;
+             }
+             else if (tb == TypeClass.Complex)
+             {
+-                creal va = unbox!(creal)(*this), vb = unbox!(creal)(other);
++                creal va = unbox!(creal)(this), vb = unbox!(creal)(other);
+                 return va == vb ? 0 : float.nan;
+             }
+             else if (tb == TypeClass.Imaginary)
+             {
+-                ireal va = unbox!(ireal)(*this), vb = unbox!(ireal)(other);
++                ireal va = unbox!(ireal)(this), vb = unbox!(ireal)(other);
+                 return va > vb ? 1 : va < vb ? -1 : va == vb ? 0 : float.nan;
+             }
+             
+diff -r ce524a58cf7a d/phobos2/std/date.d
+--- a/d/phobos2/std/date.d	Mon Sep 27 20:11:12 2010 +0100
++++ b/d/phobos2/std/date.d	Mon Sep 27 20:11:25 2010 +0100
+@@ -66,7 +66,7 @@
+     {
+ 	DateParse dp;
+ 
+-	dp.parse(s, *this);
++	dp.parse(s, this);
+     }
+ }
+ 
+diff -r ce524a58cf7a d/phobos2/std/dateparse.d
+--- a/d/phobos2/std/dateparse.d	Mon Sep 27 20:11:12 2010 +0100
++++ b/d/phobos2/std/dateparse.d	Mon Sep 27 20:11:25 2010 +0100
+@@ -46,7 +46,7 @@
+ {
+     void parse(string s, out Date date)
+     {
+-	*this = DateParse.init;
++	this = DateParse.init;
+ 
+ 	//version (Win32)
+ 	    buffer = (cast(char *)alloca(s.length))[0 .. s.length];
+diff -r ce524a58cf7a d/phobos2/std/md5.d
+--- a/d/phobos2/std/md5.d	Mon Sep 27 20:11:12 2010 +0100
++++ b/d/phobos2/std/md5.d	Mon Sep 27 20:11:25 2010 +0100
+@@ -275,7 +275,7 @@
+      */
+     void start()
+     {
+-	*this = MD5_CTX.init;
++	this = MD5_CTX.init;
+     }
+ 
+     /** MD5 block update operation. Continues an MD5 message-digest

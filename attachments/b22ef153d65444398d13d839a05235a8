@@ -1,0 +1,19 @@
+# HG changeset patch
+# User Dan Green  <venix1@gmail.com>
+# Date 1267292456 18000
+# Node ID db22a13b48265433dcee39abb771427d629e9d68
+# Parent  28bb98f741ba29593a6ff4f870eda3623e19b28c
+Changed _MSC_VER to _WIN32 to activate the code that changes %z/%j to equivalent types supported by Mingw.
+
+diff -r 28bb98f741ba -r db22a13b4826 d/dmd/root.c
+--- a/d/dmd/root.c	Sat Feb 27 12:39:03 2010 -0500
++++ b/d/dmd/root.c	Sat Feb 27 12:40:56 2010 -0500
+@@ -1655,7 +1655,7 @@
+  // The compiler shipped with Visual Studio 2005 (and possible
+  // other versions) does not support C99 printf format specfiers
+  // such as %z and %j
+- #if _MSC_VER using std::string; using std::wstring;
++ #if _WIN32 //_MSC_VER using std::string; using std::wstring;
+  
+  template<typename S>
+  inline void 

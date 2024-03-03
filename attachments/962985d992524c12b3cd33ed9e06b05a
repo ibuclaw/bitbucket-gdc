@@ -1,0 +1,16 @@
+diff -r d53a8be7c0ed d/d-decls.cc
+--- a/d/d-decls.cc	Sat Jul 24 21:14:54 2010 +0100
++++ b/d/d-decls.cc	Sun Aug 01 17:28:45 2010 -0400
+@@ -162,7 +162,10 @@
+ 	sv->intvalue++;
+     }
+ 
+-    SET_DECL_ASSEMBLER_NAME(t, get_identifier(out_name));
++    // Use GCC backend for mangling names based on calling convetion.
++    // stdcall, fastcall, etc.
++    tree id = targetm.mangle_decl_assembler_name (t, get_identifier(out_name));
++    SET_DECL_ASSEMBLER_NAME(t, id); //get_identifier(out_name));
+ 
+     if (alloc_name)
+ 	free(alloc_name);
+

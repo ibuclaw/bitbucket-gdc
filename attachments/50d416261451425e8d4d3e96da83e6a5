@@ -1,0 +1,18 @@
+diff -r c8bdb254e8fc d/d-glue.cc
+--- a/d/d-glue.cc	Sun Sep 19 15:35:46 2010 +0100
++++ b/d/d-glue.cc	Wed Sep 22 08:59:19 2010 -0400
+@@ -1243,6 +1243,14 @@
+     if (upr) {
+ 	final_len_expr = upr->toElem(irs);
+ 	if (global.params.useArrayBounds && array_len_expr) {
++        if (lwr) {
++            // Implements the check upr < lwr.
++            // 
++            lwr_tree = irs->maybeMakeTemp(lwr_tree);
++            final_len_expr = irs->maybeMakeTemp(final_len_expr);
++            irs->doExp(irs->checkedIndex(loc, lwr_tree, final_len_expr, true));
++            final_len_expr = upr->toElem(irs); // Reset
++        }
+ 	    final_len_expr = irs->maybeMakeTemp(final_len_expr);
+ 	    final_len_expr = irs->checkedIndex(loc, final_len_expr, array_len_expr, true);
+ 	}

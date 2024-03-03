@@ -1,0 +1,21 @@
+diff -r e83350ff851b d/druntime/object_.d
+--- a/d/druntime/object_.d	Tue Nov 23 01:22:30 2010 +0000
++++ b/d/druntime/object_.d	Wed Nov 24 08:02:38 2010 +0100
+@@ -1243,7 +1243,7 @@
+     {
+         this.msg = msg;
+         this.next = next;
+-        //this.info = _d_traceContext();
++        this.info = _d_traceContext();
+     }
+ 
+     this(string msg, string file, size_t line, Throwable next = null)
+@@ -1251,7 +1251,7 @@
+         this(msg, next);
+         this.file = file;
+         this.line = line;
+-        //this.info = _d_traceContext();
++        this.info = _d_traceContext();
+     }
+ 
+     override string toString()

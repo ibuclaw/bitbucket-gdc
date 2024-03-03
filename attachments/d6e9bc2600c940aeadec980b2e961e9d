@@ -1,0 +1,94 @@
+diff -ur d.orig/d-codegen.cc d/d-codegen.cc
+--- d.orig/d-codegen.cc	2010-09-11 23:38:51.683001743 +0100
++++ d/d-codegen.cc	2010-09-12 18:20:19.964196000 +0100
+@@ -3409,9 +3409,7 @@
+ 		break;
+ 	    }
+ 	}
+-	// %% BUG: Either us or dmd creates 2 __returnLabel's for the same return.
+-	// !ref->block works around assertion failure for now...
+-	assert(found || !ref->block);
++	assert(found);
+     }
+ }
+ 
+diff -ur d.orig/d-glue.cc d/d-glue.cc
+--- d.orig/d-glue.cc	2010-09-11 21:22:46.931001743 +0100
++++ d/d-glue.cc	2010-09-12 18:20:36.404196000 +0100
+@@ -3685,26 +3685,18 @@
+ LabelStatement::toIR(IRState* irs)
+ {
+     FuncDeclaration * func = irs->func;
+-#if V2
+-    LabelDsymbol * label = isReturnLabel ? func->returnLabel : func->searchLabel(ident);
+-#else
+-    LabelDsymbol * label = func->searchLabel(ident);
+-#endif
++    LabelDsymbol * label = irs->isReturnLabel(ident) ? func->returnLabel : func->searchLabel(ident);
+     tree t_label;
+ 
+-    // %% Safe to use lblock as first choice?
+-    if ( (t_label = lblock) || (t_label = irs->getLabelTree(label)) )
++    if (t_label = irs->getLabelTree(label))
+     {
+ 	irs->pushLabel(label);
+ 	irs->doLabel(t_label);
+ 	if (label->asmLabelNum)
+ 	    d_expand_priv_asm_label(irs, label->asmLabelNum);
+-#if V2
+-	if (isReturnLabel && func->fensure)
++	if (irs->isReturnLabel(ident) && func->fensure)
+ 	    func->fensure->toIR(irs);
+-	else
+-#endif
+-	if (statement)
++	else if (statement)
+ 	    statement->toIR(irs);
+ #if V1
+ 	if (fwdrefs)
+diff -ur d.orig/d-irstate.h d/d-irstate.h
+--- d.orig/d-irstate.h	2010-09-11 21:22:46.935001743 +0100
++++ d/d-irstate.h	2010-09-12 18:20:19.980196000 +0100
+@@ -99,6 +99,9 @@
+     // is being compiled.
+     tree    getLabelTree(LabelDsymbol * label);
+     Label * getLabelBlock(LabelDsymbol * label, Statement * from = NULL);
++    bool    isReturnLabel(Identifier * ident) {
++	return func->returnLabel ? ident == func->returnLabel->ident : 0;
++    }
+ 
+     // ** Loops (and case statements)
+ #if D_GCC_VER < 40
+diff -ur d.orig/dmd/statement.c d/dmd/statement.c
+--- d.orig/dmd/statement.c	2010-09-07 19:30:51.393584819 +0100
++++ d/dmd/statement.c	2010-09-12 18:20:19.988196000 +0100
+@@ -3912,11 +3912,12 @@
+                 error("catch at %s hides catch at %s", sj, si);
+         }
+     }
+-
++#ifndef IN_GCC
+     if (!body || body->isEmpty())
+     {
+         return NULL;
+     }
++#endif
+     return this;
+ }
+ 
+diff -ur d.orig/dmd2/statement.c d/dmd2/statement.c
+--- d.orig/dmd2/statement.c	2010-08-09 23:15:57.873045470 +0100
++++ d/dmd2/statement.c	2010-09-12 18:21:10.288196000 +0100
+@@ -3608,10 +3608,10 @@
+ 		error("catch at %s hides catch at %s", sj, si);
+ 	}
+     }
+-
++#ifndef IN_GCC
+     if (!body)
+ 	return NULL;
+-
++#endif
+     return this;
+ }
+ 

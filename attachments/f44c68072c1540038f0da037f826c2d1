@@ -1,0 +1,5657 @@
+diff -r 616079c615b1 d/Make-lang.in
+--- a/d/Make-lang.in	Mon Apr 05 19:53:16 2010 -0400
++++ b/d/Make-lang.in	Sat Apr 17 11:46:53 2010 +0100
+@@ -233,11 +233,11 @@
+  else
+   ifeq ($(D_gcc_main_ver),4.1)
+    D_GLUE_OBJS += d/d-c-stubs.cglue.o
+-   D_BORROWED_C_OBJS += stub-objc.o prefix.o $(C_TARGET_OBJS)
++   D_BORROWED_C_OBJS += stub-objc.o prefix.o
+   else
+    ifeq ($(D_gcc_main_ver),4.3)
+     D_GLUE_OBJS += d/d-c-stubs.cglue.o
+-    D_BORROWED_C_OBJS += stub-objc.o prefix.o $(C_TARGET_OBJS)
++    D_BORROWED_C_OBJS += stub-objc.o prefix.o
+     D_EXTRA_LIBS += $(GMPLIBS)
+     D_DRIVER_OBJS += opts-common.o gcc-options.o
+    endif
+diff -r 616079c615b1 d/patches/patch-gcc-4.1.x
+--- a/d/patches/patch-gcc-4.1.x	Mon Apr 05 19:53:16 2010 -0400
++++ b/d/patches/patch-gcc-4.1.x	Sat Apr 17 11:46:53 2010 +0100
+@@ -1,818 +1,748 @@
+-diff -cr gcc-orig/cgraph.c gcc/cgraph.c
+-*** gcc-orig/cgraph.c	Mon Oct 31 16:07:29 2005
+---- gcc/cgraph.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 182,187 ****
+---- 182,188 ----
+-  cgraph_node (tree decl)
+-  {
+-    struct cgraph_node key, *node, **slot;
+-+   tree context;
+-  
+-    gcc_assert (TREE_CODE (decl) == FUNCTION_DECL);
+-  
+-***************
+-*** 203,214 ****
+-    node = cgraph_create_node ();
+-    node->decl = decl;
+-    *slot = node;
+-!   if (DECL_CONTEXT (decl) && TREE_CODE (DECL_CONTEXT (decl)) == FUNCTION_DECL)
+-      {
+-!       node->origin = cgraph_node (DECL_CONTEXT (decl));
+-!       node->next_nested = node->origin->nested;
+-!       node->origin->nested = node;
+-!       node->master_clone = node;
+-      }
+-    return node;
+-  }
+---- 204,219 ----
+-    node = cgraph_create_node ();
+-    node->decl = decl;
+-    *slot = node;
+-!   if (!DECL_NO_STATIC_CHAIN (decl))
+-      {
+-!       context = decl_function_context (decl);
+-!       if (context)
+-!         {
+-! 	  node->origin = cgraph_node (context);
+-! 	  node->next_nested = node->origin->nested;
+-! 	  node->origin->nested = node;
+-! 	  node->master_clone = node;
+-!         }
+-      }
+-    return node;
+-  }
+-diff -cr gcc-orig/config/arm.c gcc/config/arm.c
+-*** gcc-orig/config/arm/arm.c	Mon Oct 16 21:04:38 2006
+---- gcc/config/arm/arm.c	Sun Sep 30 21:58:58 2007
+-***************
+-*** 15371,15376 ****
+---- 15371,15385 ----
+-  	  /* Move from sp to reg.  */
+-  	  asm_fprintf (asm_out_file, "\t.movsp %r\n", REGNO (e0));
+-  	}
+-+       else if (GET_CODE (e1) == PLUS
+-+ 	      && GET_CODE (XEXP (e1, 0)) == REG
+-+ 	      && REGNO (XEXP (e1, 0)) == SP_REGNUM
+-+ 	      && GET_CODE (XEXP (e1, 1)) == CONST_INT)
+-+ 	{
+-+ 	  /* Set reg to offset from sp.  */
+-+ 	  asm_fprintf (asm_out_file, "\t.movsp %r, #%d\n",
+-+ 		       REGNO (e0), (int)INTVAL(XEXP (e1, 1)));
+-+ 	}
+-        else
+-  	abort ();
+-        break;
+-diff -cr gcc-orig/config/darwin.h gcc/config/darwin.h
+-*** gcc-orig/config/darwin.h	Mon Nov 14 23:55:12 2005
+---- gcc/config/darwin.h	Tue Jan 23 19:39:14 2007
+-***************
+-*** 926,933 ****
+-  
+-  #define MACHO_DYNAMIC_NO_PIC_P	(TARGET_DYNAMIC_NO_PIC)
+-  #define MACHOPIC_INDIRECT	(flag_pic || MACHO_DYNAMIC_NO_PIC_P)
+-! #define MACHOPIC_JUST_INDIRECT	(flag_pic == 1 || MACHO_DYNAMIC_NO_PIC_P)
+-! #define MACHOPIC_PURE		(flag_pic == 2 && ! MACHO_DYNAMIC_NO_PIC_P)
+-  
+-  #undef TARGET_ENCODE_SECTION_INFO
+-  #define TARGET_ENCODE_SECTION_INFO  darwin_encode_section_info
+---- 926,933 ----
+-  
+-  #define MACHO_DYNAMIC_NO_PIC_P	(TARGET_DYNAMIC_NO_PIC)
+-  #define MACHOPIC_INDIRECT	(flag_pic || MACHO_DYNAMIC_NO_PIC_P)
+-! #define MACHOPIC_JUST_INDIRECT	(MACHO_DYNAMIC_NO_PIC_P)
+-! #define MACHOPIC_PURE		(flag_pic && ! MACHO_DYNAMIC_NO_PIC_P)
+-  
+-  #undef TARGET_ENCODE_SECTION_INFO
+-  #define TARGET_ENCODE_SECTION_INFO  darwin_encode_section_info
+-Only in gcc/config: darwin.h.orig
+-diff -cr gcc-orig/config/i386/i386.c gcc/config/i386/i386.c
+-*** gcc-orig/config/i386/i386.c	Tue May 16 21:11:59 2006
+---- gcc/config/i386/i386.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 4727,4732 ****
+---- 4727,4737 ----
+-      frame->red_zone_size = 0;
+-    frame->to_allocate -= frame->red_zone_size;
+-    frame->stack_pointer_offset -= frame->red_zone_size;
++Index: gcc/tree-dump.c
++===================================================================
++--- gcc/tree-dump.c	(revision 158462)
+++++ gcc/tree-dump.c	(working copy)
++@@ -582,6 +582,10 @@
++       dump_child ("args", TREE_OPERAND (t, 1));
++       break;
++ 
+++    case STATIC_CHAIN_EXPR:
+++      dump_child ("func", TREE_OPERAND (t, 0));
+++      break;
+++
++     case CONSTRUCTOR:
++       {
++ 	unsigned HOST_WIDE_INT cnt;
++Index: gcc/tree-pretty-print.c
++===================================================================
++--- gcc/tree-pretty-print.c	(revision 158462)
+++++ gcc/tree-pretty-print.c	(working copy)
++@@ -1004,6 +1004,16 @@
++ 	pp_string (buffer, " [tail call]");
++       break;
++ 
+++    case STATIC_CHAIN_EXPR:
+++	pp_string (buffer, "<<static chain of ");
+++	dump_generic_node (buffer, TREE_OPERAND (node, 0), spc, flags, false);
+++	pp_string (buffer, ">>");
+++      break;
+++
+++    case STATIC_CHAIN_DECL:
+++       pp_string (buffer, "<<static chain decl>>");
+++       break;
+++	
++     case WITH_CLEANUP_EXPR:
++       NIY;
++       break;
++Index: gcc/cgraph.c
++===================================================================
++--- gcc/cgraph.c	(revision 158462)
+++++ gcc/cgraph.c	(working copy)
++@@ -182,6 +182,7 @@
++ cgraph_node (tree decl)
++ {
++   struct cgraph_node key, *node, **slot;
+++  tree context;
++ 
++   gcc_assert (TREE_CODE (decl) == FUNCTION_DECL);
++ 
++@@ -203,12 +204,16 @@
++   node = cgraph_create_node ();
++   node->decl = decl;
++   *slot = node;
++-  if (DECL_CONTEXT (decl) && TREE_CODE (DECL_CONTEXT (decl)) == FUNCTION_DECL)
+++  if (!DECL_NO_STATIC_CHAIN (decl))
++     {
++-      node->origin = cgraph_node (DECL_CONTEXT (decl));
++-      node->next_nested = node->origin->nested;
++-      node->origin->nested = node;
++-      node->master_clone = node;
+++      context = decl_function_context (decl);
+++      if (context)
+++        {
+++	  node->origin = cgraph_node (context);
+++	  node->next_nested = node->origin->nested;
+++	  node->origin->nested = node;
+++	  node->master_clone = node;
+++        }
++     }
++   return node;
++ }
++Index: gcc/gcc.c
++===================================================================
++--- gcc/gcc.c	(revision 158462)
+++++ gcc/gcc.c	(working copy)
++@@ -126,6 +126,9 @@
++ /* Flag set by cppspec.c to 1.  */
++ int is_cpp_driver;
++ 
+++/* Flag set by drivers needing Pthreads. */
+++int need_pthreads;
+++
++ /* Flag saying to pass the greatest exit code returned by a sub-process
++    to the calling program.  */
++ static int pass_exit_codes;
++@@ -458,6 +461,7 @@
++ 	assembler has done its job.
++  %D	Dump out a -L option for each directory in startfile_prefixes.
++ 	If multilib_dir is set, extra entries are generated with it affixed.
+++ %N     Output the currently selected multilib directory name.
++  %l     process LINK_SPEC as a spec.
++  %L     process LIB_SPEC as a spec.
++  %G     process LIBGCC_SPEC as a spec.
++@@ -876,6 +880,8 @@
++ #endif
++ #endif
++ 
+++#define GCC_SPEC_FORMAT_4 1
+++
++ /* Record the mapping from file suffixes for compilation specs.  */
++ 
++ struct compiler
++@@ -3800,6 +3806,9 @@
++ 	}
++     }
++ 
+++  if (need_pthreads)
+++      n_switches++;
+++
++   if (save_temps_flag && use_pipes)
++     {
++       /* -save-temps overrides -pipe, so that temp files are produced */
++@@ -4138,6 +4147,18 @@
++ 	}
++     }
++ 
+++  if (need_pthreads)
+++    {
+++	switches[n_switches].part1 = "pthread";
+++	switches[n_switches].args = 0;
+++	switches[n_switches].live_cond = SWITCH_OK;
+++	/* Do not print an error if there is not expansion for -pthread. */
+++	switches[n_switches].validated = 1;
+++	switches[n_switches].ordering = 0;
+++
+++	n_switches++;
+++    }
+++
++   switches[n_switches].part1 = 0;
++   infiles[n_infiles].name = 0;
++ }
++@@ -5109,6 +5130,17 @@
++ 	      return value;
++ 	    break;
++ 
+++	  case 'N':
+++	    if (multilib_dir)
+++	      {
+++		arg_going = 1;
+++		obstack_grow (&obstack, "-fmultilib-dir=",
+++			      strlen ("-fmultilib-dir="));
+++	        obstack_grow (&obstack, multilib_dir,
+++			      strlen (multilib_dir));
+++	      }
+++	    break;
+++
++ 	    /* Here we define characters other than letters and digits.  */
++ 
++ 	  case '{':
++Index: gcc/gcc.h
++===================================================================
++--- gcc/gcc.h	(revision 158462)
+++++ gcc/gcc.h	(working copy)
++@@ -38,7 +38,7 @@
++    || (CHAR) == 'e' || (CHAR) == 'T' || (CHAR) == 'u' \
++    || (CHAR) == 'I' || (CHAR) == 'm' || (CHAR) == 'x' \
++    || (CHAR) == 'L' || (CHAR) == 'A' || (CHAR) == 'V' \
++-   || (CHAR) == 'B' || (CHAR) == 'b')
+++   || (CHAR) == 'B' || (CHAR) == 'b' || (CHAR) == 'J')
++ 
++ /* This defines which multi-letter switches take arguments.  */
++ 
++Index: gcc/tree-gimple.c
++===================================================================
++--- gcc/tree-gimple.c	(revision 158462)
+++++ gcc/tree-gimple.c	(working copy)
++@@ -72,6 +72,8 @@
++     case VECTOR_CST:
++     case OBJ_TYPE_REF:
++     case ASSERT_EXPR:
+++    case STATIC_CHAIN_EXPR: /* not sure if this is right...*/
+++    case STATIC_CHAIN_DECL:
++       return true;
++ 
++     default:
++@@ -143,7 +145,10 @@
++ 	  || TREE_CODE (t) == WITH_SIZE_EXPR
++ 	  /* These are complex lvalues, but don't have addresses, so they
++ 	     go here.  */
++-	  || TREE_CODE (t) == BIT_FIELD_REF);
+++	  || TREE_CODE (t) == BIT_FIELD_REF
+++          /* This is an lvalue because it will be replaced with the real
+++	     static chain decl. */
+++	  || TREE_CODE (t) == STATIC_CHAIN_DECL);
++ }
++ 
++ /*  Return true if T is a GIMPLE condition.  */
++Index: gcc/real.c
++===================================================================
++--- gcc/real.c	(revision 158462)
+++++ gcc/real.c	(working copy)
++@@ -2212,6 +2212,8 @@
++   np2 = SIGNIFICAND_BITS - fmt->p * fmt->log2_b;
++   memset (r->sig, -1, SIGSZ * sizeof (unsigned long));
++   clear_significand_below (r, np2);
+++  if (REAL_MODE_FORMAT_COMPOSITE_P (mode))
+++      clear_significand_bit (r, SIGNIFICAND_BITS - fmt->pnan - 1);
++ }
++ 
++ /* Fills R with 2**N.  */
++Index: gcc/DEV-PHASE
++===================================================================
++--- gcc/DEV-PHASE	(revision 158462)
+++++ gcc/DEV-PHASE	(working copy)
++@@ -1 +1 @@
++-prerelease
+++prerelease gdc hg, using dmd 2.015
++Index: gcc/dwarf2out.c
++===================================================================
++--- gcc/dwarf2out.c	(revision 158462)
+++++ gcc/dwarf2out.c	(working copy)
++@@ -5322,7 +5322,8 @@
++   unsigned int lang = get_AT_unsigned (comp_unit_die, DW_AT_language);
++ 
++   return (lang == DW_LANG_C || lang == DW_LANG_C89
++-	  || lang == DW_LANG_C_plus_plus);
+++	  || lang == DW_LANG_C_plus_plus
+++	  || lang == DW_LANG_D);
++ }
++ 
++ /* Return TRUE if the language is C++.  */
++@@ -12213,6 +12214,8 @@
++     language = DW_LANG_Pascal83;
++   else if (strcmp (language_string, "GNU Java") == 0)
++     language = DW_LANG_Java;
+++  else if (strcmp (language_string, "GNU D") == 0)
+++    language = DW_LANG_D;
++   else
++     language = DW_LANG_C89;
++ 
++@@ -13355,7 +13358,7 @@
++ 
++       /* For local statics lookup proper context die.  */
++       if (TREE_STATIC (decl) && decl_function_context (decl))
++-	context_die = lookup_decl_die (DECL_CONTEXT (decl));
+++	context_die = lookup_decl_die (decl_function_context (decl));
++ 
++       /* If we are in terse mode, don't generate any DIEs to represent any
++ 	 variable declarations or definitions.  */
++Index: gcc/expr.c
++===================================================================
++--- gcc/expr.c	(revision 158462)
+++++ gcc/expr.c	(working copy)
++@@ -8470,6 +8470,11 @@
++       /* Lowered by gimplify.c.  */
++       gcc_unreachable ();
++ 
+++    case STATIC_CHAIN_EXPR:
+++    case STATIC_CHAIN_DECL:
+++      /* Lowered by tree-nested.c */
+++      gcc_unreachable ();
+++
++     case EXC_PTR_EXPR:
++       return get_exception_pointer (cfun);
++ 
++Index: gcc/dwarf2.h
++===================================================================
++--- gcc/dwarf2.h	(revision 158462)
+++++ gcc/dwarf2.h	(working copy)
++@@ -731,6 +731,7 @@
++     DW_LANG_C99 = 0x000c,
++     DW_LANG_Ada95 = 0x000d,
++     DW_LANG_Fortran95 = 0x000e,
+++    DW_LANG_D = 0x0013,
++     /* MIPS.  */
++     DW_LANG_Mips_Assembler = 0x8001,
++     /* UPC.  */
++Index: gcc/predict.c
++===================================================================
++--- gcc/predict.c	(revision 158462)
+++++ gcc/predict.c	(working copy)
++@@ -1339,6 +1339,7 @@
++ 	     care for error returns and other cases are often used for
++ 	     fast paths trought function.  */
++ 	  if (e->dest == EXIT_BLOCK_PTR
+++	      && last_stmt (bb) == NULL_TREE
++ 	      && TREE_CODE (last_stmt (bb)) == RETURN_EXPR
++ 	      && !single_pred_p (bb))
++ 	    {
++Index: gcc/function.c
++===================================================================
++--- gcc/function.c	(revision 158462)
+++++ gcc/function.c	(working copy)
++@@ -2997,7 +2997,8 @@
++       FUNCTION_ARG_ADVANCE (all.args_so_far, data.promoted_mode,
++ 			    data.passed_type, data.named_arg);
++ 
++-      assign_parm_adjust_stack_rtl (&data);
+++      if (!cfun->naked)
+++	assign_parm_adjust_stack_rtl (&data);
++ 
++       if (assign_parm_setup_block_p (&data))
++ 	assign_parm_setup_block (&all, parm, &data);
++@@ -3012,7 +3013,8 @@
++ 
++   /* Output all parameter conversion instructions (possibly including calls)
++      now that all parameters have been copied out of hard registers.  */
++-  emit_insn (all.conversion_insns);
+++  if (!cfun->naked)
+++    emit_insn (all.conversion_insns);
++ 
++   /* If we are receiving a struct value address as the first argument, set up
++      the RTL for the function result. As this might require code to convert
++@@ -3142,6 +3144,9 @@
++   struct assign_parm_data_all all;
++   tree fnargs, parm, stmts = NULL;
++ 
+++  if (cfun->naked)
+++    return NULL;
+++
++   assign_parms_initialize_all (&all);
++   fnargs = assign_parms_augmented_arg_list (&all);
++ 
++@@ -4176,11 +4181,15 @@
++       tree parm = cfun->static_chain_decl;
++       rtx local = gen_reg_rtx (Pmode);
++ 
++-      set_decl_incoming_rtl (parm, static_chain_incoming_rtx);
++       SET_DECL_RTL (parm, local);
++       mark_reg_pointer (local, TYPE_ALIGN (TREE_TYPE (TREE_TYPE (parm))));
++ 
++-      emit_move_insn (local, static_chain_incoming_rtx);
+++      if (! cfun->custom_static_chain)
+++        {
+++	    set_decl_incoming_rtl (parm, static_chain_incoming_rtx);
+++	    emit_move_insn (local, static_chain_incoming_rtx);
+++	}
+++      /* else, the static chain will be set in the main body */
++     }
++ 
++   /* If the function receives a non-local goto, then store the
++@@ -5093,6 +5102,9 @@
++ #endif
++   edge_iterator ei;
++ 
+++  if (cfun->naked)
+++      return;
+++
++ #ifdef HAVE_prologue
++   if (HAVE_prologue)
++     {
++Index: gcc/function.h
++===================================================================
++--- gcc/function.h	(revision 158462)
+++++ gcc/function.h	(working copy)
++@@ -461,6 +461,14 @@
++   /* Number of units of floating point registers that need saving in stdarg
++      function.  */
++   unsigned int va_list_fpr_size : 8;
+++
+++  /* Nonzero if static chain is initialized by something other than
+++     static_chain_incoming_rtx. */
+++  unsigned int custom_static_chain : 1;
+++
+++  /* Nonzero if no code should be generated for prologues, copying
+++     parameters, etc. */
+++  unsigned int naked : 1;
++ };
++ 
++ /* If va_list_[gf]pr_size is set to this, it means we don't know how
++Index: gcc/gimplify.c
++===================================================================
++--- gcc/gimplify.c	(revision 158462)
+++++ gcc/gimplify.c	(working copy)
++@@ -4200,6 +4200,12 @@
++ 	    }
++ 	  break;
++ 
+++	case STATIC_CHAIN_EXPR:
+++	  /* The argument is used as information only.  No need to gimplify */
+++	case STATIC_CHAIN_DECL:  
+++	  ret = GS_ALL_DONE;
+++	  break;
+++	  
++ 	case TREE_LIST:
++ 	  gcc_unreachable ();
++ 
++Index: gcc/tree.def
++===================================================================
++--- gcc/tree.def	(revision 158462)
+++++ gcc/tree.def	(working copy)
++@@ -526,6 +526,13 @@
++    Operand 2 is the static chain argument, or NULL.  */
++ DEFTREECODE (CALL_EXPR, "call_expr", tcc_expression, 3)
++ 
+++/* Operand 0 is the FUNC_DECL of the outer function for
+++   which the static chain is to be computed. */
+++DEFTREECODE (STATIC_CHAIN_EXPR, "static_chain_expr", tcc_expression, 1)
+++    
+++/* Represents a function's static chain.  It can be used as an lvalue. */
+++DEFTREECODE (STATIC_CHAIN_DECL, "static_chain_decl", tcc_expression, 0)
+++
++ /* Specify a value to compute along with its corresponding cleanup.
++    Operand 0 is the cleanup expression.
++    The cleanup is executed by the first enclosing CLEANUP_POINT_EXPR,
++Index: gcc/tree-sra.c
++===================================================================
++--- gcc/tree-sra.c	(revision 158462)
+++++ gcc/tree-sra.c	(working copy)
++@@ -198,6 +198,8 @@
++     case RECORD_TYPE:
++       {
++ 	bool saw_one_field = false;
+++	tree last_offset = size_zero_node;
+++	tree cmp;
++ 
++ 	for (t = TYPE_FIELDS (type); t ; t = TREE_CHAIN (t))
++ 	  if (TREE_CODE (t) == FIELD_DECL)
++@@ -207,6 +209,11 @@
++ 		  && (tree_low_cst (DECL_SIZE (t), 1)
++ 		      != TYPE_PRECISION (TREE_TYPE (t))))
++ 		goto fail;
+++	      /* Reject aliased fields created by GDC for anonymous unions. */
+++	      cmp = fold_binary_to_constant (LE_EXPR, boolean_type_node,
+++		DECL_FIELD_OFFSET (t), last_offset);
+++	      if (cmp == NULL_TREE || tree_expr_nonzero_p (cmp))
+++		goto fail;
++ 
++ 	      saw_one_field = true;
++ 	    }
++Index: gcc/tree-nested.c
++===================================================================
++--- gcc/tree-nested.c	(revision 158462)
+++++ gcc/tree-nested.c	(working copy)
++@@ -323,6 +323,7 @@
++   if (!decl)
++     {
++       tree type;
+++      enum tree_code code;
++ 
++       type = get_frame_type (info->outer);
++       type = build_pointer_type (type);
++@@ -333,12 +334,17 @@
++ 	 Note also that it's represented as a parameter.  This is more
++ 	 close to the truth, since the initial value does come from 
++ 	 the caller.  */
++-      decl = build_decl (PARM_DECL, create_tmp_var_name ("CHAIN"), type);
+++      /* If the function has a custom static chain, a VAR_DECL is more
+++	 appropriate. */
+++      code = DECL_STRUCT_FUNCTION (info->context)->custom_static_chain ?
+++	  VAR_DECL : PARM_DECL;
+++      decl = build_decl (code, create_tmp_var_name ("CHAIN"), type);
++       DECL_ARTIFICIAL (decl) = 1;
++       DECL_IGNORED_P (decl) = 1;
++       TREE_USED (decl) = 1;
++       DECL_CONTEXT (decl) = info->context;
++-      DECL_ARG_TYPE (decl) = type;
+++      if (TREE_CODE (decl) == PARM_DECL)
+++	  DECL_ARG_TYPE (decl) = type;
++ 
++       /* Tell tree-inline.c that we never write to this variable, so
++ 	 it can copy-prop the replacement value immediately.  */
++@@ -741,6 +747,8 @@
++ 
++   if (info->context == target_context)
++     {
+++      /* might be doing something wrong to need the following line.. */
+++      get_frame_type (info);
++       x = build_addr (info->frame_decl, target_context);
++     }
++   else
++@@ -1224,6 +1232,10 @@
++       if (DECL_NO_STATIC_CHAIN (decl))
++ 	break;
++ 
+++      /* Don't use a trampoline for a static reference. */
+++      if (TREE_STATIC (t))
+++	break;
+++
++       /* Lookup the immediate parent of the callee, as that's where
++ 	 we need to insert the trampoline.  */
++       for (i = info; i->context != target_context; i = i->outer)
++@@ -1288,6 +1300,14 @@
++ 	  = get_static_chain (info, target_context, &wi->tsi);
++       break;
++ 
+++    case STATIC_CHAIN_EXPR:
+++      *tp = get_static_chain (info, TREE_OPERAND (t, 0), &wi->tsi);
+++      break;
+++
+++    case STATIC_CHAIN_DECL:
+++      *tp = get_chain_decl (info);
+++      break;
+ + 
+-+   if (cfun->naked)
+-+       /* As above, skip return address */
+-+       frame->stack_pointer_offset = UNITS_PER_WORD;
+-+ 
+-  #if 0
+-    fprintf (stderr, "nregs: %i\n", frame->nregs);
+-    fprintf (stderr, "size: %i\n", size);
+-***************
+-*** 16950,16956 ****
+-  	  output_set_got (tmp);
+-  
+-  	  xops[1] = tmp;
+-! 	  output_asm_insn ("mov{l}\t{%0@GOT(%1), %1|%1, %0@GOT[%1]}", xops);
+-  	  output_asm_insn ("jmp\t{*}%1", xops);
+-  	}
+-      }
+---- 16950,16956 ----
+-  	  output_set_got (tmp);
+-  
+-  	  xops[1] = tmp;
+-! 	  output_asm_insn ("mov{l}\t{%a0@GOT(%1), %1|%1, %a0@GOT[%1]}", xops);
+-  	  output_asm_insn ("jmp\t{*}%1", xops);
+-  	}
+-      }
+-diff -cr gcc-orig/config/rs6000/rs6000.c gcc/config/rs6000/rs6000.c
+-*** gcc-orig/config/rs6000/rs6000.c	Thu Apr 13 01:46:01 2006
+---- gcc/config/rs6000/rs6000.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 15236,15242 ****
+-  	 use language_string.
+-  	 C is 0.  Fortran is 1.  Pascal is 2.  Ada is 3.  C++ is 9.
+-  	 Java is 13.  Objective-C is 14.  */
+-!       if (! strcmp (language_string, "GNU C"))
+-  	i = 0;
+-        else if (! strcmp (language_string, "GNU F77")
+-  	       || ! strcmp (language_string, "GNU F95"))
+---- 15236,15243 ----
+-  	 use language_string.
+-  	 C is 0.  Fortran is 1.  Pascal is 2.  Ada is 3.  C++ is 9.
+-  	 Java is 13.  Objective-C is 14.  */
+-!       if (! strcmp (language_string, "GNU C") ||
+-!  	  ! strcmp (language_string, "GNU D"))
+-  	i = 0;
+-        else if (! strcmp (language_string, "GNU F77")
+-  	       || ! strcmp (language_string, "GNU F95"))
+-Only in gcc: d
+-diff -cr gcc-orig/dwarf2.h gcc/dwarf2.h
+-*** gcc-orig/dwarf2.h	Fri Jun 24 22:02:01 2005
+---- gcc/dwarf2.h	Tue Jan 23 19:39:14 2007
+-***************
+-*** 731,736 ****
+---- 731,737 ----
+-      DW_LANG_C99 = 0x000c,
+-      DW_LANG_Ada95 = 0x000d,
+-      DW_LANG_Fortran95 = 0x000e,
+-+     DW_LANG_D = 0x0013,
+-      /* MIPS.  */
+-      DW_LANG_Mips_Assembler = 0x8001,
+-      /* UPC.  */
+-diff -cr gcc-orig/dwarf2out.c gcc/dwarf2out.c
+-*** gcc-orig/dwarf2out.c	Mon Apr 10 09:21:13 2006
+---- gcc/dwarf2out.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 5311,5317 ****
+-    unsigned int lang = get_AT_unsigned (comp_unit_die, DW_AT_language);
+-  
+-    return (lang == DW_LANG_C || lang == DW_LANG_C89
+-! 	  || lang == DW_LANG_C_plus_plus);
+-  }
+-  
+-  /* Return TRUE if the language is C++.  */
+---- 5311,5318 ----
+-    unsigned int lang = get_AT_unsigned (comp_unit_die, DW_AT_language);
+-  
+-    return (lang == DW_LANG_C || lang == DW_LANG_C89
+-! 	  || lang == DW_LANG_C_plus_plus
+-! 	  || lang == DW_LANG_D);
+-  }
+-  
+-  /* Return TRUE if the language is C++.  */
+-***************
+-*** 12187,12192 ****
+---- 12188,12195 ----
+-      language = DW_LANG_Pascal83;
+-    else if (strcmp (language_string, "GNU Java") == 0)
+-      language = DW_LANG_Java;
+-+   else if (strcmp (language_string, "GNU D") == 0)
+-+     language = DW_LANG_D;
+-    else
+-      language = DW_LANG_C89;
+-  
+-***************
+-*** 13318,13324 ****
+-  
+-        /* For local statics lookup proper context die.  */
+-        if (TREE_STATIC (decl) && decl_function_context (decl))
+-! 	context_die = lookup_decl_die (DECL_CONTEXT (decl));
+-  
+-        /* If we are in terse mode, don't generate any DIEs to represent any
+-  	 variable declarations or definitions.  */
+---- 13321,13327 ----
+-  
+-        /* For local statics lookup proper context die.  */
+-        if (TREE_STATIC (decl) && decl_function_context (decl))
+-! 	context_die = lookup_decl_die (decl_function_context (decl));
+-  
+-        /* If we are in terse mode, don't generate any DIEs to represent any
+-  	 variable declarations or definitions.  */
+-diff -cr gcc-orig/expr.c gcc/expr.c
+-*** gcc-orig/expr.c	Wed May 17 12:03:25 2006
+---- gcc/expr.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 8476,8481 ****
+---- 8476,8486 ----
+-        /* Lowered by gimplify.c.  */
+-        gcc_unreachable ();
+-  
+-+     case STATIC_CHAIN_EXPR:
+-+     case STATIC_CHAIN_DECL:
+-+       /* Lowered by tree-nested.c */
+-+       gcc_unreachable ();
+-+ 
+-      case EXC_PTR_EXPR:
+-        return get_exception_pointer (cfun);
+-  
+-diff -cr gcc-orig/function.c gcc/function.c
+-*** gcc-orig/function.c	Wed Jan  4 04:13:56 2006
+---- gcc/function.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 2990,2996 ****
+-        FUNCTION_ARG_ADVANCE (all.args_so_far, data.promoted_mode,
+-  			    data.passed_type, data.named_arg);
+-  
+-!       assign_parm_adjust_stack_rtl (&data);
+-  
+-        if (assign_parm_setup_block_p (&data))
+-  	assign_parm_setup_block (&all, parm, &data);
+---- 2990,2997 ----
+-        FUNCTION_ARG_ADVANCE (all.args_so_far, data.promoted_mode,
+-  			    data.passed_type, data.named_arg);
+-  
+-!       if (!cfun->naked)
+-! 	assign_parm_adjust_stack_rtl (&data);
+-  
+-        if (assign_parm_setup_block_p (&data))
+-  	assign_parm_setup_block (&all, parm, &data);
+-***************
+-*** 3005,3011 ****
+-  
+-    /* Output all parameter conversion instructions (possibly including calls)
+-       now that all parameters have been copied out of hard registers.  */
+-!   emit_insn (all.conversion_insns);
+-  
+-    /* If we are receiving a struct value address as the first argument, set up
+-       the RTL for the function result. As this might require code to convert
+---- 3006,3013 ----
+-  
+-    /* Output all parameter conversion instructions (possibly including calls)
+-       now that all parameters have been copied out of hard registers.  */
+-!   if (!cfun->naked)
+-!     emit_insn (all.conversion_insns);
+-  
+-    /* If we are receiving a struct value address as the first argument, set up
+-       the RTL for the function result. As this might require code to convert
+-***************
+-*** 3135,3140 ****
+---- 3137,3145 ----
+-    struct assign_parm_data_all all;
+-    tree fnargs, parm, stmts = NULL;
+-  
+-+   if (cfun->naked)
+-+     return NULL;
+-+ 
+-    assign_parms_initialize_all (&all);
+-    fnargs = assign_parms_augmented_arg_list (&all);
+-  
+-***************
+-*** 4169,4179 ****
+-        tree parm = cfun->static_chain_decl;
+-        rtx local = gen_reg_rtx (Pmode);
+-  
+--       set_decl_incoming_rtl (parm, static_chain_incoming_rtx);
+-        SET_DECL_RTL (parm, local);
+-        mark_reg_pointer (local, TYPE_ALIGN (TREE_TYPE (TREE_TYPE (parm))));
+-  
+-!       emit_move_insn (local, static_chain_incoming_rtx);
+-      }
+-  
+-    /* If the function receives a non-local goto, then store the
+---- 4174,4188 ----
+-        tree parm = cfun->static_chain_decl;
+-        rtx local = gen_reg_rtx (Pmode);
+-  
+-        SET_DECL_RTL (parm, local);
+-        mark_reg_pointer (local, TYPE_ALIGN (TREE_TYPE (TREE_TYPE (parm))));
+-  
+-!       if (! cfun->custom_static_chain)
+-!         {
+-! 	    set_decl_incoming_rtl (parm, static_chain_incoming_rtx);
+-! 	    emit_move_insn (local, static_chain_incoming_rtx);
+-! 	}
+-!       /* else, the static chain will be set in the main body */
+-      }
+-  
+-    /* If the function receives a non-local goto, then store the
+-***************
+-*** 5086,5091 ****
+---- 5095,5103 ----
+-  #endif
+-    edge_iterator ei;
+-  
+-+   if (cfun->naked)
+-+       return;
+-+ 
+-  #ifdef HAVE_prologue
+-    if (HAVE_prologue)
+-      {
+-diff -cr gcc-orig/function.h gcc/function.h
+-*** gcc-orig/function.h	Fri Aug 19 17:16:20 2005
+---- gcc/function.h	Tue Jan 23 19:39:14 2007
+-***************
+-*** 461,466 ****
+---- 461,474 ----
+-    /* Number of units of floating point registers that need saving in stdarg
+-       function.  */
+-    unsigned int va_list_fpr_size : 8;
+-+ 
+-+   /* Nonzero if static chain is initialized by something other than
+-+      static_chain_incoming_rtx. */
+-+   unsigned int custom_static_chain : 1;
+-+ 
+-+   /* Nonzero if no code should be generated for prologues, copying
+-+      parameters, etc. */
+-+   unsigned int naked : 1;
+-  };
+-  
+-  /* If va_list_[gf]pr_size is set to this, it means we don't know how
+-diff -cr gcc-orig/gcc.c gcc/gcc.c
+-*** gcc-orig/gcc.c	Wed May 17 14:38:58 2006
+---- gcc/gcc.c	Thu Mar  1 10:42:36 2007
+-***************
+-*** 126,131 ****
+---- 126,134 ----
+-  /* Flag set by cppspec.c to 1.  */
+-  int is_cpp_driver;
+-  
+-+ /* Flag set by drivers needing Pthreads. */
+-+ int need_pthreads;
+-+ 
+-  /* Flag saying to pass the greatest exit code returned by a sub-process
+-     to the calling program.  */
+-  static int pass_exit_codes;
+-***************
+-*** 458,463 ****
+---- 461,467 ----
+-  	assembler has done its job.
+-   %D	Dump out a -L option for each directory in startfile_prefixes.
+-  	If multilib_dir is set, extra entries are generated with it affixed.
+-+  %N     Output the currently selected multilib directory name.
+-   %l     process LINK_SPEC as a spec.
+-   %L     process LIB_SPEC as a spec.
+-   %G     process LIBGCC_SPEC as a spec.
+-***************
+-*** 876,881 ****
+---- 880,887 ----
+-  #endif
+-  #endif
+-  
+-+ #define GCC_SPEC_FORMAT_4 1
+-+ 
+-  /* Record the mapping from file suffixes for compilation specs.  */
+-  
+-  struct compiler
+-***************
+-*** 3797,3802 ****
+---- 3803,3811 ----
+-  	}
+-      }
+-  
+-+   if (need_pthreads)
+-+       n_switches++;
+-+ 
+-    if (save_temps_flag && use_pipes)
+-      {
+-        /* -save-temps overrides -pipe, so that temp files are produced */
+-***************
+-*** 4135,4140 ****
+---- 4144,4161 ----
+-  	}
+-      }
+-  
+-+   if (need_pthreads)
+-+     {
+-+ 	switches[n_switches].part1 = "pthread";
+-+ 	switches[n_switches].args = 0;
+-+ 	switches[n_switches].live_cond = SWITCH_OK;
+-+ 	/* Do not print an error if there is not expansion for -pthread. */
+-+ 	switches[n_switches].validated = 1;
+-+ 	switches[n_switches].ordering = 0;
+-+ 
+-+ 	n_switches++;
+-+     }
+-+ 
+-    switches[n_switches].part1 = 0;
+-    infiles[n_infiles].name = 0;
+-  }
+-***************
+-*** 5106,5111 ****
+---- 5127,5143 ----
+-  	      return value;
+-  	    break;
+-  
+-+ 	  case 'N':
+-+ 	    if (multilib_dir)
+-+ 	      {
+-+ 		arg_going = 1;
+-+ 		obstack_grow (&obstack, "-fmultilib-dir=",
+-+ 			      strlen ("-fmultilib-dir="));
+-+ 	        obstack_grow (&obstack, multilib_dir,
+-+ 			      strlen (multilib_dir));
+-+ 	      }
+-+ 	    break;
+-+ 
+-  	    /* Here we define characters other than letters and digits.  */
+-  
+-  	  case '{':
+-diff -cr gcc-orig/gcc.c gcc/gcc.h
+-*** gcc-orig/gcc.h Fri Jun 24 22:02:01 2005
+---- gcc/gcc.h       Sun Mar  4 13:44:05 2007
+-***************
+-*** 38,44 ****
+-     || (CHAR) == 'e' || (CHAR) == 'T' || (CHAR) == 'u' \
+-     || (CHAR) == 'I' || (CHAR) == 'm' || (CHAR) == 'x' \
+-     || (CHAR) == 'L' || (CHAR) == 'A' || (CHAR) == 'V' \
+-!    || (CHAR) == 'B' || (CHAR) == 'b')
+-  
+-  /* This defines which multi-letter switches take arguments.  */
+-  
+---- 38,44 ----
+-     || (CHAR) == 'e' || (CHAR) == 'T' || (CHAR) == 'u' \
+-     || (CHAR) == 'I' || (CHAR) == 'm' || (CHAR) == 'x' \
+-     || (CHAR) == 'L' || (CHAR) == 'A' || (CHAR) == 'V' \
+-!    || (CHAR) == 'B' || (CHAR) == 'b' || (CHAR) == 'J')
+-  
+-  /* This defines which multi-letter switches take arguments.  */
+-  
+-diff -cr gcc-orig/gimplify.c gcc/gimplify.c
+-*** gcc-orig/gimplify.c	Wed Apr  5 09:41:27 2006
+---- gcc/gimplify.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 4181,4186 ****
+---- 4181,4192 ----
+-  	    }
+-  	  break;
+-  
+-+ 	case STATIC_CHAIN_EXPR:
+-+ 	  /* The argument is used as information only.  No need to gimplify */
+-+ 	case STATIC_CHAIN_DECL:  
+-+ 	  ret = GS_ALL_DONE;
+-+ 	  break;
+-+ 	  
+-  	case TREE_LIST:
+-  	  gcc_unreachable ();
+-  
+-diff -cr gcc-orig/predict.c gcc/predict.c
+-*** gcc-orig/predict.c	Thu Jul 19 20:05:21 2007
+---- gcc/predict.c	Thu Jul 19 20:06:06 2007
+-***************
+-*** 1339,1344 ****
+---- 1339,1345 ----
+-  	     care for error returns and other cases are often used for
+-  	     fast paths trought function.  */
+-  	  if (e->dest == EXIT_BLOCK_PTR
+-+ 	      && last_stmt (bb) == NULL_TREE
+-  	      && TREE_CODE (last_stmt (bb)) == RETURN_EXPR
+-  	      && !single_pred_p (bb))
+-  	    {
+-diff -cr gcc-orig/real.c gcc/real.c
+-*** gcc-orig/real.c	Mon Sep 19 13:01:40 2005
+---- gcc/real.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 2212,2217 ****
+---- 2212,2219 ----
+-    np2 = SIGNIFICAND_BITS - fmt->p * fmt->log2_b;
+-    memset (r->sig, -1, SIGSZ * sizeof (unsigned long));
+-    clear_significand_below (r, np2);
+-+   if (REAL_MODE_FORMAT_COMPOSITE_P (mode))
+-+       clear_significand_bit (r, SIGNIFICAND_BITS - fmt->pnan - 1);
+-  }
+-  
+-  /* Fills R with 2**N.  */
+-diff -cr gcc-orig/tree-dump.c gcc/tree-dump.c
+-*** gcc-orig/tree-dump.c	Sat Aug 20 12:03:58 2005
+---- gcc/tree-dump.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 582,587 ****
+---- 582,591 ----
+-        dump_child ("args", TREE_OPERAND (t, 1));
+-        break;
+-  
+-+     case STATIC_CHAIN_EXPR:
+-+       dump_child ("func", TREE_OPERAND (t, 0));
+-+       break;
+-+ 
+-      case CONSTRUCTOR:
+-        {
+-  	unsigned HOST_WIDE_INT cnt;
+-diff -cr gcc-orig/tree-gimple.c gcc/tree-gimple.c
+-*** gcc-orig/tree-gimple.c	Sun Nov 20 14:05:43 2005
+---- gcc/tree-gimple.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 72,77 ****
+---- 72,79 ----
+-      case VECTOR_CST:
+-      case OBJ_TYPE_REF:
+-      case ASSERT_EXPR:
+-+     case STATIC_CHAIN_EXPR: /* not sure if this is right...*/
+-+     case STATIC_CHAIN_DECL:
+-        return true;
+-  
+-      default:
+-***************
+-*** 143,149 ****
+-  	  || TREE_CODE (t) == WITH_SIZE_EXPR
+-  	  /* These are complex lvalues, but don't have addresses, so they
+-  	     go here.  */
+-! 	  || TREE_CODE (t) == BIT_FIELD_REF);
+-  }
+-  
+-  /*  Return true if T is a GIMPLE condition.  */
+---- 145,154 ----
+-  	  || TREE_CODE (t) == WITH_SIZE_EXPR
+-  	  /* These are complex lvalues, but don't have addresses, so they
+-  	     go here.  */
+-! 	  || TREE_CODE (t) == BIT_FIELD_REF
+-!           /* This is an lvalue because it will be replaced with the real
+-! 	     static chain decl. */
+-! 	  || TREE_CODE (t) == STATIC_CHAIN_DECL);
+-  }
+-  
+-  /*  Return true if T is a GIMPLE condition.  */
+-diff -cr gcc-orig/tree-inline.c gcc/tree-inline.c
+-*** gcc-orig/tree-inline.c	Fri Apr 28 07:43:43 2006
+---- gcc/tree-inline.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 602,611 ****
+-       knows not to copy VAR_DECLs, etc., so this is safe.  */
+-    else
+-      {
+-        /* Here we handle trees that are not completely rewritten.
+-  	 First we detect some inlining-induced bogosities for
+-  	 discarding.  */
+-!       if (TREE_CODE (*tp) == MODIFY_EXPR
+-  	  && TREE_OPERAND (*tp, 0) == TREE_OPERAND (*tp, 1)
+-  	  && (lang_hooks.tree_inlining.auto_var_in_fn_p
+-  	      (TREE_OPERAND (*tp, 0), fn)))
+---- 602,622 ----
+-       knows not to copy VAR_DECLs, etc., so this is safe.  */
+-    else
+-      {
+-+       if (! id->cloning_p && ! id->saving_p &&
+-+ 	  TREE_CODE (*tp) == MODIFY_EXPR &&
+-+ 	  TREE_OPERAND (*tp, 0) ==
+-+ 	  DECL_STRUCT_FUNCTION (fn)->static_chain_decl)
+-+ 	{
+-+ 	  /* Don't use special methods to initialize the static chain
+-+ 	     if expanding inline.  If this code could somehow be
+-+ 	     expanded in expand_start_function, it would not be
+-+ 	     necessary to deal with it here. */
+-+ 	  *tp = build_empty_stmt ();
+-+ 	}
+-        /* Here we handle trees that are not completely rewritten.
+-  	 First we detect some inlining-induced bogosities for
+-  	 discarding.  */
+-!       else if (TREE_CODE (*tp) == MODIFY_EXPR
+-  	  && TREE_OPERAND (*tp, 0) == TREE_OPERAND (*tp, 1)
+-  	  && (lang_hooks.tree_inlining.auto_var_in_fn_p
+-  	      (TREE_OPERAND (*tp, 0), fn)))
+-diff -cr gcc-orig/tree-nested.c gcc/tree-nested.c
+-*** gcc-orig/tree-nested.c	Mon Oct  3 16:57:45 2005
+---- gcc/tree-nested.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 320,325 ****
+---- 320,326 ----
+-    if (!decl)
+-      {
+-        tree type;
+-+       enum tree_code code;
+-  
+-        type = get_frame_type (info->outer);
+-        type = build_pointer_type (type);
+-***************
+-*** 330,341 ****
+-  	 Note also that it's represented as a parameter.  This is more
+-  	 close to the truth, since the initial value does come from 
+-  	 the caller.  */
+-!       decl = build_decl (PARM_DECL, create_tmp_var_name ("CHAIN"), type);
+-        DECL_ARTIFICIAL (decl) = 1;
+-        DECL_IGNORED_P (decl) = 1;
+-        TREE_USED (decl) = 1;
+-        DECL_CONTEXT (decl) = info->context;
+-!       DECL_ARG_TYPE (decl) = type;
+-  
+-        /* Tell tree-inline.c that we never write to this variable, so
+-  	 it can copy-prop the replacement value immediately.  */
+---- 331,347 ----
+-  	 Note also that it's represented as a parameter.  This is more
+-  	 close to the truth, since the initial value does come from 
+-  	 the caller.  */
+-!       /* If the function has a custom static chain, a VAR_DECL is more
+-! 	 appropriate. */
+-!       code = DECL_STRUCT_FUNCTION (info->context)->custom_static_chain ?
+-! 	  VAR_DECL : PARM_DECL;
+-!       decl = build_decl (code, create_tmp_var_name ("CHAIN"), type);
+-        DECL_ARTIFICIAL (decl) = 1;
+-        DECL_IGNORED_P (decl) = 1;
+-        TREE_USED (decl) = 1;
+-        DECL_CONTEXT (decl) = info->context;
+-!       if (TREE_CODE (decl) == PARM_DECL)
+-! 	  DECL_ARG_TYPE (decl) = type;
+-  
+-        /* Tell tree-inline.c that we never write to this variable, so
+-  	 it can copy-prop the replacement value immediately.  */
+-***************
+-*** 738,743 ****
+---- 744,751 ----
+-  
+-    if (info->context == target_context)
+-      {
+-+       /* might be doing something wrong to need the following line.. */
+-+       get_frame_type (info);
+-        x = build_addr (info->frame_decl, target_context);
+-      }
+-    else
+-***************
+-*** 1221,1226 ****
+---- 1229,1238 ----
+-        if (DECL_NO_STATIC_CHAIN (decl))
+-  	break;
+-  
+-+       /* Don't use a trampoline for a static reference. */
+-+       if (TREE_STATIC (t))
+-+ 	break;
+-+ 
+-        /* Lookup the immediate parent of the callee, as that's where
+-  	 we need to insert the trampoline.  */
+-        for (i = info; i->context != target_context; i = i->outer)
+-***************
+-*** 1285,1290 ****
+---- 1297,1310 ----
+-  	  = get_static_chain (info, target_context, &wi->tsi);
+-        break;
+-  
+-+     case STATIC_CHAIN_EXPR:
+-+       *tp = get_static_chain (info, TREE_OPERAND (t, 0), &wi->tsi);
+-+       break;
+-+ 
+-+     case STATIC_CHAIN_DECL:
+-+       *tp = get_chain_decl (info);
+-+       break;
+-+  
+-      case RETURN_EXPR:
+-      case MODIFY_EXPR:
+-      case WITH_SIZE_EXPR:
+-***************
+-*** 1384,1390 ****
+-        tree x = build (COMPONENT_REF, TREE_TYPE (root->chain_field),
+-  		      root->frame_decl, root->chain_field, NULL_TREE);
+-        x = build (MODIFY_EXPR, TREE_TYPE (x), x, get_chain_decl (root));
+-!       append_to_statement_list (x, &stmt_list);
+-      }
+-  
+-    /* If trampolines were created, then we need to initialize them.  */
+---- 1404,1432 ----
+-        tree x = build (COMPONENT_REF, TREE_TYPE (root->chain_field),
+-  		      root->frame_decl, root->chain_field, NULL_TREE);
+-        x = build (MODIFY_EXPR, TREE_TYPE (x), x, get_chain_decl (root));
+-!       /* If the function has a custom static chain, chain_field must
+-! 	 be set after the static chain. */
+-!       if (DECL_STRUCT_FUNCTION (root->context)->custom_static_chain)
+-! 	{
+-! 	  /* Should use walk_function instead. */
+-! 	  tree_stmt_iterator i =
+-! 	      tsi_start ( BIND_EXPR_BODY (DECL_SAVED_TREE (context)));
+-! 	  while (!tsi_end_p (i))
+-! 	    {
+-! 	      tree t = tsi_stmt (i);
+-! 	      if (TREE_CODE (t) == MODIFY_EXPR &&
+-! 		  TREE_OPERAND (t, 0) == root->chain_decl)
+-! 		{
+-! 		  tsi_link_after(& i, x, TSI_SAME_STMT);
+-! 		  x = NULL_TREE;
+-! 		  break;
+-! 		}
+-! 	      tsi_next (& i);
+-! 	    }
+-! 	  gcc_assert(x == NULL_TREE);
+-! 	}
+-!       else
+-! 	append_to_statement_list (x, &stmt_list);
+-      }
+-  
+-    /* If trampolines were created, then we need to initialize them.  */
+-diff -cr gcc-orig/tree-pretty-print.c gcc/tree-pretty-print.c
+-*** gcc-orig/tree-pretty-print.c	Sun Jul 31 16:55:41 2005
+---- gcc/tree-pretty-print.c	Tue Jan 23 19:39:14 2007
+-***************
+-*** 1004,1009 ****
+---- 1004,1019 ----
+-  	pp_string (buffer, " [tail call]");
+-        break;
+-  
+-+     case STATIC_CHAIN_EXPR:
+-+ 	pp_string (buffer, "<<static chain of ");
+-+ 	dump_generic_node (buffer, TREE_OPERAND (node, 0), spc, flags, false);
+-+ 	pp_string (buffer, ">>");
+-+       break;
+-+ 
+-+     case STATIC_CHAIN_DECL:
+-+        pp_string (buffer, "<<static chain decl>>");
+-+        break;
+-+ 	
+-      case WITH_CLEANUP_EXPR:
+-        NIY;
+-        break;
+-diff -cr gcc-orig/tree-sra.c gcc/tree-sra.c
+-*** gcc-orig/tree-sra.c Sun Nov 20 19:55:57 2005
+---- gcc/tree-sra.c      Sun Jul 22 11:32:36 2007
+-***************
+-*** 198,203 ****
+---- 198,205 ----
+-      case RECORD_TYPE:
+-        {
+-  	bool saw_one_field = false;
+-+ 	tree last_offset = size_zero_node;
+-+ 	tree cmp;
+-  
+-  	for (t = TYPE_FIELDS (type); t ; t = TREE_CHAIN (t))
+-  	  if (TREE_CODE (t) == FIELD_DECL)
+-***************
+-*** 207,212 ****
+---- 209,219 ----
+-  		  && (tree_low_cst (DECL_SIZE (t), 1)
+-  		      != TYPE_PRECISION (TREE_TYPE (t))))
+-  		goto fail;
+-+ 	      /* Reject aliased fields created by GDC for anonymous unions. */
+-+ 	      cmp = fold_binary_to_constant (LE_EXPR, boolean_type_node,
+-+ 		DECL_FIELD_OFFSET (t), last_offset);
+-+ 	      if (cmp == NULL_TREE || tree_expr_nonzero_p (cmp))
+-+ 		goto fail;
+-  
+-  	      saw_one_field = true;
+-  	    }
+-diff -cr gcc-orig/tree.def gcc/tree.def
+-*** gcc-orig/tree.def	Fri Feb 10 12:32:10 2006
+---- gcc/tree.def	Tue Jan 23 19:39:14 2007
+-***************
+-*** 526,531 ****
+---- 526,538 ----
+-     Operand 2 is the static chain argument, or NULL.  */
+-  DEFTREECODE (CALL_EXPR, "call_expr", tcc_expression, 3)
+-  
+-+ /* Operand 0 is the FUNC_DECL of the outer function for
+-+    which the static chain is to be computed. */
+-+ DEFTREECODE (STATIC_CHAIN_EXPR, "static_chain_expr", tcc_expression, 1)
+-+     
+-+ /* Represents a function's static chain.  It can be used as an lvalue. */
+-+ DEFTREECODE (STATIC_CHAIN_DECL, "static_chain_decl", tcc_expression, 0)
+-+ 
+-  /* Specify a value to compute along with its corresponding cleanup.
+-     Operand 0 is the cleanup expression.
+-     The cleanup is executed by the first enclosing CLEANUP_POINT_EXPR,
+-diff -cr gcc-orig/varray.h gcc/varray.h
+-*** gcc-orig/varray.h	Fri Jun 24 22:02:01 2005
+---- gcc/varray.h	Tue Jan 23 19:39:14 2007
+-***************
+-*** 62,67 ****
+---- 62,78 ----
+-    NUM_VARRAY_DATA
+-  };
+-  
+-+ #ifndef __cplusplus 
+-+ # define VARRAY_STRANGE_1 rtx
+-+ # define VARRAY_STRANGE_2 rtvec
+-+ # define VARRAY_STRANGE_3 tree
+-+ #else
+-+ # define VARRAY_STRANGE_1 rtx_
+-+ # define VARRAY_STRANGE_2 rtvec_
+-+ # define VARRAY_STRANGE_3 tree_
+-+ #endif
+-+ 
+-+ 
+-  /* Union of various array types that are used.  */
+-  typedef union varray_data_tag GTY (()) {
+-    char			  GTY ((length ("%0.num_elements"),
+-***************
+-*** 91,101 ****
+-    char			 *GTY ((length ("%0.num_elements"),
+-  				tag ("VARRAY_DATA_CPTR")))	cptr[1];
+-    rtx			  GTY ((length ("%0.num_elements"),
+-! 				tag ("VARRAY_DATA_RTX")))	rtx[1];
+-    rtvec			  GTY ((length ("%0.num_elements"),
+-! 				tag ("VARRAY_DATA_RTVEC")))	rtvec[1];
+-    tree			  GTY ((length ("%0.num_elements"),
+-! 				tag ("VARRAY_DATA_TREE")))	tree[1];
+-    struct bitmap_head_def *GTY ((length ("%0.num_elements"),
+-  				tag ("VARRAY_DATA_BITMAP")))	bitmap[1];
+-    struct reg_info_def	 *GTY ((length ("%0.num_elements"), skip,
+---- 102,112 ----
+-    char			 *GTY ((length ("%0.num_elements"),
+-  				tag ("VARRAY_DATA_CPTR")))	cptr[1];
+-    rtx			  GTY ((length ("%0.num_elements"),
+-! 				tag ("VARRAY_DATA_RTX")))	VARRAY_STRANGE_1[1];
+-    rtvec			  GTY ((length ("%0.num_elements"),
+-! 				tag ("VARRAY_DATA_RTVEC")))	VARRAY_STRANGE_2[1];
+-    tree			  GTY ((length ("%0.num_elements"),
+-! 				tag ("VARRAY_DATA_TREE")))	VARRAY_STRANGE_3[1];
+-    struct bitmap_head_def *GTY ((length ("%0.num_elements"),
+-  				tag ("VARRAY_DATA_BITMAP")))	bitmap[1];
+-    struct reg_info_def	 *GTY ((length ("%0.num_elements"), skip,
++     case RETURN_EXPR:
++     case MODIFY_EXPR:
++     case WITH_SIZE_EXPR:
++@@ -1387,7 +1407,29 @@
++       tree x = build (COMPONENT_REF, TREE_TYPE (root->chain_field),
++ 		      root->frame_decl, root->chain_field, NULL_TREE);
++       x = build (MODIFY_EXPR, TREE_TYPE (x), x, get_chain_decl (root));
++-      append_to_statement_list (x, &stmt_list);
+++      /* If the function has a custom static chain, chain_field must
+++	 be set after the static chain. */
+++      if (DECL_STRUCT_FUNCTION (root->context)->custom_static_chain)
+++	{
+++	  /* Should use walk_function instead. */
+++	  tree_stmt_iterator i =
+++	      tsi_start ( BIND_EXPR_BODY (DECL_SAVED_TREE (context)));
+++	  while (!tsi_end_p (i))
+++	    {
+++	      tree t = tsi_stmt (i);
+++	      if (TREE_CODE (t) == MODIFY_EXPR &&
+++		  TREE_OPERAND (t, 0) == root->chain_decl)
+++		{
+++		  tsi_link_after(& i, x, TSI_SAME_STMT);
+++		  x = NULL_TREE;
+++		  break;
+++		}
+++	      tsi_next (& i);
+++	    }
+++	  gcc_assert(x == NULL_TREE);
+++	}
+++      else
+++	append_to_statement_list (x, &stmt_list);
++     }
++ 
++   /* If trampolines were created, then we need to initialize them.  */
++Index: gcc/tree-inline.c
++===================================================================
++--- gcc/tree-inline.c	(revision 158462)
+++++ gcc/tree-inline.c	(working copy)
++@@ -602,10 +602,21 @@
++      knows not to copy VAR_DECLs, etc., so this is safe.  */
++   else
++     {
+++      if (! id->cloning_p && ! id->saving_p &&
+++	  TREE_CODE (*tp) == MODIFY_EXPR &&
+++	  TREE_OPERAND (*tp, 0) ==
+++	  DECL_STRUCT_FUNCTION (fn)->static_chain_decl)
+++	{
+++	  /* Don't use special methods to initialize the static chain
+++	     if expanding inline.  If this code could somehow be
+++	     expanded in expand_start_function, it would not be
+++	     necessary to deal with it here. */
+++	  *tp = build_empty_stmt ();
+++	}
++       /* Here we handle trees that are not completely rewritten.
++ 	 First we detect some inlining-induced bogosities for
++ 	 discarding.  */
++-      if (TREE_CODE (*tp) == MODIFY_EXPR
+++      else if (TREE_CODE (*tp) == MODIFY_EXPR
++ 	  && TREE_OPERAND (*tp, 0) == TREE_OPERAND (*tp, 1)
++ 	  && (lang_hooks.tree_inlining.auto_var_in_fn_p
++ 	      (TREE_OPERAND (*tp, 0), fn)))
++Index: gcc/config/i386/i386.c
++===================================================================
++--- gcc/config/i386/i386.c	(revision 158462)
+++++ gcc/config/i386/i386.c	(working copy)
++@@ -4754,6 +4754,11 @@
++     frame->red_zone_size = 0;
++   frame->to_allocate -= frame->red_zone_size;
++   frame->stack_pointer_offset -= frame->red_zone_size;
+++
+++  if (cfun->naked)
+++      /* As above, skip return address */
+++      frame->stack_pointer_offset = UNITS_PER_WORD;
+++
++ #if 0
++   fprintf (stderr, "nregs: %i\n", frame->nregs);
++   fprintf (stderr, "size: %i\n", size);
++@@ -17078,7 +17083,7 @@
++ 	  output_set_got (tmp);
++ 
++ 	  xops[1] = tmp;
++-	  output_asm_insn ("mov{l}\t{%0@GOT(%1), %1|%1, %0@GOT[%1]}", xops);
+++	  output_asm_insn ("mov{l}\t{%a0@GOT(%1), %1|%1, %a0@GOT[%1]}", xops);
++ 	  output_asm_insn ("jmp\t{*}%1", xops);
++ 	}
++     }
++Index: gcc/config/rs6000/rs6000.c
++===================================================================
++--- gcc/config/rs6000/rs6000.c	(revision 158462)
+++++ gcc/config/rs6000/rs6000.c	(working copy)
++@@ -15306,7 +15306,8 @@
++ 	 use language_string.
++ 	 C is 0.  Fortran is 1.  Pascal is 2.  Ada is 3.  C++ is 9.
++ 	 Java is 13.  Objective-C is 14.  */
++-      if (! strcmp (language_string, "GNU C"))
+++      if (! strcmp (language_string, "GNU C") ||
+++ 	  ! strcmp (language_string, "GNU D"))
++ 	i = 0;
++       else if (! strcmp (language_string, "GNU F77")
++ 	       || ! strcmp (language_string, "GNU F95"))
++Index: gcc/config/rs6000/rs6000.h
++===================================================================
++--- gcc/config/rs6000/rs6000.h	(revision 158462)
+++++ gcc/config/rs6000/rs6000.h	(working copy)
++@@ -358,10 +358,6 @@
++   targetm.resolve_overloaded_builtin = altivec_resolve_overloaded_builtin; \
++ } while (0)
++ 
++-/* Target #defines.  */
++-#define TARGET_CPU_CPP_BUILTINS() \
++-  rs6000_cpu_cpp_builtins (pfile)
++-
++ /* This is used by rs6000_cpu_cpp_builtins to indicate the byte order
++    we're compiling for.  Some configurations may need to override it.  */
++ #define RS6000_CPU_CPP_ENDIAN_BUILTINS()	\
++@@ -381,6 +377,77 @@
++ 	}					\
++     }						\
++   while (0)
+++
+++/* Target #defines.  */
+++#define TARGET_CPU_CPP_BUILTINS()		\
+++do {						\
+++  if (TARGET_POWER2)				\
+++    builtin_define ("_ARCH_PWR2");		\
+++  else if (TARGET_POWER)			\
+++    builtin_define ("_ARCH_PWR");		\
+++  if (TARGET_POWERPC)				\
+++    builtin_define ("_ARCH_PPC");		\
+++  if (TARGET_PPC_GPOPT)				\
+++    builtin_define ("_ARCH_PPCSQ");		\
+++  if (TARGET_PPC_GFXOPT)			\
+++    builtin_define ("_ARCH_PPCGR");		\
+++  if (TARGET_POWERPC64)				\
+++    builtin_define ("_ARCH_PPC64");		\
+++  if (TARGET_MFCRF)				\
+++    builtin_define ("_ARCH_PWR4");		\
+++  if (TARGET_POPCNTB)				\
+++    builtin_define ("_ARCH_PWR5");		\
+++  if (TARGET_FPRND)				\
+++    builtin_define ("_ARCH_PWR5X");		\
+++  if (! TARGET_POWER && ! TARGET_POWER2 && ! TARGET_POWERPC)	\
+++    builtin_define ("_ARCH_COM");		\
+++  if (TARGET_ALTIVEC)				\
+++    {						\
+++      builtin_define ("__ALTIVEC__");		\
+++      builtin_define ("__VEC__=10206");		\
+++						\
+++      /* Define the AltiVec syntactic elements.  */	\
+++      builtin_define ("__vector=__attribute__((altivec(vector__)))");	\
+++      builtin_define ("__pixel=__attribute__((altivec(pixel__))) unsigned short");	\
+++      builtin_define ("__bool=__attribute__((altivec(bool__))) unsigned");	\
+++    }						\
+++  if (TARGET_SPE)				\
+++    builtin_define ("__SPE__");			\
+++  if (TARGET_SOFT_FLOAT)			\
+++    builtin_define ("_SOFT_FLOAT");		\
+++  /* Used by lwarx/stwcx. errata work-around.  */	\
+++  if (rs6000_cpu == PROCESSOR_PPC405)		\
+++    builtin_define ("__PPC405__");		\
+++  /* Used by libstdc++.  */			\
+++  if (TARGET_NO_LWSYNC)				\
+++    builtin_define ("__NO_LWSYNC__");		\
+++						\
+++  /* May be overridden by target configuration.  */	\
+++  RS6000_CPU_CPP_ENDIAN_BUILTINS();		\
+++						\
+++  if (TARGET_LONG_DOUBLE_128)			\
+++    builtin_define ("__LONG_DOUBLE_128__");	\
+++						\
+++  switch (rs6000_current_abi)			\
+++    {						\
+++    case ABI_V4:				\
+++      builtin_define ("_CALL_SYSV");		\
+++      break;					\
+++    case ABI_AIX:				\
+++      builtin_define ("_CALL_AIXDESC");		\
+++      builtin_define ("_CALL_AIX");		\
+++      break;					\
+++    case ABI_DARWIN:				\
+++      builtin_define ("_CALL_DARWIN");		\
+++      break;					\
+++    default:					\
+++      break;					\
+++    }						\
+++						\
+++  /* Let the compiled code know if 'f' class registers will not be available.  */	\
+++  if (TARGET_SOFT_FLOAT || !TARGET_FPRS)	\
+++    builtin_define ("__NO_FPRS__");		\
+++} while (0)
++ 
++ /* Target machine storage layout.  */
++ 
++Index: gcc/config/darwin.h
++===================================================================
++--- gcc/config/darwin.h	(revision 158462)
+++++ gcc/config/darwin.h	(working copy)
++@@ -926,8 +926,8 @@
++ 
++ #define MACHO_DYNAMIC_NO_PIC_P	(TARGET_DYNAMIC_NO_PIC)
++ #define MACHOPIC_INDIRECT	(flag_pic || MACHO_DYNAMIC_NO_PIC_P)
++-#define MACHOPIC_JUST_INDIRECT	(flag_pic == 1 || MACHO_DYNAMIC_NO_PIC_P)
++-#define MACHOPIC_PURE		(flag_pic == 2 && ! MACHO_DYNAMIC_NO_PIC_P)
+++#define MACHOPIC_JUST_INDIRECT	(MACHO_DYNAMIC_NO_PIC_P)
+++#define MACHOPIC_PURE		(flag_pic && ! MACHO_DYNAMIC_NO_PIC_P)
++ 
++ #undef TARGET_ENCODE_SECTION_INFO
++ #define TARGET_ENCODE_SECTION_INFO  darwin_encode_section_info
++Index: gcc/config/arm/arm.c
++===================================================================
++--- gcc/config/arm/arm.c	(revision 158462)
+++++ gcc/config/arm/arm.c	(working copy)
++@@ -15373,6 +15373,15 @@
++ 	  /* Move from sp to reg.  */
++ 	  asm_fprintf (asm_out_file, "\t.movsp %r\n", REGNO (e0));
++ 	}
+++      else if (GET_CODE (e1) == PLUS
+++	      && GET_CODE (XEXP (e1, 0)) == REG
+++	      && REGNO (XEXP (e1, 0)) == SP_REGNUM
+++	      && GET_CODE (XEXP (e1, 1)) == CONST_INT)
+++	{
+++	  /* Set reg to offset from sp.  */
+++	  asm_fprintf (asm_out_file, "\t.movsp %r, #%d\n",
+++		       REGNO (e0), (int)INTVAL(XEXP (e1, 1)));
+++	}
++       else
++ 	abort ();
++       break;
++Index: gcc/varray.h
++===================================================================
++--- gcc/varray.h	(revision 158462)
+++++ gcc/varray.h	(working copy)
++@@ -62,6 +62,17 @@
++   NUM_VARRAY_DATA
++ };
++ 
+++#ifndef __cplusplus 
+++# define VARRAY_STRANGE_1 rtx
+++# define VARRAY_STRANGE_2 rtvec
+++# define VARRAY_STRANGE_3 tree
+++#else
+++# define VARRAY_STRANGE_1 rtx_
+++# define VARRAY_STRANGE_2 rtvec_
+++# define VARRAY_STRANGE_3 tree_
+++#endif
+++
+++
++ /* Union of various array types that are used.  */
++ typedef union varray_data_tag GTY (()) {
++   char			  GTY ((length ("%0.num_elements"),
++@@ -91,11 +102,11 @@
++   char			 *GTY ((length ("%0.num_elements"),
++ 				tag ("VARRAY_DATA_CPTR")))	cptr[1];
++   rtx			  GTY ((length ("%0.num_elements"),
++-				tag ("VARRAY_DATA_RTX")))	rtx[1];
+++				tag ("VARRAY_DATA_RTX")))	VARRAY_STRANGE_1[1];
++   rtvec			  GTY ((length ("%0.num_elements"),
++-				tag ("VARRAY_DATA_RTVEC")))	rtvec[1];
+++				tag ("VARRAY_DATA_RTVEC")))	VARRAY_STRANGE_2[1];
++   tree			  GTY ((length ("%0.num_elements"),
++-				tag ("VARRAY_DATA_TREE")))	tree[1];
+++				tag ("VARRAY_DATA_TREE")))	VARRAY_STRANGE_3[1];
++   struct bitmap_head_def *GTY ((length ("%0.num_elements"),
++ 				tag ("VARRAY_DATA_BITMAP")))	bitmap[1];
++   struct reg_info_def	 *GTY ((length ("%0.num_elements"), skip,
+diff -r 616079c615b1 d/patches/patch-gcc-4.3.x
+--- a/d/patches/patch-gcc-4.3.x	Mon Apr 05 19:53:16 2010 -0400
++++ b/d/patches/patch-gcc-4.3.x	Sat Apr 17 11:46:53 2010 +0100
+@@ -1,687 +1,663 @@
+-diff -cr gcc-orig/cgraph.c gcc/cgraph.c
+-*** gcc-orig/cgraph.c	2008-01-29 18:21:24.000000000 -0500
+---- gcc/cgraph.c	2008-07-24 10:41:30.000000000 -0400
+-***************
+-*** 181,186 ****
+---- 181,187 ----
+-  cgraph_node (tree decl)
+-  {
+-    struct cgraph_node key, *node, **slot;
+-+   tree context;
+-  
+-    gcc_assert (TREE_CODE (decl) == FUNCTION_DECL);
+-  
+-***************
+-*** 202,213 ****
+-    node = cgraph_create_node ();
+-    node->decl = decl;
+-    *slot = node;
+-!   if (DECL_CONTEXT (decl) && TREE_CODE (DECL_CONTEXT (decl)) == FUNCTION_DECL)
+-      {
+-!       node->origin = cgraph_node (DECL_CONTEXT (decl));
+-!       node->next_nested = node->origin->nested;
+-!       node->origin->nested = node;
+-!       node->master_clone = node;
+-      }
+-    return node;
+-  }
+---- 203,218 ----
+-    node = cgraph_create_node ();
+-    node->decl = decl;
+-    *slot = node;
+-!   if (!DECL_NO_STATIC_CHAIN (decl))
+-      {
+-!       context = decl_function_context (decl);
+-!       if (context)
+-!         {
+-! 	  node->origin = cgraph_node (context);
+-! 	  node->next_nested = node->origin->nested;
+-! 	  node->origin->nested = node;
+-! 	  node->master_clone = node;
+-!         }
+-      }
+-    return node;
+-  }
+-*** gcc-orig/cgraphunit.c	2008-01-29 18:21:24.000000000 -0500
+---- gcc/cgraphunit.c	2008-08-09 13:10:56.000000000 -0400
+-***************
+-*** 1141,1146 ****
+---- 1141,1150 ----
+-  static void
+-  cgraph_expand_function (struct cgraph_node *node)
+-  {
+-+   int save_flag_omit_frame_pointer = flag_omit_frame_pointer;
+-+   static int inited = 0;
+-+   static int orig_omit_frame_pointer;
+-+   
+-    tree decl = node->decl;
+-  
+-    /* We ought to not compile any inline clones.  */
+-***************
+-*** 1150,1160 ****
+---- 1154,1174 ----
+-      announce_function (decl);
+-  
+-    gcc_assert (node->lowered);
+-+   
+-+   if (!inited)
+-+   {
+-+       inited = 1;
+-+       orig_omit_frame_pointer = flag_omit_frame_pointer;
+-+   }
+-+   flag_omit_frame_pointer = orig_omit_frame_pointer ||
+-+     DECL_STRUCT_FUNCTION (decl)->naked;
+-  
+-    /* Generate RTL for the body of DECL.  */
+-    if (lang_hooks.callgraph.emit_associated_thunks)
+-      lang_hooks.callgraph.emit_associated_thunks (decl);
+-    tree_rest_of_compilation (decl);
+-+   
+-+   flag_omit_frame_pointer = save_flag_omit_frame_pointer;
+-  
+-    /* Make sure that BE didn't give up on compiling.  */
+-    /* ??? Can happen with nested function of extern inline.  */
+-diff -cr gcc-orig/config/i386/i386.c gcc/config/i386/i386.c
+-*** gcc-orig/config/i386/i386.c	2008-05-21 04:54:15.000000000 -0400
+---- gcc/config/i386/i386.c	2008-07-24 10:45:17.000000000 -0400
+-***************
+-*** 6150,6155 ****
+---- 6150,6160 ----
+-      frame->red_zone_size = 0;
+-    frame->to_allocate -= frame->red_zone_size;
+-    frame->stack_pointer_offset -= frame->red_zone_size;
++Index: gcc/tree-dump.c
++===================================================================
++--- gcc/tree-dump.c	(revision 158462)
+++++ gcc/tree-dump.c	(working copy)
++@@ -646,6 +646,10 @@
++       }
++       break;
++ 
+++    case STATIC_CHAIN_EXPR:
+++      dump_child ("func", TREE_OPERAND (t, 0));
+++      break;
+++
++     case CONSTRUCTOR:
++       {
++ 	unsigned HOST_WIDE_INT cnt;
++Index: gcc/tree-pretty-print.c
++===================================================================
++--- gcc/tree-pretty-print.c	(revision 158462)
+++++ gcc/tree-pretty-print.c	(working copy)
++@@ -1251,6 +1251,16 @@
++ 	pp_string (buffer, " [tail call]");
++       break;
++ 
+++    case STATIC_CHAIN_EXPR:
+++	pp_string (buffer, "<<static chain of ");
+++	dump_generic_node (buffer, TREE_OPERAND (node, 0), spc, flags, false);
+++	pp_string (buffer, ">>");
+++      break;
+++
+++    case STATIC_CHAIN_DECL:
+++       pp_string (buffer, "<<static chain decl>>");
+++       break;
+++	
++     case WITH_CLEANUP_EXPR:
++       NIY;
++       break;
++Index: gcc/cgraph.c
++===================================================================
++--- gcc/cgraph.c	(revision 158462)
+++++ gcc/cgraph.c	(working copy)
++@@ -181,6 +181,7 @@
++ cgraph_node (tree decl)
++ {
++   struct cgraph_node key, *node, **slot;
+++  tree context;
++ 
++   gcc_assert (TREE_CODE (decl) == FUNCTION_DECL);
++ 
++@@ -202,12 +203,16 @@
++   node = cgraph_create_node ();
++   node->decl = decl;
++   *slot = node;
++-  if (DECL_CONTEXT (decl) && TREE_CODE (DECL_CONTEXT (decl)) == FUNCTION_DECL)
+++  if (!DECL_NO_STATIC_CHAIN (decl))
++     {
++-      node->origin = cgraph_node (DECL_CONTEXT (decl));
++-      node->next_nested = node->origin->nested;
++-      node->origin->nested = node;
++-      node->master_clone = node;
+++      context = decl_function_context (decl);
+++      if (context)
+++        {
+++	  node->origin = cgraph_node (context);
+++	  node->next_nested = node->origin->nested;
+++	  node->origin->nested = node;
+++	  node->master_clone = node;
+++        }
++     }
++   return node;
++ }
++Index: gcc/gcc.c
++===================================================================
++--- gcc/gcc.c	(revision 158462)
+++++ gcc/gcc.c	(working copy)
++@@ -129,6 +129,9 @@
++ /* Flag set to nonzero if an @file argument has been supplied to gcc.  */
++ static bool at_file_supplied;
++ 
+++/* Flag set by drivers needing Pthreads. */
+++int need_pthreads;
+++
++ /* Flag saying to pass the greatest exit code returned by a sub-process
++    to the calling program.  */
++ static int pass_exit_codes;
++@@ -365,6 +368,9 @@
++ static const char *version_compare_spec_function (int, const char **);
++ static const char *include_spec_function (int, const char **);
++ static const char *print_asm_header_spec_function (int, const char **);
+++
+++extern const char *d_all_sources_spec_function (int, const char **);
+++extern const char *d_output_prefix_spec_function (int, const char **);
++ 
++ /* The Specs Language
++ 
++@@ -472,6 +478,7 @@
++ 	assembler has done its job.
++  %D	Dump out a -L option for each directory in startfile_prefixes.
++ 	If multilib_dir is set, extra entries are generated with it affixed.
+++ %N     Output the currently selected multilib directory name.
++  %l     process LINK_SPEC as a spec.
++  %L     process LIB_SPEC as a spec.
++  %G     process LIBGCC_SPEC as a spec.
++@@ -917,6 +924,8 @@
++ #endif
++ #endif
++ 
+++#define GCC_SPEC_FORMAT_4 1
+++
++ /* Record the mapping from file suffixes for compilation specs.  */
++ 
++ struct compiler
++@@ -1635,6 +1644,10 @@
++   { "version-compare",		version_compare_spec_function },
++   { "include",			include_spec_function },
++   { "print-asm-header",		print_asm_header_spec_function },
+++#ifdef D_USE_EXTRA_SPEC_FUNCTIONS
+++  { "d-all-sources",            d_all_sources_spec_function },
+++  { "d-output-prefix",          d_output_prefix_spec_function },
+++#endif
++ #ifdef EXTRA_SPEC_FUNCTIONS
++   EXTRA_SPEC_FUNCTIONS
++ #endif
++@@ -3974,6 +3987,9 @@
++ 	}
++     }
++ 
+++  if (need_pthreads)
+++      n_switches++;
+++
++   if (save_temps_flag && use_pipes)
++     {
++       /* -save-temps overrides -pipe, so that temp files are produced */
++@@ -4280,6 +4296,18 @@
++       infiles[0].name   = "help-dummy";
++     }
++ 
+++  if (need_pthreads)
+++    {
+++	switches[n_switches].part1 = "pthread";
+++	switches[n_switches].args = 0;
+++	switches[n_switches].live_cond = 0;
+++	/* Do not print an error if there is not expansion for -pthread. */
+++	switches[n_switches].validated = 1;
+++	switches[n_switches].ordering = 0;
+++
+++	n_switches++;
+++    }
+++
++   switches[n_switches].part1 = 0;
++   infiles[n_infiles].name = 0;
++ }
++@@ -5240,6 +5268,17 @@
++ 	      return value;
++ 	    break;
++ 
+++	  case 'N':
+++	    if (multilib_dir)
+++	      {
+++		arg_going = 1;
+++		obstack_grow (&obstack, "-fmultilib-dir=",
+++			      strlen ("-fmultilib-dir="));
+++	        obstack_grow (&obstack, multilib_dir,
+++			      strlen (multilib_dir));
+++	      }
+++	    break;
+++
++ 	    /* Here we define characters other than letters and digits.  */
++ 
++ 	  case '{':
++Index: gcc/gcc.h
++===================================================================
++--- gcc/gcc.h	(revision 158462)
+++++ gcc/gcc.h	(working copy)
++@@ -37,7 +37,7 @@
++    || (CHAR) == 'e' || (CHAR) == 'T' || (CHAR) == 'u' \
++    || (CHAR) == 'I' || (CHAR) == 'm' || (CHAR) == 'x' \
++    || (CHAR) == 'L' || (CHAR) == 'A' || (CHAR) == 'V' \
++-   || (CHAR) == 'B' || (CHAR) == 'b')
+++   || (CHAR) == 'B' || (CHAR) == 'b' || (CHAR) == 'J')
++ 
++ /* This defines which multi-letter switches take arguments.  */
++ 
++Index: gcc/tree-gimple.c
++===================================================================
++--- gcc/tree-gimple.c	(revision 158462)
+++++ gcc/tree-gimple.c	(working copy)
++@@ -74,6 +74,8 @@
++     case VECTOR_CST:
++     case OBJ_TYPE_REF:
++     case ASSERT_EXPR:
+++    case STATIC_CHAIN_EXPR: /* not sure if this is right...*/
+++    case STATIC_CHAIN_DECL:
++       return true;
++ 
++     default:
++@@ -147,7 +149,10 @@
++ 	  || TREE_CODE (t) == WITH_SIZE_EXPR
++ 	  /* These are complex lvalues, but don't have addresses, so they
++ 	     go here.  */
++-	  || TREE_CODE (t) == BIT_FIELD_REF);
+++	  || TREE_CODE (t) == BIT_FIELD_REF
+++          /* This is an lvalue because it will be replaced with the real
+++	     static chain decl. */
+++	  || TREE_CODE (t) == STATIC_CHAIN_DECL);
++ }
++ 
++ /*  Return true if T is a GIMPLE condition.  */
++Index: gcc/cgraphunit.c
++===================================================================
++--- gcc/cgraphunit.c	(revision 158462)
+++++ gcc/cgraphunit.c	(working copy)
++@@ -1150,6 +1150,10 @@
++ static void
++ cgraph_expand_function (struct cgraph_node *node)
++ {
+++  int save_flag_omit_frame_pointer = flag_omit_frame_pointer;
+++  static int inited = 0;
+++  static int orig_omit_frame_pointer;
+++  
++   tree decl = node->decl;
++ 
++   /* We ought to not compile any inline clones.  */
++@@ -1159,11 +1163,21 @@
++     announce_function (decl);
++ 
++   gcc_assert (node->lowered);
+++  
+++  if (!inited)
+++  {
+++      inited = 1;
+++      orig_omit_frame_pointer = flag_omit_frame_pointer;
+++  }
+++  flag_omit_frame_pointer = orig_omit_frame_pointer ||
+++    DECL_STRUCT_FUNCTION (decl)->naked;
++ 
++   /* Generate RTL for the body of DECL.  */
++   if (lang_hooks.callgraph.emit_associated_thunks)
++     lang_hooks.callgraph.emit_associated_thunks (decl);
++   tree_rest_of_compilation (decl);
+++  
+++  flag_omit_frame_pointer = save_flag_omit_frame_pointer;
++ 
++   /* Make sure that BE didn't give up on compiling.  */
++   /* ??? Can happen with nested function of extern inline.  */
++Index: gcc/dwarf2out.c
++===================================================================
++--- gcc/dwarf2out.c	(revision 158462)
+++++ gcc/dwarf2out.c	(working copy)
++@@ -5743,7 +5743,8 @@
++ 
++   return (lang == DW_LANG_C || lang == DW_LANG_C89 || lang == DW_LANG_ObjC
++ 	  || lang == DW_LANG_C99
++-	  || lang == DW_LANG_C_plus_plus || lang == DW_LANG_ObjC_plus_plus);
+++	  || lang == DW_LANG_C_plus_plus || lang == DW_LANG_ObjC_plus_plus
+++	  || lang == DW_LANG_D);
++ }
++ 
++ /* Return TRUE if the language is C++.  */
++@@ -13267,6 +13268,8 @@
++     language = DW_LANG_ObjC;
++   else if (strcmp (language_string, "GNU Objective-C++") == 0)
++     language = DW_LANG_ObjC_plus_plus;
+++  else if (strcmp (language_string, "GNU D") == 0)
+++    language = DW_LANG_D;
++   else
++     language = DW_LANG_C89;
++ 
++@@ -14408,7 +14411,7 @@
++ 
++       /* For local statics lookup proper context die.  */
++       if (TREE_STATIC (decl) && decl_function_context (decl))
++-	context_die = lookup_decl_die (DECL_CONTEXT (decl));
+++	context_die = lookup_decl_die (decl_function_context (decl));
++ 
++       /* If we are in terse mode, don't generate any DIEs to represent any
++ 	 variable declarations or definitions.  */
++Index: gcc/expr.c
++===================================================================
++--- gcc/expr.c	(revision 158462)
+++++ gcc/expr.c	(working copy)
++@@ -9227,6 +9227,11 @@
++ 	 represent.  */
++       return const0_rtx;
++ 
+++    case STATIC_CHAIN_EXPR:
+++    case STATIC_CHAIN_DECL:
+++      /* Lowered by tree-nested.c */
+++      gcc_unreachable ();
+++
++     case EXC_PTR_EXPR:
++       return get_exception_pointer (cfun);
++ 
++Index: gcc/function.c
++===================================================================
++--- gcc/function.c	(revision 158462)
+++++ gcc/function.c	(working copy)
++@@ -3062,7 +3062,8 @@
++       FUNCTION_ARG_ADVANCE (all.args_so_far, data.promoted_mode,
++ 			    data.passed_type, data.named_arg);
++ 
++-      assign_parm_adjust_stack_rtl (&data);
+++      if (!cfun->naked)
+++	assign_parm_adjust_stack_rtl (&data);
++ 
++       if (assign_parm_setup_block_p (&data))
++ 	assign_parm_setup_block (&all, parm, &data);
++@@ -3077,7 +3078,8 @@
++ 
++   /* Output all parameter conversion instructions (possibly including calls)
++      now that all parameters have been copied out of hard registers.  */
++-  emit_insn (all.first_conversion_insn);
+++  if (!cfun->naked)
+++    emit_insn (all.first_conversion_insn);
++ 
++   /* If we are receiving a struct value address as the first argument, set up
++      the RTL for the function result. As this might require code to convert
++@@ -3207,6 +3209,9 @@
++   struct assign_parm_data_all all;
++   tree fnargs, parm, stmts = NULL;
++ 
+++  if (cfun->naked)
+++    return NULL;
+++  
++   assign_parms_initialize_all (&all);
++   fnargs = assign_parms_augmented_arg_list (&all);
++ 
++@@ -4280,11 +4285,15 @@
++       tree parm = cfun->static_chain_decl;
++       rtx local = gen_reg_rtx (Pmode);
++ 
++-      set_decl_incoming_rtl (parm, static_chain_incoming_rtx, false);
++       SET_DECL_RTL (parm, local);
++       mark_reg_pointer (local, TYPE_ALIGN (TREE_TYPE (TREE_TYPE (parm))));
++ 
++-      emit_move_insn (local, static_chain_incoming_rtx);
+++      if (! cfun->custom_static_chain)
+++        {
+++	    set_decl_incoming_rtl (parm, static_chain_incoming_rtx, false);
+++	    emit_move_insn (local, static_chain_incoming_rtx);
+++	}
+++      /* else, the static chain will be set in the main body */
++     }
++ 
++   /* If the function receives a non-local goto, then store the
++@@ -5179,6 +5188,9 @@
++ #endif
++   edge_iterator ei;
++ 
+++  if (cfun->naked)
+++      return;
+++
++ #ifdef HAVE_prologue
++   if (HAVE_prologue)
++     {
++Index: gcc/function.h
++===================================================================
++--- gcc/function.h	(revision 158462)
+++++ gcc/function.h	(working copy)
++@@ -463,6 +463,14 @@
++ 
++   /* Nonzero if pass_tree_profile was run on this function.  */
++   unsigned int after_tree_profile : 1;
+++
+++  /* Nonzero if static chain is initialized by something other than
+++     static_chain_incoming_rtx. */
+++  unsigned int custom_static_chain : 1;
+++
+++  /* Nonzero if no code should be generated for prologues, copying
+++     parameters, etc. */
+++  unsigned int naked : 1;
++ };
++ 
++ /* If va_list_[gf]pr_size is set to this, it means we don't know how
++Index: gcc/gimplify.c
++===================================================================
++--- gcc/gimplify.c	(revision 158462)
+++++ gcc/gimplify.c	(working copy)
++@@ -5726,6 +5726,12 @@
++ 	    }
++ 	  break;
++ 
+++	case STATIC_CHAIN_EXPR:
+++	  /* The argument is used as information only.  No need to gimplify */
+++	case STATIC_CHAIN_DECL:  
+++	  ret = GS_ALL_DONE;
+++	  break;
+++	  
++ 	case TREE_LIST:
++ 	  gcc_unreachable ();
++ 
++Index: gcc/tree.def
++===================================================================
++--- gcc/tree.def	(revision 158462)
+++++ gcc/tree.def	(working copy)
++@@ -539,6 +539,13 @@
++    arguments to the call.  */
++ DEFTREECODE (CALL_EXPR, "call_expr", tcc_vl_exp, 3)
++ 
+++/* Operand 0 is the FUNC_DECL of the outer function for
+++   which the static chain is to be computed. */
+++DEFTREECODE (STATIC_CHAIN_EXPR, "static_chain_expr", tcc_expression, 1)
+++    
+++/* Represents a function's static chain.  It can be used as an lvalue. */
+++DEFTREECODE (STATIC_CHAIN_DECL, "static_chain_decl", tcc_expression, 0)
+++
++ /* Specify a value to compute along with its corresponding cleanup.
++    Operand 0 is the cleanup expression.
++    The cleanup is executed by the first enclosing CLEANUP_POINT_EXPR,
++Index: gcc/tree-sra.c
++===================================================================
++--- gcc/tree-sra.c	(revision 158462)
+++++ gcc/tree-sra.c	(working copy)
++@@ -262,6 +262,8 @@
++     case RECORD_TYPE:
++       {
++ 	bool saw_one_field = false;
+++	tree last_offset = size_zero_node;
+++	tree cmp;
++ 
++ 	for (t = TYPE_FIELDS (type); t ; t = TREE_CHAIN (t))
++ 	  if (TREE_CODE (t) == FIELD_DECL)
++@@ -271,6 +273,11 @@
++ 		  && (tree_low_cst (DECL_SIZE (t), 1)
++ 		      != TYPE_PRECISION (TREE_TYPE (t))))
++ 		goto fail;
+++	      /* Reject aliased fields created by GDC for anonymous unions. */
+++	      cmp = fold_binary_to_constant (LE_EXPR, boolean_type_node,
+++		DECL_FIELD_OFFSET (t), last_offset);
+++	      if (cmp == NULL_TREE || tree_expr_nonzero_p (cmp))
+++		goto fail;
++ 
++ 	      saw_one_field = true;
++ 	    }
++Index: gcc/tree-nested.c
++===================================================================
++--- gcc/tree-nested.c	(revision 158462)
+++++ gcc/tree-nested.c	(working copy)
++@@ -300,6 +300,7 @@
++   if (!decl)
++     {
++       tree type;
+++      enum tree_code code;
++ 
++       type = get_frame_type (info->outer);
++       type = build_pointer_type (type);
++@@ -815,6 +816,8 @@
++ 
++   if (info->context == target_context)
++     {
+++      /* might be doing something wrong to need the following line.. */
+++      get_frame_type (info);
++       x = build_addr (info->frame_decl, target_context);
++     }
++   else
++@@ -1640,6 +1643,10 @@
++       if (DECL_NO_STATIC_CHAIN (decl))
++ 	break;
++ 
+++      /* Don't use a trampoline for a static reference. */
+++      if (TREE_STATIC (t))
+++	break;
+++
++       /* Lookup the immediate parent of the callee, as that's where
++ 	 we need to insert the trampoline.  */
++       for (i = info; i->context != target_context; i = i->outer)
++@@ -1714,6 +1721,14 @@
++ 	}
++       break;
++ 
+++    case STATIC_CHAIN_EXPR:
+++      *tp = get_static_chain (info, TREE_OPERAND (t, 0), &wi->tsi);
+++      break;
+++
+++    case STATIC_CHAIN_DECL:
+++      *tp = get_chain_decl (info);
+++      break;
+ + 
+-+   if (cfun->naked)
+-+       /* As above, skip return address */
+-+       frame->stack_pointer_offset = UNITS_PER_WORD;
+-+ 
+-  #if 0
+-    fprintf (stderr, "\n");
+-    fprintf (stderr, "nregs: %ld\n", (long)frame->nregs);
+-***************
+-*** 22880,22886 ****
+-  	  output_set_got (tmp, NULL_RTX);
+-  
+-  	  xops[1] = tmp;
+-! 	  output_asm_insn ("mov{l}\t{%0@GOT(%1), %1|%1, %0@GOT[%1]}", xops);
+-  	  output_asm_insn ("jmp\t{*}%1", xops);
+-  	}
+-      }
+---- 22885,22891 ----
+-  	  output_set_got (tmp, NULL_RTX);
+-  
+-  	  xops[1] = tmp;
+-! 	  output_asm_insn ("mov{l}\t{%a0@GOT(%1), %1|%1, %a0@GOT[%1]}", xops);
+-  	  output_asm_insn ("jmp\t{*}%1", xops);
+-  	}
+-      }
+-diff -cr gcc-orig/config/rs6000/rs6000.c gcc/config/rs6000/rs6000.c
+-*** gcc-orig/config/rs6000/rs6000.c	2008-05-09 13:13:30.000000000 -0400
+---- gcc/config/rs6000/rs6000.c	2008-07-24 10:48:26.000000000 -0400
+-***************
+-*** 16929,16935 ****
+-  	 C is 0.  Fortran is 1.  Pascal is 2.  Ada is 3.  C++ is 9.
+-  	 Java is 13.  Objective-C is 14.  Objective-C++ isn't assigned
+-  	 a number, so for now use 9.  */
+-!       if (! strcmp (language_string, "GNU C"))
+-  	i = 0;
+-        else if (! strcmp (language_string, "GNU F77")
+-  	       || ! strcmp (language_string, "GNU F95"))
+---- 16929,16936 ----
+-  	 C is 0.  Fortran is 1.  Pascal is 2.  Ada is 3.  C++ is 9.
+-  	 Java is 13.  Objective-C is 14.  Objective-C++ isn't assigned
+-  	 a number, so for now use 9.  */
+-!       if (! strcmp (language_string, "GNU C")
+-! 	  || ! strcmp (language_string, "GNU D"))
+-  	i = 0;
+-        else if (! strcmp (language_string, "GNU F77")
+-  	       || ! strcmp (language_string, "GNU F95"))
+-diff -cr gcc-orig/dwarf2out.c gcc/dwarf2out.c
+-*** gcc-orig/dwarf2out.c	2008-04-28 05:50:31.000000000 -0400
+---- gcc/dwarf2out.c	2008-07-24 11:03:16.000000000 -0400
+-***************
+-*** 5540,5546 ****
+-  
+-    return (lang == DW_LANG_C || lang == DW_LANG_C89 || lang == DW_LANG_ObjC
+-  	  || lang == DW_LANG_C99
+-! 	  || lang == DW_LANG_C_plus_plus || lang == DW_LANG_ObjC_plus_plus);
+-  }
+-  
+-  /* Return TRUE if the language is C++.  */
+---- 5540,5547 ----
+-  
+-    return (lang == DW_LANG_C || lang == DW_LANG_C89 || lang == DW_LANG_ObjC
+-  	  || lang == DW_LANG_C99
+-! 	  || lang == DW_LANG_C_plus_plus || lang == DW_LANG_ObjC_plus_plus
+-! 	  || lang == DW_LANG_D);
+-  }
+-  
+-  /* Return TRUE if the language is C++.  */
+-***************
+-*** 13024,13029 ****
+---- 13025,13032 ----
+-      language = DW_LANG_ObjC;
+-    else if (strcmp (language_string, "GNU Objective-C++") == 0)
+-      language = DW_LANG_ObjC_plus_plus;
+-+   else if (strcmp (language_string, "GNU D") == 0)
+-+     language = DW_LANG_D;
+-    else
+-      language = DW_LANG_C89;
+-  
+-***************
+-*** 14165,14171 ****
+-  
+-        /* For local statics lookup proper context die.  */
+-        if (TREE_STATIC (decl) && decl_function_context (decl))
+-! 	context_die = lookup_decl_die (DECL_CONTEXT (decl));
+-  
+-        /* If we are in terse mode, don't generate any DIEs to represent any
+-  	 variable declarations or definitions.  */
+---- 14168,14174 ----
+-  
+-        /* For local statics lookup proper context die.  */
+-        if (TREE_STATIC (decl) && decl_function_context (decl))
+-! 	context_die = lookup_decl_die (decl_function_context (decl));
+-  
+-        /* If we are in terse mode, don't generate any DIEs to represent any
+-  	 variable declarations or definitions.  */
+-diff -cr gcc-orig/expr.c gcc/expr.c
+-*** gcc-orig/expr.c	2008-03-11 10:16:25.000000000 -0400
+---- gcc/expr.c	2008-07-24 11:03:56.000000000 -0400
+-***************
+-*** 9205,9210 ****
+---- 9205,9215 ----
+-  	 represent.  */
+-        return const0_rtx;
+-  
+-+     case STATIC_CHAIN_EXPR:
+-+     case STATIC_CHAIN_DECL:
+-+       /* Lowered by tree-nested.c */
+-+       gcc_unreachable ();
+-+ 
+-      case EXC_PTR_EXPR:
+-        return get_exception_pointer (cfun);
+-  
+-diff -cr gcc-orig/function.c gcc/function.c
+-*** gcc-orig/function.c	2008-02-15 04:55:36.000000000 -0500
+---- gcc/function.c	2008-07-24 11:14:14.000000000 -0400
+-***************
+-*** 3057,3063 ****
+-        FUNCTION_ARG_ADVANCE (all.args_so_far, data.promoted_mode,
+-  			    data.passed_type, data.named_arg);
+-  
+-!       assign_parm_adjust_stack_rtl (&data);
+-  
+-        if (assign_parm_setup_block_p (&data))
+-  	assign_parm_setup_block (&all, parm, &data);
+---- 3057,3064 ----
+-        FUNCTION_ARG_ADVANCE (all.args_so_far, data.promoted_mode,
+-  			    data.passed_type, data.named_arg);
+-  
+-!       if (!cfun->naked)
+-! 	assign_parm_adjust_stack_rtl (&data);
+-  
+-        if (assign_parm_setup_block_p (&data))
+-  	assign_parm_setup_block (&all, parm, &data);
+-***************
+-*** 3072,3078 ****
+-  
+-    /* Output all parameter conversion instructions (possibly including calls)
+-       now that all parameters have been copied out of hard registers.  */
+-!   emit_insn (all.first_conversion_insn);
+-  
+-    /* If we are receiving a struct value address as the first argument, set up
+-       the RTL for the function result. As this might require code to convert
+---- 3073,3080 ----
+-  
+-    /* Output all parameter conversion instructions (possibly including calls)
+-       now that all parameters have been copied out of hard registers.  */
+-!   if (!cfun->naked)
+-!     emit_insn (all.first_conversion_insn);
+-  
+-    /* If we are receiving a struct value address as the first argument, set up
+-       the RTL for the function result. As this might require code to convert
+-***************
+-*** 3202,3207 ****
+---- 3204,3212 ----
+-    struct assign_parm_data_all all;
+-    tree fnargs, parm, stmts = NULL;
+-  
+-+   if (cfun->naked)
+-+     return NULL;
+-+   
+-    assign_parms_initialize_all (&all);
+-    fnargs = assign_parms_augmented_arg_list (&all);
+-  
+-***************
+-*** 4275,4285 ****
+-        tree parm = cfun->static_chain_decl;
+-        rtx local = gen_reg_rtx (Pmode);
+-  
+--       set_decl_incoming_rtl (parm, static_chain_incoming_rtx, false);
+-        SET_DECL_RTL (parm, local);
+-        mark_reg_pointer (local, TYPE_ALIGN (TREE_TYPE (TREE_TYPE (parm))));
+-  
+-!       emit_move_insn (local, static_chain_incoming_rtx);
+-      }
+-  
+-    /* If the function receives a non-local goto, then store the
+---- 4280,4294 ----
+-        tree parm = cfun->static_chain_decl;
+-        rtx local = gen_reg_rtx (Pmode);
+-  
+-        SET_DECL_RTL (parm, local);
+-        mark_reg_pointer (local, TYPE_ALIGN (TREE_TYPE (TREE_TYPE (parm))));
+-  
+-!       if (! cfun->custom_static_chain)
+-!         {
+-! 	    set_decl_incoming_rtl (parm, static_chain_incoming_rtx, false);
+-! 	    emit_move_insn (local, static_chain_incoming_rtx);
+-! 	}
+-!       /* else, the static chain will be set in the main body */
+-      }
+-  
+-    /* If the function receives a non-local goto, then store the
+-***************
+-*** 5174,5179 ****
+---- 5183,5191 ----
+-  #endif
+-    edge_iterator ei;
+-  
+-+   if (cfun->naked)
+-+       return;
+-+ 
+-  #ifdef HAVE_prologue
+-    if (HAVE_prologue)
+-      {
+-diff -cr gcc-orig/function.h gcc/function.h
+-*** gcc-orig/function.h	2008-01-26 12:18:35.000000000 -0500
+---- gcc/function.h	2008-07-24 11:15:42.000000000 -0400
+-***************
+-*** 463,468 ****
+---- 463,476 ----
+-  
+-    /* Nonzero if pass_tree_profile was run on this function.  */
+-    unsigned int after_tree_profile : 1;
+-+ 
+-+   /* Nonzero if static chain is initialized by something other than
+-+      static_chain_incoming_rtx. */
+-+   unsigned int custom_static_chain : 1;
+-+ 
+-+   /* Nonzero if no code should be generated for prologues, copying
+-+      parameters, etc. */
+-+   unsigned int naked : 1;
+-  };
+-  
+-  /* If va_list_[gf]pr_size is set to this, it means we don't know how
+-diff -cr gcc-orig/gcc.c gcc/gcc.c
+-*** gcc-orig/gcc.c	2008-03-02 17:55:19.000000000 -0500
+---- gcc/gcc.c	2008-07-24 11:25:08.000000000 -0400
+-***************
+-*** 129,134 ****
+---- 129,137 ----
+-  /* Flag set to nonzero if an @file argument has been supplied to gcc.  */
+-  static bool at_file_supplied;
+-  
+-+ /* Flag set by drivers needing Pthreads. */
+-+ int need_pthreads;
+-+ 
+-  /* Flag saying to pass the greatest exit code returned by a sub-process
+-     to the calling program.  */
+-  static int pass_exit_codes;
+-***************
+-*** 365,370 ****
+---- 368,376 ----
+-  static const char *version_compare_spec_function (int, const char **);
+-  static const char *include_spec_function (int, const char **);
+-  static const char *print_asm_header_spec_function (int, const char **);
+-+ 
+-+ extern const char *d_all_sources_spec_function (int, const char **);
+-+ extern const char *d_output_prefix_spec_function (int, const char **);
+-  
+-  /* The Specs Language
+-  
+-***************
+-*** 472,477 ****
+---- 478,484 ----
+-  	assembler has done its job.
+-   %D	Dump out a -L option for each directory in startfile_prefixes.
+-  	If multilib_dir is set, extra entries are generated with it affixed.
+-+  %N     Output the currently selected multilib directory name.
+-   %l     process LINK_SPEC as a spec.
+-   %L     process LIB_SPEC as a spec.
+-   %G     process LIBGCC_SPEC as a spec.
+-***************
+-*** 917,922 ****
+---- 924,931 ----
+-  #endif
+-  #endif
+-  
+-+ #define GCC_SPEC_FORMAT_4 1
+-+ 
+-  /* Record the mapping from file suffixes for compilation specs.  */
+-  
+-  struct compiler
+-***************
+-*** 1635,1640 ****
+---- 1644,1653 ----
+-    { "version-compare",		version_compare_spec_function },
+-    { "include",			include_spec_function },
+-    { "print-asm-header",		print_asm_header_spec_function },
+-+ #ifdef D_USE_EXTRA_SPEC_FUNCTIONS
+-+   { "d-all-sources",            d_all_sources_spec_function },
+-+   { "d-output-prefix",          d_output_prefix_spec_function },
+-+ #endif
+-  #ifdef EXTRA_SPEC_FUNCTIONS
+-    EXTRA_SPEC_FUNCTIONS
+-  #endif
+-***************
+-*** 3974,3979 ****
+---- 3987,3995 ----
+-  	}
+-      }
+-  
+-+   if (need_pthreads)
+-+       n_switches++;
+-+ 
+-    if (save_temps_flag && use_pipes)
+-      {
+-        /* -save-temps overrides -pipe, so that temp files are produced */
+-***************
+-*** 4280,4285 ****
+---- 4296,4313 ----
+-        infiles[0].name   = "help-dummy";
+-      }
+-  
+-+   if (need_pthreads)
+-+     {
+-+ 	switches[n_switches].part1 = "pthread";
+-+ 	switches[n_switches].args = 0;
+-+ 	switches[n_switches].live_cond = 0;
+-+ 	/* Do not print an error if there is not expansion for -pthread. */
+-+ 	switches[n_switches].validated = 1;
+-+ 	switches[n_switches].ordering = 0;
+-+ 
+-+ 	n_switches++;
+-+     }
+-+ 
+-    switches[n_switches].part1 = 0;
+-    infiles[n_infiles].name = 0;
+-  }
+-***************
+-*** 5240,5245 ****
+---- 5268,5284 ----
+-  	      return value;
+-  	    break;
+-  
+-+ 	  case 'N':
+-+ 	    if (multilib_dir)
+-+ 	      {
+-+ 		arg_going = 1;
+-+ 		obstack_grow (&obstack, "-fmultilib-dir=",
+-+ 			      strlen ("-fmultilib-dir="));
+-+ 	        obstack_grow (&obstack, multilib_dir,
+-+ 			      strlen (multilib_dir));
+-+ 	      }
+-+ 	    break;
+-+ 
+-  	    /* Here we define characters other than letters and digits.  */
+-  
+-  	  case '{':
+-diff -cr gcc-orig/gcc.h gcc/gcc.h
+-*** gcc-orig/gcc.h	2007-07-26 04:37:01.000000000 -0400
+---- gcc/gcc.h	2008-07-24 11:26:34.000000000 -0400
+-***************
+-*** 37,43 ****
+-     || (CHAR) == 'e' || (CHAR) == 'T' || (CHAR) == 'u' \
+-     || (CHAR) == 'I' || (CHAR) == 'm' || (CHAR) == 'x' \
+-     || (CHAR) == 'L' || (CHAR) == 'A' || (CHAR) == 'V' \
+-!    || (CHAR) == 'B' || (CHAR) == 'b')
+-  
+-  /* This defines which multi-letter switches take arguments.  */
+-  
+---- 37,43 ----
+-     || (CHAR) == 'e' || (CHAR) == 'T' || (CHAR) == 'u' \
+-     || (CHAR) == 'I' || (CHAR) == 'm' || (CHAR) == 'x' \
+-     || (CHAR) == 'L' || (CHAR) == 'A' || (CHAR) == 'V' \
+-!    || (CHAR) == 'B' || (CHAR) == 'b' || (CHAR) == 'J')
+-  
+-  /* This defines which multi-letter switches take arguments.  */
+-  
+-diff -cr gcc-orig/gimplify.c gcc/gimplify.c
+-*** gcc-orig/gimplify.c	2008-05-07 04:00:36.000000000 -0400
+---- gcc/gimplify.c	2008-07-24 14:40:20.000000000 -0400
+-***************
+-*** 5701,5706 ****
+---- 5701,5712 ----
+-  	    }
+-  	  break;
+-  
+-+ 	case STATIC_CHAIN_EXPR:
+-+ 	  /* The argument is used as information only.  No need to gimplify */
+-+ 	case STATIC_CHAIN_DECL:  
+-+ 	  ret = GS_ALL_DONE;
+-+ 	  break;
+-+ 	  
+-  	case TREE_LIST:
+-  	  gcc_unreachable ();
+-  
+-diff -cr gcc-orig/tree-dump.c gcc/tree-dump.c
+-*** gcc-orig/tree-dump.c	2008-02-13 06:15:51.000000000 -0500
+---- gcc/tree-dump.c	2008-07-24 12:44:35.000000000 -0400
+-***************
+-*** 646,651 ****
+---- 646,655 ----
+-        }
+-        break;
+-  
+-+     case STATIC_CHAIN_EXPR:
+-+       dump_child ("func", TREE_OPERAND (t, 0));
+-+       break;
+-+ 
+-      case CONSTRUCTOR:
+-        {
+-  	unsigned HOST_WIDE_INT cnt;
+-diff -cr gcc-orig/tree-gimple.c gcc/tree-gimple.c
+-*** gcc-orig/tree-gimple.c	2007-12-13 16:49:09.000000000 -0500
+---- gcc/tree-gimple.c	2008-07-24 12:46:41.000000000 -0400
+-***************
+-*** 74,79 ****
+---- 74,81 ----
+-      case VECTOR_CST:
+-      case OBJ_TYPE_REF:
+-      case ASSERT_EXPR:
+-+     case STATIC_CHAIN_EXPR: /* not sure if this is right...*/
+-+     case STATIC_CHAIN_DECL:
+-        return true;
+-  
+-      default:
+-***************
+-*** 147,153 ****
+-  	  || TREE_CODE (t) == WITH_SIZE_EXPR
+-  	  /* These are complex lvalues, but don't have addresses, so they
+-  	     go here.  */
+-! 	  || TREE_CODE (t) == BIT_FIELD_REF);
+-  }
+-  
+-  /*  Return true if T is a GIMPLE condition.  */
+---- 149,158 ----
+-  	  || TREE_CODE (t) == WITH_SIZE_EXPR
+-  	  /* These are complex lvalues, but don't have addresses, so they
+-  	     go here.  */
+-! 	  || TREE_CODE (t) == BIT_FIELD_REF
+-!           /* This is an lvalue because it will be replaced with the real
+-! 	     static chain decl. */
+-! 	  || TREE_CODE (t) == STATIC_CHAIN_DECL);
+-  }
+-  
+-  /*  Return true if T is a GIMPLE condition.  */
+-diff -cr gcc-orig/tree-nested.c gcc/tree-nested.c
+-*** gcc-orig/tree-nested.c	2008-05-29 07:35:05.000000000 -0400
+---- gcc/tree-nested.c	2008-08-03 10:20:22.000000000 -0400
+-***************
+-*** 300,305 ****
+---- 300,306 ----
+-    if (!decl)
+-      {
+-        tree type;
+-+       enum tree_code code;
+-  
+-        type = get_frame_type (info->outer);
+-        type = build_pointer_type (type);
+-***************
+-*** 815,820 ****
+---- 816,823 ----
+-  
+-    if (info->context == target_context)
+-      {
+-+       /* might be doing something wrong to need the following line.. */
+-+       get_frame_type (info);
+-        x = build_addr (info->frame_decl, target_context);
+-      }
+-    else
+-***************
+-*** 1640,1645 ****
+---- 1643,1652 ----
+-        if (DECL_NO_STATIC_CHAIN (decl))
+-  	break;
+-  
+-+       /* Don't use a trampoline for a static reference. */
+-+       if (TREE_STATIC (t))
+-+ 	break;
+-+ 
+-        /* Lookup the immediate parent of the callee, as that's where
+-  	 we need to insert the trampoline.  */
+-        for (i = info; i->context != target_context; i = i->outer)
+-***************
+-*** 1714,1719 ****
+---- 1721,1734 ----
+-  	}
+-        break;
+-  
+-+     case STATIC_CHAIN_EXPR:
+-+       *tp = get_static_chain (info, TREE_OPERAND (t, 0), &wi->tsi);
+-+       break;
+-+ 
+-+     case STATIC_CHAIN_DECL:
+-+       *tp = get_chain_decl (info);
+-+       break;
+-+  
+-      case RETURN_EXPR:
+-      case GIMPLE_MODIFY_STMT:
+-      case WITH_SIZE_EXPR:
+-***************
+-*** 1889,1897 ****
+-      {
+-        annotate_all_with_locus (&stmt_list,
+-  			       DECL_SOURCE_LOCATION (context));
+-!       append_to_statement_list (BIND_EXPR_BODY (DECL_SAVED_TREE (context)),
+-! 				&stmt_list);
+-!       BIND_EXPR_BODY (DECL_SAVED_TREE (context)) = stmt_list;
+-      }
+-  
+-    /* If a chain_decl was created, then it needs to be registered with
+---- 1904,1937 ----
+-      {
+-        annotate_all_with_locus (&stmt_list,
+-  			       DECL_SOURCE_LOCATION (context));
+-!       /* If the function has a custom static chain, chain_field must
+-! 	 be set after the static chain. */
+-!       if (DECL_STRUCT_FUNCTION (root->context)->custom_static_chain)
+-! 	{
+-! 	  /* Should use walk_function instead. */
+-! 	  tree_stmt_iterator i =
+-! 	      tsi_start ( BIND_EXPR_BODY (DECL_SAVED_TREE (context)));
+-! 	  int found = 0;
+-! 	  while (!tsi_end_p (i))
+-! 	    {
+-! 	      tree t = tsi_stmt (i);
+-! 	      if (TREE_CODE (t) == GIMPLE_MODIFY_STMT &&
+-! 		  GIMPLE_STMT_OPERAND (t, 0) == root->chain_decl)
+-! 		{
+-! 		  tsi_link_after (& i, stmt_list, TSI_SAME_STMT);
+-! 		  found = 1;
+-! 		  break;
+-! 		}
+-! 	      tsi_next (& i);
+-! 	    }
+-! 	  gcc_assert (found);
+-! 	}
+-!       else
+-!         {
+-! 	  append_to_statement_list (BIND_EXPR_BODY (DECL_SAVED_TREE (context)),
+-! 				    &stmt_list);
+-! 	  BIND_EXPR_BODY (DECL_SAVED_TREE (context)) = stmt_list;
+-! 	}
+-      }
+-  
+-    /* If a chain_decl was created, then it needs to be registered with
+-diff -cr gcc-orig/tree-pretty-print.c gcc/tree-pretty-print.c
+-*** gcc-orig/tree-pretty-print.c	2008-01-27 11:48:54.000000000 -0500
+---- gcc/tree-pretty-print.c	2008-07-24 14:31:32.000000000 -0400
+-***************
+-*** 1251,1256 ****
+---- 1251,1266 ----
+-  	pp_string (buffer, " [tail call]");
+-        break;
+-  
+-+     case STATIC_CHAIN_EXPR:
+-+ 	pp_string (buffer, "<<static chain of ");
+-+ 	dump_generic_node (buffer, TREE_OPERAND (node, 0), spc, flags, false);
+-+ 	pp_string (buffer, ">>");
+-+       break;
+-+ 
+-+     case STATIC_CHAIN_DECL:
+-+        pp_string (buffer, "<<static chain decl>>");
+-+        break;
+-+ 	
+-      case WITH_CLEANUP_EXPR:
+-        NIY;
+-        break;
+-diff -cr gcc-orig/tree-sra.c gcc/tree-sra.c
+-*** gcc-orig/tree-sra.c	2008-02-12 13:35:05.000000000 -0500
+---- gcc/tree-sra.c	2008-07-24 14:34:07.000000000 -0400
+-***************
+-*** 262,267 ****
+---- 262,269 ----
+-      case RECORD_TYPE:
+-        {
+-  	bool saw_one_field = false;
+-+ 	tree last_offset = size_zero_node;
+-+ 	tree cmp;
+-  
+-  	for (t = TYPE_FIELDS (type); t ; t = TREE_CHAIN (t))
+-  	  if (TREE_CODE (t) == FIELD_DECL)
+-***************
+-*** 271,276 ****
+---- 273,283 ----
+-  		  && (tree_low_cst (DECL_SIZE (t), 1)
+-  		      != TYPE_PRECISION (TREE_TYPE (t))))
+-  		goto fail;
+-+ 	      /* Reject aliased fields created by GDC for anonymous unions. */
+-+ 	      cmp = fold_binary_to_constant (LE_EXPR, boolean_type_node,
+-+ 		DECL_FIELD_OFFSET (t), last_offset);
+-+ 	      if (cmp == NULL_TREE || tree_expr_nonzero_p (cmp))
+-+ 		goto fail;
+-  
+-  	      saw_one_field = true;
+-  	    }
+-diff -cr gcc-orig/tree.def gcc/tree.def
+-*** gcc-orig/tree.def	2007-10-29 07:05:04.000000000 -0400
+---- gcc/tree.def	2008-07-24 14:34:32.000000000 -0400
+-***************
+-*** 539,544 ****
+---- 539,551 ----
+-     arguments to the call.  */
+-  DEFTREECODE (CALL_EXPR, "call_expr", tcc_vl_exp, 3)
+-  
+-+ /* Operand 0 is the FUNC_DECL of the outer function for
+-+    which the static chain is to be computed. */
+-+ DEFTREECODE (STATIC_CHAIN_EXPR, "static_chain_expr", tcc_expression, 1)
+-+     
+-+ /* Represents a function's static chain.  It can be used as an lvalue. */
+-+ DEFTREECODE (STATIC_CHAIN_DECL, "static_chain_decl", tcc_expression, 0)
+-+ 
+-  /* Specify a value to compute along with its corresponding cleanup.
+-     Operand 0 is the cleanup expression.
+-     The cleanup is executed by the first enclosing CLEANUP_POINT_EXPR,
++     case RETURN_EXPR:
++     case GIMPLE_MODIFY_STMT:
++     case WITH_SIZE_EXPR:
++@@ -1889,9 +1904,34 @@
++     {
++       annotate_all_with_locus (&stmt_list,
++ 			       DECL_SOURCE_LOCATION (context));
++-      append_to_statement_list (BIND_EXPR_BODY (DECL_SAVED_TREE (context)),
++-				&stmt_list);
++-      BIND_EXPR_BODY (DECL_SAVED_TREE (context)) = stmt_list;
+++      /* If the function has a custom static chain, chain_field must
+++	 be set after the static chain. */
+++      if (DECL_STRUCT_FUNCTION (root->context)->custom_static_chain)
+++	{
+++	  /* Should use walk_function instead. */
+++	  tree_stmt_iterator i =
+++	      tsi_start ( BIND_EXPR_BODY (DECL_SAVED_TREE (context)));
+++	  int found = 0;
+++	  while (!tsi_end_p (i))
+++	    {
+++	      tree t = tsi_stmt (i);
+++	      if (TREE_CODE (t) == GIMPLE_MODIFY_STMT &&
+++		  GIMPLE_STMT_OPERAND (t, 0) == root->chain_decl)
+++		{
+++		  tsi_link_after (& i, stmt_list, TSI_SAME_STMT);
+++		  found = 1;
+++		  break;
+++		}
+++	      tsi_next (& i);
+++	    }
+++	  gcc_assert (found);
+++	}
+++      else
+++        {
+++	  append_to_statement_list (BIND_EXPR_BODY (DECL_SAVED_TREE (context)),
+++				    &stmt_list);
+++	  BIND_EXPR_BODY (DECL_SAVED_TREE (context)) = stmt_list;
+++	}
++     }
++ 
++   /* If a chain_decl was created, then it needs to be registered with
++Index: gcc/config/i386/i386.c
++===================================================================
++--- gcc/config/i386/i386.c	(revision 158462)
+++++ gcc/config/i386/i386.c	(working copy)
++@@ -6151,6 +6151,11 @@
++     frame->red_zone_size = 0;
++   frame->to_allocate -= frame->red_zone_size;
++   frame->stack_pointer_offset -= frame->red_zone_size;
+++
+++  if (cfun->naked)
+++      /* As above, skip return address */
+++      frame->stack_pointer_offset = UNITS_PER_WORD;
+++
++ #if 0
++   fprintf (stderr, "\n");
++   fprintf (stderr, "nregs: %ld\n", (long)frame->nregs);
++@@ -22924,7 +22929,7 @@
++ 	  output_set_got (tmp, NULL_RTX);
++ 
++ 	  xops[1] = tmp;
++-	  output_asm_insn ("mov{l}\t{%0@GOT(%1), %1|%1, %0@GOT[%1]}", xops);
+++	  output_asm_insn ("mov{l}\t{%a0@GOT(%1), %1|%1, %a0@GOT[%1]}", xops);
++ 	  output_asm_insn ("jmp\t{*}%1", xops);
++ 	}
++     }
++Index: gcc/config/rs6000/rs6000.c
++===================================================================
++--- gcc/config/rs6000/rs6000.c	(revision 158462)
+++++ gcc/config/rs6000/rs6000.c	(working copy)
++@@ -16943,7 +16943,8 @@
++ 	 C is 0.  Fortran is 1.  Pascal is 2.  Ada is 3.  C++ is 9.
++ 	 Java is 13.  Objective-C is 14.  Objective-C++ isn't assigned
++ 	 a number, so for now use 9.  */
++-      if (! strcmp (language_string, "GNU C"))
+++      if (! strcmp (language_string, "GNU C")
+++	  || ! strcmp (language_string, "GNU D"))
++ 	i = 0;
++       else if (! strcmp (language_string, "GNU F77")
++ 	       || ! strcmp (language_string, "GNU F95"))
++Index: gcc/config/rs6000/rs6000.h
++===================================================================
++--- gcc/config/rs6000/rs6000.h	(revision 158462)
+++++ gcc/config/rs6000/rs6000.h	(working copy)
++@@ -412,10 +412,6 @@
++   targetm.resolve_overloaded_builtin = altivec_resolve_overloaded_builtin; \
++ } while (0)
++ 
++-/* Target #defines.  */
++-#define TARGET_CPU_CPP_BUILTINS() \
++-  rs6000_cpu_cpp_builtins (pfile)
++-
++ /* This is used by rs6000_cpu_cpp_builtins to indicate the byte order
++    we're compiling for.  Some configurations may need to override it.  */
++ #define RS6000_CPU_CPP_ENDIAN_BUILTINS()	\
++@@ -435,6 +431,90 @@
++ 	}					\
++     }						\
++   while (0)
+++
+++/* Target #defines.  */
+++#define TARGET_CPU_CPP_BUILTINS()		\
+++do {						\
+++  if (TARGET_POWER2)				\
+++    builtin_define ("_ARCH_PWR2");		\
+++  else if (TARGET_POWER)			\
+++    builtin_define ("_ARCH_PWR");		\
+++  if (TARGET_POWERPC)				\
+++    builtin_define ("_ARCH_PPC");		\
+++  if (TARGET_PPC_GPOPT)				\
+++    builtin_define ("_ARCH_PPCSQ");		\
+++  if (TARGET_PPC_GFXOPT)			\
+++    builtin_define ("_ARCH_PPCGR");		\
+++  if (TARGET_POWERPC64)				\
+++    builtin_define ("_ARCH_PPC64");		\
+++  if (TARGET_MFCRF)				\
+++    builtin_define ("_ARCH_PWR4");		\
+++  if (TARGET_POPCNTB)				\
+++    builtin_define ("_ARCH_PWR5");		\
+++  if (TARGET_FPRND)				\
+++    builtin_define ("_ARCH_PWR5X");		\
+++  if (TARGET_CMPB)				\
+++    builtin_define ("_ARCH_PWR6");		\
+++  if (TARGET_MFPGPR)				\
+++    builtin_define ("_ARCH_PWR6X");		\
+++  if (! TARGET_POWER && ! TARGET_POWER2 && ! TARGET_POWERPC)	\
+++    builtin_define ("_ARCH_COM");		\
+++  if (TARGET_ALTIVEC)				\
+++    {						\
+++      builtin_define ("__ALTIVEC__");		\
+++      builtin_define ("__VEC__=10206");		\
+++						\
+++      /* Define the AltiVec syntactic elements.  */	\
+++      builtin_define ("__vector=__attribute__((altivec(vector__)))");	\
+++      builtin_define ("__pixel=__attribute__((altivec(pixel__))) unsigned short");	\
+++      builtin_define ("__bool=__attribute__((altivec(bool__))) unsigned");	\
+++    }						\
+++  if (rs6000_cpu == PROCESSOR_CELL)		\
+++    builtin_define ("__PPU__");			\
+++  if (TARGET_SPE)				\
+++    builtin_define ("__SPE__");			\
+++  if (TARGET_PAIRED_FLOAT)			\
+++    builtin_define ("__PAIRED__");		\
+++  if (TARGET_SOFT_FLOAT)			\
+++    builtin_define ("_SOFT_FLOAT");		\
+++  if (!(TARGET_HARD_FLOAT && (TARGET_FPRS || TARGET_E500_DOUBLE)))	\
+++    builtin_define ("_SOFT_DOUBLE");		\
+++  /* Used by lwarx/stwcx. errata work-around.  */	\
+++  if (rs6000_cpu == PROCESSOR_PPC405)		\
+++    builtin_define ("__PPC405__");		\
+++  /* Used by libstdc++.  */			\
+++  if (TARGET_NO_LWSYNC)				\
+++    builtin_define ("__NO_LWSYNC__");		\
+++						\
+++  /* May be overridden by target configuration.  */	\
+++  RS6000_CPU_CPP_ENDIAN_BUILTINS();		\
+++						\
+++  if (TARGET_LONG_DOUBLE_128)			\
+++    {						\
+++      builtin_define ("__LONG_DOUBLE_128__");	\
+++      builtin_define ("__LONGDOUBLE128");	\
+++    }						\
+++						\
+++  switch (rs6000_current_abi)			\
+++    {						\
+++    case ABI_V4:				\
+++      builtin_define ("_CALL_SYSV");		\
+++      break;					\
+++    case ABI_AIX:				\
+++      builtin_define ("_CALL_AIXDESC");		\
+++      builtin_define ("_CALL_AIX");		\
+++      break;					\
+++    case ABI_DARWIN:				\
+++      builtin_define ("_CALL_DARWIN");		\
+++      break;					\
+++    default:					\
+++      break;					\
+++    }						\
+++						\
+++  /* Let the compiled code know if 'f' class registers will not be available.  */	\
+++  if (TARGET_SOFT_FLOAT || !TARGET_FPRS)	\
+++    builtin_define ("__NO_FPRS__");		\
+++} while (0)
++ 
++ /* Target machine storage layout.  */
++ 
+diff -r 616079c615b1 d/patches/patch-toplev-4.1.x
+--- a/d/patches/patch-toplev-4.1.x	Mon Apr 05 19:53:16 2010 -0400
++++ b/d/patches/patch-toplev-4.1.x	Sat Apr 17 11:46:53 2010 +0100
+@@ -1,724 +1,595 @@
+-	diff -c gcc-4.1.1-orig/Makefile.def gcc-4.1.1/Makefile.def
+-*** gcc-4.1.1-orig/Makefile.def	Fri Nov 11 16:47:07 2005
+---- gcc-4.1.1/Makefile.def	Tue Jan 23 19:39:14 2007
+-***************
+-*** 136,141 ****
+---- 136,142 ----
+-  target_modules = { module= qthreads; };
+-  target_modules = { module= rda; };
+-  target_modules = { module= libada; };
+-+ target_modules = { module= libphobos; };
+-  
+-  // These are (some of) the make targets to be done in each subdirectory.
+-  // Not all; these are the ones which don't have special options.
+-diff -c gcc-4.1.1-orig/Makefile.in gcc-4.1.1/Makefile.in
+-*** gcc-4.1.1-orig/Makefile.in	Tue Apr  4 17:03:05 2006
+---- gcc-4.1.1/Makefile.in	Tue Jan 23 19:39:14 2007
+-***************
+-*** 626,632 ****
+-      maybe-configure-target-boehm-gc \
+-      maybe-configure-target-qthreads \
+-      maybe-configure-target-rda \
+-!     maybe-configure-target-libada
+-  
+-  # The target built for a native non-bootstrap build.
+-  .PHONY: all
+---- 626,633 ----
+-      maybe-configure-target-boehm-gc \
+-      maybe-configure-target-qthreads \
+-      maybe-configure-target-rda \
+-!     maybe-configure-target-libada \
+-!     maybe-configure-target-libphobos
+-  
+-  # The target built for a native non-bootstrap build.
+-  .PHONY: all
+-***************
+-*** 745,751 ****
+-      maybe-all-target-boehm-gc \
+-      maybe-all-target-qthreads \
+-      maybe-all-target-rda \
+-!     maybe-all-target-libada
+-  
+-  # Do a target for all the subdirectories.  A ``make do-X'' will do a
+-  # ``make X'' in all subdirectories (because, in general, there is a
+---- 746,753 ----
+-      maybe-all-target-boehm-gc \
+-      maybe-all-target-qthreads \
+-      maybe-all-target-rda \
+-!     maybe-all-target-libada \
+-!     maybe-all-target-libphobos
+-  
+-  # Do a target for all the subdirectories.  A ``make do-X'' will do a
+-  # ``make X'' in all subdirectories (because, in general, there is a
+-***************
+-*** 852,858 ****
+-      maybe-info-target-boehm-gc \
+-      maybe-info-target-qthreads \
+-      maybe-info-target-rda \
+-!     maybe-info-target-libada
+-  
+-  .PHONY: do-dvi
+-  do-dvi:
+---- 854,861 ----
+-      maybe-info-target-boehm-gc \
+-      maybe-info-target-qthreads \
+-      maybe-info-target-rda \
+-!     maybe-info-target-libada \
+-!     maybe-info-target-libphobos
+-  
+-  .PHONY: do-dvi
+-  do-dvi:
+-***************
+-*** 954,960 ****
+-      maybe-dvi-target-boehm-gc \
+-      maybe-dvi-target-qthreads \
+-      maybe-dvi-target-rda \
+-!     maybe-dvi-target-libada
+-  
+-  .PHONY: do-html
+-  do-html:
+---- 957,964 ----
+-      maybe-dvi-target-boehm-gc \
+-      maybe-dvi-target-qthreads \
+-      maybe-dvi-target-rda \
+-!     maybe-dvi-target-libada \
+-!     maybe-dvi-target-libphobos
+-  
+-  .PHONY: do-html
+-  do-html:
+-***************
+-*** 1056,1062 ****
+-      maybe-html-target-boehm-gc \
+-      maybe-html-target-qthreads \
+-      maybe-html-target-rda \
+-!     maybe-html-target-libada
+-  
+-  .PHONY: do-TAGS
+-  do-TAGS:
+---- 1060,1067 ----
+-      maybe-html-target-boehm-gc \
+-      maybe-html-target-qthreads \
+-      maybe-html-target-rda \
+-!     maybe-html-target-libada \
+-!     maybe-html-target-libphobos
+-  
+-  .PHONY: do-TAGS
+-  do-TAGS:
+-***************
+-*** 1158,1164 ****
+-      maybe-TAGS-target-boehm-gc \
+-      maybe-TAGS-target-qthreads \
+-      maybe-TAGS-target-rda \
+-!     maybe-TAGS-target-libada
+-  
+-  .PHONY: do-install-info
+-  do-install-info:
+---- 1163,1170 ----
+-      maybe-TAGS-target-boehm-gc \
+-      maybe-TAGS-target-qthreads \
+-      maybe-TAGS-target-rda \
+-!     maybe-TAGS-target-libada \
+-!     maybe-TAGS-target-libphobos
+-  
+-  .PHONY: do-install-info
+-  do-install-info:
+-***************
+-*** 1260,1266 ****
+-      maybe-install-info-target-boehm-gc \
+-      maybe-install-info-target-qthreads \
+-      maybe-install-info-target-rda \
+-!     maybe-install-info-target-libada
+-  
+-  .PHONY: do-installcheck
+-  do-installcheck:
+---- 1266,1273 ----
+-      maybe-install-info-target-boehm-gc \
+-      maybe-install-info-target-qthreads \
+-      maybe-install-info-target-rda \
+-!     maybe-install-info-target-libada \
+-!     maybe-install-info-target-libphobos
+-  
+-  .PHONY: do-installcheck
+-  do-installcheck:
+-***************
+-*** 1362,1368 ****
+-      maybe-installcheck-target-boehm-gc \
+-      maybe-installcheck-target-qthreads \
+-      maybe-installcheck-target-rda \
+-!     maybe-installcheck-target-libada
+-  
+-  .PHONY: do-mostlyclean
+-  do-mostlyclean:
+---- 1369,1376 ----
+-      maybe-installcheck-target-boehm-gc \
+-      maybe-installcheck-target-qthreads \
+-      maybe-installcheck-target-rda \
+-!     maybe-installcheck-target-libada \
+-!     maybe-installcheck-target-libphobos
+-  
+-  .PHONY: do-mostlyclean
+-  do-mostlyclean:
+-***************
+-*** 1464,1470 ****
+-      maybe-mostlyclean-target-boehm-gc \
+-      maybe-mostlyclean-target-qthreads \
+-      maybe-mostlyclean-target-rda \
+-!     maybe-mostlyclean-target-libada
+-  
+-  .PHONY: do-clean
+-  do-clean:
+---- 1472,1479 ----
+-      maybe-mostlyclean-target-boehm-gc \
+-      maybe-mostlyclean-target-qthreads \
+-      maybe-mostlyclean-target-rda \
+-!     maybe-mostlyclean-target-libada \
+-!     maybe-mostlyclean-target-libphobos
+-  
+-  .PHONY: do-clean
+-  do-clean:
+-***************
+-*** 1566,1572 ****
+-      maybe-clean-target-boehm-gc \
+-      maybe-clean-target-qthreads \
+-      maybe-clean-target-rda \
+-!     maybe-clean-target-libada
+-  
+-  .PHONY: do-distclean
+-  do-distclean:
+---- 1575,1582 ----
+-      maybe-clean-target-boehm-gc \
+-      maybe-clean-target-qthreads \
+-      maybe-clean-target-rda \
+-!     maybe-clean-target-libada \
+-!     maybe-clean-target-libphobos
+-  
+-  .PHONY: do-distclean
+-  do-distclean:
+-***************
+-*** 1668,1674 ****
+-      maybe-distclean-target-boehm-gc \
+-      maybe-distclean-target-qthreads \
+-      maybe-distclean-target-rda \
+-!     maybe-distclean-target-libada
+-  
+-  .PHONY: do-maintainer-clean
+-  do-maintainer-clean:
+---- 1678,1685 ----
+-      maybe-distclean-target-boehm-gc \
+-      maybe-distclean-target-qthreads \
+-      maybe-distclean-target-rda \
+-!     maybe-distclean-target-libada \
+-!     maybe-distclean-target-libphobos
+-  
+-  .PHONY: do-maintainer-clean
+-  do-maintainer-clean:
+-***************
+-*** 1770,1776 ****
+-      maybe-maintainer-clean-target-boehm-gc \
+-      maybe-maintainer-clean-target-qthreads \
+-      maybe-maintainer-clean-target-rda \
+-!     maybe-maintainer-clean-target-libada
+-  
+-  
+-  # Here are the targets which correspond to the do-X targets.
+---- 1781,1788 ----
+-      maybe-maintainer-clean-target-boehm-gc \
+-      maybe-maintainer-clean-target-qthreads \
+-      maybe-maintainer-clean-target-rda \
+-!     maybe-maintainer-clean-target-libada \
+-!     maybe-maintainer-clean-target-libphobos
+-  
+-  
+-  # Here are the targets which correspond to the do-X targets.
+-***************
+-*** 1928,1934 ****
+-      maybe-check-target-boehm-gc \
+-      maybe-check-target-qthreads \
+-      maybe-check-target-rda \
+-!     maybe-check-target-libada
+-  
+-  do-check:
+-  	@: $(MAKE); $(unstage)
+---- 1940,1947 ----
+-      maybe-check-target-boehm-gc \
+-      maybe-check-target-qthreads \
+-      maybe-check-target-rda \
+-!     maybe-check-target-libada \
+-!     maybe-check-target-libphobos
+-  
+-  do-check:
+-  	@: $(MAKE); $(unstage)
+-***************
+-*** 2127,2133 ****
+-      maybe-install-target-boehm-gc \
+-      maybe-install-target-qthreads \
+-      maybe-install-target-rda \
+-!     maybe-install-target-libada
+-  
+-  uninstall:
+-  	@echo "the uninstall target is not supported in this tree"
+---- 2140,2147 ----
+-      maybe-install-target-boehm-gc \
+-      maybe-install-target-qthreads \
+-      maybe-install-target-rda \
+-!     maybe-install-target-libada \
+-!     maybe-install-target-libphobos
+-  
+-  uninstall:
+-  	@echo "the uninstall target is not supported in this tree"
+-***************
+-*** 34743,34748 ****
+---- 34757,35111 ----
+-  
+-  
+-  
+-+ # There's only one multilib.out.  Cleverer subdirs shouldn't need it copied.
+-+ @if target-libphobos
+-+ $(TARGET_SUBDIR)/libphobos/multilib.out: multilib.out
+-+ 	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libphobos ; \
+-+ 	rm -f $(TARGET_SUBDIR)/libphobos/Makefile || : ; \
+-+ 	cp multilib.out $(TARGET_SUBDIR)/libphobos/multilib.out
+-+ @endif target-libphobos
+-+ 
+-+ 
+-+ 
+-+ .PHONY: configure-target-libphobos maybe-configure-target-libphobos
+-+ maybe-configure-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-configure-target-libphobos: configure-target-libphobos
+-+ configure-target-libphobos: $(TARGET_SUBDIR)/libphobos/multilib.out
+-+ 	@$(unstage)
+-+ 	@test ! -f $(TARGET_SUBDIR)/libphobos/Makefile || exit 0; \
+-+ 	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libphobos ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo Configuring in $(TARGET_SUBDIR)/libphobos; \
+-+ 	cd "$(TARGET_SUBDIR)/libphobos" || exit 1; \
+-+ 	case $(srcdir) in \
+-+ 	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+-+ 	  *) topdir=`echo $(TARGET_SUBDIR)/libphobos/ | \
+-+ 		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+-+ 	esac; \
+-+ 	srcdiroption="--srcdir=$${topdir}/libphobos"; \
+-+ 	libsrcdir="$$s/libphobos"; \
+-+ 	rm -f no-such-file || : ; \
+-+ 	CONFIG_SITE=no-such-file $(SHELL) $${libsrcdir}/configure \
+-+ 	  $(TARGET_CONFIGARGS) $${srcdiroption}  \
+-+ 	  || exit 1
+-+ @endif target-libphobos
+-+ 
+-+ 
+-+ 
+-+ 
+-+ 
+-+ .PHONY: all-target-libphobos maybe-all-target-libphobos
+-+ maybe-all-target-libphobos:
+-+ @if target-libphobos
+-+ TARGET-target-libphobos=all
+-+ maybe-all-target-libphobos: all-target-libphobos
+-+ all-target-libphobos: configure-target-libphobos
+-+ 	@$(unstage)
+-+ 	@r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  $(TARGET-target-libphobos))
+-+ @endif target-libphobos
+-+ 
+-+ 
+-+ 
+-+ 
+-+ 
+-+ .PHONY: check-target-libphobos maybe-check-target-libphobos
+-+ maybe-check-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-check-target-libphobos: check-target-libphobos
+-+ 
+-+ check-target-libphobos:
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(TARGET_FLAGS_TO_PASS)   check)
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: install-target-libphobos maybe-install-target-libphobos
+-+ maybe-install-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-install-target-libphobos: install-target-libphobos
+-+ 
+-+ install-target-libphobos: installdirs
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  install)
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ # Other targets (info, dvi, etc.)
+-+ 
+-+ .PHONY: maybe-info-target-libphobos info-target-libphobos
+-+ maybe-info-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-info-target-libphobos: info-target-libphobos
+-+ 
+-+ info-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing info in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           info) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-dvi-target-libphobos dvi-target-libphobos
+-+ maybe-dvi-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-dvi-target-libphobos: dvi-target-libphobos
+-+ 
+-+ dvi-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing dvi in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           dvi) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-html-target-libphobos html-target-libphobos
+-+ maybe-html-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-html-target-libphobos: html-target-libphobos
+-+ 
+-+ html-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing html in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           html) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-TAGS-target-libphobos TAGS-target-libphobos
+-+ maybe-TAGS-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-TAGS-target-libphobos: TAGS-target-libphobos
+-+ 
+-+ TAGS-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing TAGS in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           TAGS) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-install-info-target-libphobos install-info-target-libphobos
+-+ maybe-install-info-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-install-info-target-libphobos: install-info-target-libphobos
+-+ 
+-+ install-info-target-libphobos: \
+-+     configure-target-libphobos \
+-+     info-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing install-info in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           install-info) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-installcheck-target-libphobos installcheck-target-libphobos
+-+ maybe-installcheck-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-installcheck-target-libphobos: installcheck-target-libphobos
+-+ 
+-+ installcheck-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing installcheck in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           installcheck) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-mostlyclean-target-libphobos mostlyclean-target-libphobos
+-+ maybe-mostlyclean-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-mostlyclean-target-libphobos: mostlyclean-target-libphobos
+-+ 
+-+ mostlyclean-target-libphobos: 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing mostlyclean in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           mostlyclean) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-clean-target-libphobos clean-target-libphobos
+-+ maybe-clean-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-clean-target-libphobos: clean-target-libphobos
+-+ 
+-+ clean-target-libphobos: 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing clean in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           clean) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-distclean-target-libphobos distclean-target-libphobos
+-+ maybe-distclean-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-distclean-target-libphobos: distclean-target-libphobos
+-+ 
+-+ distclean-target-libphobos: 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing distclean in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           distclean) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-maintainer-clean-target-libphobos maintainer-clean-target-libphobos
+-+ maybe-maintainer-clean-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-maintainer-clean-target-libphobos: maintainer-clean-target-libphobos
+-+ 
+-+ maintainer-clean-target-libphobos: 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing maintainer-clean in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+-+ 	           maintainer-clean) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ 
+-+ 
+-  # ----------
+-  # GCC module
+-  # ----------
+-***************
+-*** 36182,36187 ****
+---- 36545,36552 ----
+-  
+-  configure-target-libada: maybe-all-gcc
+-  
+-+ configure-target-libphobos: maybe-all-gcc
+-+ 
+-  
+-  
+-  configure-target-boehm-gc: maybe-all-target-newlib maybe-all-target-libgloss
+-Common subdirectories: gcc-4.1.1-orig/config and gcc-4.1.1/config
+-diff -c gcc-4.1.1-orig/configure gcc-4.1.1/configure
+-*** gcc-4.1.1-orig/configure	Fri Dec 16 07:57:40 2005
+---- gcc-4.1.1/configure	Tue Jan 23 19:39:14 2007
+-***************
+-*** 909,914 ****
+---- 909,915 ----
+-  		target-libgfortran \
+-  		${libgcj} \
+-  		target-libobjc \
+-+   		target-libphobos \
+-  		target-libada"
+-  
+-  # these tools are built using the target libraries, and are intended to
+-***************
+-*** 1802,1807 ****
+---- 1803,1809 ----
+-    CXX=${CXX-${host_alias}-c++}
+-    CXXFLAGS=${CXXFLAGS-"-g -O2"}
+-    CC_FOR_BUILD=${CC_FOR_BUILD-gcc}
+-+   CXX_FOR_BUILD=${CXX_FOR_BUILD-c++}
+-    BUILD_PREFIX=${build_alias}-
+-    BUILD_PREFIX_1=${build_alias}-
+-  
+-***************
+-*** 1815,1820 ****
+---- 1817,1823 ----
+-    # This is all going to change when we autoconfiscate...
+-  
+-    CC_FOR_BUILD="\$(CC)"
+-+   CXX_FOR_BUILD="\$(CXX)"
+-    BUILD_PREFIX=
+-    BUILD_PREFIX_1=loser-
+-  
+-***************
+-*** 6311,6316 ****
+---- 6314,6320 ----
+-  s%@target_configargs@%$target_configargs%g
+-  s%@target_configdirs@%$target_configdirs%g
+-  s%@CC_FOR_BUILD@%$CC_FOR_BUILD%g
+-+ s%@CXX_FOR_BUILD@%$CXX_FOR_BUILD%g
+-  s%@config_shell@%$config_shell%g
+-  s%@YACC@%$YACC%g
+-  s%@BISON@%$BISON%g
+-diff -c gcc-4.1.1-orig/configure.in gcc-4.1.1/configure.in
+-*** gcc-4.1.1-orig/configure.in	Fri Dec 16 07:57:40 2005
+---- gcc-4.1.1/configure.in	Tue Jan 23 19:39:14 2007
+-***************
+-*** 151,156 ****
+---- 151,157 ----
+-  		target-libgfortran \
+-  		${libgcj} \
+-  		target-libobjc \
+-+   		target-libphobos \
+-  		target-libada"
+-  
+-  # these tools are built using the target libraries, and are intended to
+-***************
+-*** 1010,1015 ****
+---- 1011,1017 ----
+-    CXX=${CXX-${host_alias}-c++}
+-    CXXFLAGS=${CXXFLAGS-"-g -O2"}
+-    CC_FOR_BUILD=${CC_FOR_BUILD-gcc}
+-+   CXX_FOR_BUILD=${CXX_FOR_BUILD-c++}
+-    BUILD_PREFIX=${build_alias}-
+-    BUILD_PREFIX_1=${build_alias}-
+-  
+-***************
+-*** 1023,1028 ****
+---- 1025,1031 ----
+-    # This is all going to change when we autoconfiscate...
+-  
+-    CC_FOR_BUILD="\$(CC)"
+-+   CXX_FOR_BUILD="\$(CXX)"
+-    BUILD_PREFIX=
+-    BUILD_PREFIX_1=loser-
+-  
+-***************
+-*** 2086,2091 ****
+---- 2089,2095 ----
+-  
+-  # Build tools.
+-  AC_SUBST(CC_FOR_BUILD)
+-+ AC_SUBST(CXX_FOR_BUILD)
+-  AC_SUBST(config_shell)
+-  
+-  # Generate default definitions for YACC, M4, LEX and other programs that run
++Index: gcc-4.1/configure
++===================================================================
++--- gcc-4.1/configure	(revision 158462)
+++++ gcc-4.1/configure	(working copy)
++@@ -909,6 +909,7 @@
++ 		target-libgfortran \
++ 		${libgcj} \
++ 		target-libobjc \
+++  		target-libphobos \
++ 		target-libada"
++ 
++ # these tools are built using the target libraries, and are intended to
++@@ -1802,6 +1803,7 @@
++   CXX=${CXX-${host_alias}-c++}
++   CXXFLAGS=${CXXFLAGS-"-g -O2"}
++   CC_FOR_BUILD=${CC_FOR_BUILD-gcc}
+++  CXX_FOR_BUILD=${CXX_FOR_BUILD-c++}
++   BUILD_PREFIX=${build_alias}-
++   BUILD_PREFIX_1=${build_alias}-
++ 
++@@ -1815,6 +1817,7 @@
++   # This is all going to change when we autoconfiscate...
++ 
++   CC_FOR_BUILD="\$(CC)"
+++  CXX_FOR_BUILD="\$(CXX)"
++   BUILD_PREFIX=
++   BUILD_PREFIX_1=loser-
++ 
++@@ -6317,6 +6320,7 @@
++ s%@target_configargs@%$target_configargs%g
++ s%@target_configdirs@%$target_configdirs%g
++ s%@CC_FOR_BUILD@%$CC_FOR_BUILD%g
+++s%@CXX_FOR_BUILD@%$CXX_FOR_BUILD%g
++ s%@config_shell@%$config_shell%g
++ s%@YACC@%$YACC%g
++ s%@BISON@%$BISON%g
++Index: gcc-4.1/Makefile.in
++===================================================================
++--- gcc-4.1/Makefile.in	(revision 158462)
+++++ gcc-4.1/Makefile.in	(working copy)
++@@ -626,7 +626,8 @@
++     maybe-configure-target-boehm-gc \
++     maybe-configure-target-qthreads \
++     maybe-configure-target-rda \
++-    maybe-configure-target-libada
+++    maybe-configure-target-libada \
+++    maybe-configure-target-libphobos
++ 
++ # The target built for a native non-bootstrap build.
++ .PHONY: all
++@@ -745,7 +746,8 @@
++     maybe-all-target-boehm-gc \
++     maybe-all-target-qthreads \
++     maybe-all-target-rda \
++-    maybe-all-target-libada
+++    maybe-all-target-libada \
+++    maybe-all-target-libphobos
++ 
++ # Do a target for all the subdirectories.  A ``make do-X'' will do a
++ # ``make X'' in all subdirectories (because, in general, there is a
++@@ -852,7 +854,8 @@
++     maybe-info-target-boehm-gc \
++     maybe-info-target-qthreads \
++     maybe-info-target-rda \
++-    maybe-info-target-libada
+++    maybe-info-target-libada \
+++    maybe-info-target-libphobos
++ 
++ .PHONY: do-dvi
++ do-dvi:
++@@ -954,7 +957,8 @@
++     maybe-dvi-target-boehm-gc \
++     maybe-dvi-target-qthreads \
++     maybe-dvi-target-rda \
++-    maybe-dvi-target-libada
+++    maybe-dvi-target-libada \
+++    maybe-dvi-target-libphobos
++ 
++ .PHONY: do-html
++ do-html:
++@@ -1056,7 +1060,8 @@
++     maybe-html-target-boehm-gc \
++     maybe-html-target-qthreads \
++     maybe-html-target-rda \
++-    maybe-html-target-libada
+++    maybe-html-target-libada \
+++    maybe-html-target-libphobos
++ 
++ .PHONY: do-TAGS
++ do-TAGS:
++@@ -1158,7 +1163,8 @@
++     maybe-TAGS-target-boehm-gc \
++     maybe-TAGS-target-qthreads \
++     maybe-TAGS-target-rda \
++-    maybe-TAGS-target-libada
+++    maybe-TAGS-target-libada \
+++    maybe-TAGS-target-libphobos
++ 
++ .PHONY: do-install-info
++ do-install-info:
++@@ -1260,7 +1266,8 @@
++     maybe-install-info-target-boehm-gc \
++     maybe-install-info-target-qthreads \
++     maybe-install-info-target-rda \
++-    maybe-install-info-target-libada
+++    maybe-install-info-target-libada \
+++    maybe-install-info-target-libphobos
++ 
++ .PHONY: do-installcheck
++ do-installcheck:
++@@ -1362,7 +1369,8 @@
++     maybe-installcheck-target-boehm-gc \
++     maybe-installcheck-target-qthreads \
++     maybe-installcheck-target-rda \
++-    maybe-installcheck-target-libada
+++    maybe-installcheck-target-libada \
+++    maybe-installcheck-target-libphobos
++ 
++ .PHONY: do-mostlyclean
++ do-mostlyclean:
++@@ -1464,7 +1472,8 @@
++     maybe-mostlyclean-target-boehm-gc \
++     maybe-mostlyclean-target-qthreads \
++     maybe-mostlyclean-target-rda \
++-    maybe-mostlyclean-target-libada
+++    maybe-mostlyclean-target-libada \
+++    maybe-mostlyclean-target-libphobos
++ 
++ .PHONY: do-clean
++ do-clean:
++@@ -1566,7 +1575,8 @@
++     maybe-clean-target-boehm-gc \
++     maybe-clean-target-qthreads \
++     maybe-clean-target-rda \
++-    maybe-clean-target-libada
+++    maybe-clean-target-libada \
+++    maybe-clean-target-libphobos
++ 
++ .PHONY: do-distclean
++ do-distclean:
++@@ -1668,7 +1678,8 @@
++     maybe-distclean-target-boehm-gc \
++     maybe-distclean-target-qthreads \
++     maybe-distclean-target-rda \
++-    maybe-distclean-target-libada
+++    maybe-distclean-target-libada \
+++    maybe-distclean-target-libphobos
++ 
++ .PHONY: do-maintainer-clean
++ do-maintainer-clean:
++@@ -1770,7 +1781,8 @@
++     maybe-maintainer-clean-target-boehm-gc \
++     maybe-maintainer-clean-target-qthreads \
++     maybe-maintainer-clean-target-rda \
++-    maybe-maintainer-clean-target-libada
+++    maybe-maintainer-clean-target-libada \
+++    maybe-maintainer-clean-target-libphobos
++ 
++ 
++ # Here are the targets which correspond to the do-X targets.
++@@ -1928,7 +1940,8 @@
++     maybe-check-target-boehm-gc \
++     maybe-check-target-qthreads \
++     maybe-check-target-rda \
++-    maybe-check-target-libada
+++    maybe-check-target-libada \
+++    maybe-check-target-libphobos
++ 
++ do-check:
++ 	@: $(MAKE); $(unstage)
++@@ -2127,7 +2140,8 @@
++     maybe-install-target-boehm-gc \
++     maybe-install-target-qthreads \
++     maybe-install-target-rda \
++-    maybe-install-target-libada
+++    maybe-install-target-libada \
+++    maybe-install-target-libphobos
++ 
++ uninstall:
++ 	@echo "the uninstall target is not supported in this tree"
++@@ -34743,6 +34757,355 @@
++ 
++ 
++ 
+++# There's only one multilib.out.  Cleverer subdirs shouldn't need it copied.
+++@if target-libphobos
+++$(TARGET_SUBDIR)/libphobos/multilib.out: multilib.out
+++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libphobos ; \
+++	rm -f $(TARGET_SUBDIR)/libphobos/Makefile || : ; \
+++	cp multilib.out $(TARGET_SUBDIR)/libphobos/multilib.out
+++@endif target-libphobos
+++
+++
+++
+++.PHONY: configure-target-libphobos maybe-configure-target-libphobos
+++maybe-configure-target-libphobos:
+++@if target-libphobos
+++maybe-configure-target-libphobos: configure-target-libphobos
+++configure-target-libphobos: $(TARGET_SUBDIR)/libphobos/multilib.out
+++	@$(unstage)
+++	@test ! -f $(TARGET_SUBDIR)/libphobos/Makefile || exit 0; \
+++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libphobos ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo Configuring in $(TARGET_SUBDIR)/libphobos; \
+++	cd "$(TARGET_SUBDIR)/libphobos" || exit 1; \
+++	case $(srcdir) in \
+++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+++	  *) topdir=`echo $(TARGET_SUBDIR)/libphobos/ | \
+++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+++	esac; \
+++	srcdiroption="--srcdir=$${topdir}/libphobos"; \
+++	libsrcdir="$$s/libphobos"; \
+++	rm -f no-such-file || : ; \
+++	CONFIG_SITE=no-such-file $(SHELL) $${libsrcdir}/configure \
+++	  $(TARGET_CONFIGARGS) $${srcdiroption}  \
+++	  || exit 1
+++@endif target-libphobos
+++
+++
+++
+++
+++
+++.PHONY: all-target-libphobos maybe-all-target-libphobos
+++maybe-all-target-libphobos:
+++@if target-libphobos
+++TARGET-target-libphobos=all
+++maybe-all-target-libphobos: all-target-libphobos
+++all-target-libphobos: configure-target-libphobos
+++	@$(unstage)
+++	@r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  $(TARGET-target-libphobos))
+++@endif target-libphobos
+++
+++
+++
+++
+++
+++.PHONY: check-target-libphobos maybe-check-target-libphobos
+++maybe-check-target-libphobos:
+++@if target-libphobos
+++maybe-check-target-libphobos: check-target-libphobos
+++
+++check-target-libphobos:
+++	@: $(MAKE); $(unstage)
+++	@r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(TARGET_FLAGS_TO_PASS)   check)
+++
+++@endif target-libphobos
+++
+++.PHONY: install-target-libphobos maybe-install-target-libphobos
+++maybe-install-target-libphobos:
+++@if target-libphobos
+++maybe-install-target-libphobos: install-target-libphobos
+++
+++install-target-libphobos: installdirs
+++	@: $(MAKE); $(unstage)
+++	@r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  install)
+++
+++@endif target-libphobos
+++
+++# Other targets (info, dvi, etc.)
+++
+++.PHONY: maybe-info-target-libphobos info-target-libphobos
+++maybe-info-target-libphobos:
+++@if target-libphobos
+++maybe-info-target-libphobos: info-target-libphobos
+++
+++info-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing info in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           info) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-dvi-target-libphobos dvi-target-libphobos
+++maybe-dvi-target-libphobos:
+++@if target-libphobos
+++maybe-dvi-target-libphobos: dvi-target-libphobos
+++
+++dvi-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing dvi in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           dvi) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-html-target-libphobos html-target-libphobos
+++maybe-html-target-libphobos:
+++@if target-libphobos
+++maybe-html-target-libphobos: html-target-libphobos
+++
+++html-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing html in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           html) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-TAGS-target-libphobos TAGS-target-libphobos
+++maybe-TAGS-target-libphobos:
+++@if target-libphobos
+++maybe-TAGS-target-libphobos: TAGS-target-libphobos
+++
+++TAGS-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing TAGS in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           TAGS) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-install-info-target-libphobos install-info-target-libphobos
+++maybe-install-info-target-libphobos:
+++@if target-libphobos
+++maybe-install-info-target-libphobos: install-info-target-libphobos
+++
+++install-info-target-libphobos: \
+++    configure-target-libphobos \
+++    info-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing install-info in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           install-info) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-installcheck-target-libphobos installcheck-target-libphobos
+++maybe-installcheck-target-libphobos:
+++@if target-libphobos
+++maybe-installcheck-target-libphobos: installcheck-target-libphobos
+++
+++installcheck-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing installcheck in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           installcheck) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-mostlyclean-target-libphobos mostlyclean-target-libphobos
+++maybe-mostlyclean-target-libphobos:
+++@if target-libphobos
+++maybe-mostlyclean-target-libphobos: mostlyclean-target-libphobos
+++
+++mostlyclean-target-libphobos: 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing mostlyclean in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           mostlyclean) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-clean-target-libphobos clean-target-libphobos
+++maybe-clean-target-libphobos:
+++@if target-libphobos
+++maybe-clean-target-libphobos: clean-target-libphobos
+++
+++clean-target-libphobos: 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing clean in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           clean) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-distclean-target-libphobos distclean-target-libphobos
+++maybe-distclean-target-libphobos:
+++@if target-libphobos
+++maybe-distclean-target-libphobos: distclean-target-libphobos
+++
+++distclean-target-libphobos: 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing distclean in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           distclean) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-maintainer-clean-target-libphobos maintainer-clean-target-libphobos
+++maybe-maintainer-clean-target-libphobos:
+++@if target-libphobos
+++maybe-maintainer-clean-target-libphobos: maintainer-clean-target-libphobos
+++
+++maintainer-clean-target-libphobos: 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing maintainer-clean in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" \
+++	           maintainer-clean) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++
+++
++ # ----------
++ # GCC module
++ # ----------
++@@ -36182,8 +36545,10 @@
++ 
++ configure-target-libada: maybe-all-gcc
++ 
+++configure-target-libphobos: maybe-all-gcc
++ 
++ 
+++
++ configure-target-boehm-gc: maybe-all-target-newlib maybe-all-target-libgloss
++ 
++ configure-target-gperf: maybe-all-target-newlib maybe-all-target-libgloss
++Index: gcc-4.1/Makefile.def
++===================================================================
++--- gcc-4.1/Makefile.def	(revision 158462)
+++++ gcc-4.1/Makefile.def	(working copy)
++@@ -136,6 +136,7 @@
++ target_modules = { module= qthreads; };
++ target_modules = { module= rda; };
++ target_modules = { module= libada; };
+++target_modules = { module= libphobos; };
++ 
++ // These are (some of) the make targets to be done in each subdirectory.
++ // Not all; these are the ones which don't have special options.
++Index: gcc-4.1/configure.in
++===================================================================
++--- gcc-4.1/configure.in	(revision 158462)
+++++ gcc-4.1/configure.in	(working copy)
++@@ -151,6 +151,7 @@
++ 		target-libgfortran \
++ 		${libgcj} \
++ 		target-libobjc \
+++  		target-libphobos \
++ 		target-libada"
++ 
++ # these tools are built using the target libraries, and are intended to
++@@ -1010,6 +1011,7 @@
++   CXX=${CXX-${host_alias}-c++}
++   CXXFLAGS=${CXXFLAGS-"-g -O2"}
++   CC_FOR_BUILD=${CC_FOR_BUILD-gcc}
+++  CXX_FOR_BUILD=${CXX_FOR_BUILD-c++}
++   BUILD_PREFIX=${build_alias}-
++   BUILD_PREFIX_1=${build_alias}-
++ 
++@@ -1023,6 +1025,7 @@
++   # This is all going to change when we autoconfiscate...
++ 
++   CC_FOR_BUILD="\$(CC)"
+++  CXX_FOR_BUILD="\$(CXX)"
++   BUILD_PREFIX=
++   BUILD_PREFIX_1=loser-
++ 
++@@ -2092,6 +2095,7 @@
++ 
++ # Build tools.
++ AC_SUBST(CC_FOR_BUILD)
+++AC_SUBST(CXX_FOR_BUILD)
++ AC_SUBST(config_shell)
++ 
++ # Generate default definitions for YACC, M4, LEX and other programs that run
+diff -r 616079c615b1 d/patches/patch-toplev-4.3.x
+--- a/d/patches/patch-toplev-4.3.x	Mon Apr 05 19:53:16 2010 -0400
++++ b/d/patches/patch-toplev-4.3.x	Sat Apr 17 11:46:53 2010 +0100
+@@ -1,727 +1,664 @@
+-diff -c gcc-4.3.1-orig/Makefile.def gcc-4.3.1/Makefile.def
+-*** gcc-4.3.1-orig/Makefile.def	2007-10-23 11:53:18.000000000 -0400
+---- gcc-4.3.1/Makefile.def	2008-07-24 09:25:58.000000000 -0400
+-***************
+-*** 143,148 ****
+---- 143,149 ----
+-  target_modules = { module= rda; };
+-  target_modules = { module= libada; };
+-  target_modules = { module= libgomp; lib_path=.libs; };
+-+ target_modules = { module= libphobos; };
+-  
+-  // These are (some of) the make targets to be done in each subdirectory.
+-  // Not all; these are the ones which don't have special options.
+-diff -c gcc-4.3.1-orig/Makefile.in gcc-4.3.1/Makefile.in
+-*** gcc-4.3.1-orig/Makefile.in	2007-12-13 04:30:49.000000000 -0500
+---- gcc-4.3.1/Makefile.in	2008-07-24 10:10:34.000000000 -0400
+-***************
+-*** 722,728 ****
+-      maybe-configure-target-qthreads \
+-      maybe-configure-target-rda \
+-      maybe-configure-target-libada \
+-!     maybe-configure-target-libgomp
+-  
+-  # The target built for a native non-bootstrap build.
+-  .PHONY: all
+---- 722,729 ----
+-      maybe-configure-target-qthreads \
+-      maybe-configure-target-rda \
+-      maybe-configure-target-libada \
+-!     maybe-configure-target-libgomp \
+-!     maybe-configure-target-libphobos
+-  
+-  # The target built for a native non-bootstrap build.
+-  .PHONY: all
+-***************
+-*** 876,881 ****
+---- 877,883 ----
+-  all-target: maybe-all-target-rda
+-  all-target: maybe-all-target-libada
+-  all-target: maybe-all-target-libgomp
+-+ all-target: maybe-all-target-libphobos
+-  
+-  # Do a target for all the subdirectories.  A ``make do-X'' will do a
+-  # ``make X'' in all subdirectories (because, in general, there is a
+-***************
+-*** 987,992 ****
+---- 989,995 ----
+-  info-target: maybe-info-target-rda
+-  info-target: maybe-info-target-libada
+-  info-target: maybe-info-target-libgomp
+-+ info-target: maybe-info-target-libphobos
+-  
+-  .PHONY: do-dvi
+-  do-dvi:
+-***************
+-*** 1093,1098 ****
+---- 1096,1102 ----
+-  dvi-target: maybe-dvi-target-rda
+-  dvi-target: maybe-dvi-target-libada
+-  dvi-target: maybe-dvi-target-libgomp
+-+ dvi-target: maybe-dvi-target-libphobos
+-  
+-  .PHONY: do-pdf
+-  do-pdf:
+-***************
+-*** 1199,1204 ****
+---- 1203,1209 ----
+-  pdf-target: maybe-pdf-target-rda
+-  pdf-target: maybe-pdf-target-libada
+-  pdf-target: maybe-pdf-target-libgomp
+-+ pdf-target: maybe-pdf-target-libphobos
+-  
+-  .PHONY: do-html
+-  do-html:
+-***************
+-*** 1305,1310 ****
+---- 1310,1316 ----
+-  html-target: maybe-html-target-rda
+-  html-target: maybe-html-target-libada
+-  html-target: maybe-html-target-libgomp
+-+ html-target: maybe-html-target-libphobos
+-  
+-  .PHONY: do-TAGS
+-  do-TAGS:
+-***************
+-*** 1411,1416 ****
+---- 1417,1423 ----
+-  TAGS-target: maybe-TAGS-target-rda
+-  TAGS-target: maybe-TAGS-target-libada
+-  TAGS-target: maybe-TAGS-target-libgomp
+-+ TAGS-target: maybe-TAGS-target-libphobos
+-  
+-  .PHONY: do-install-info
+-  do-install-info:
+-***************
+-*** 1517,1522 ****
+---- 1524,1530 ----
+-  install-info-target: maybe-install-info-target-rda
+-  install-info-target: maybe-install-info-target-libada
+-  install-info-target: maybe-install-info-target-libgomp
+-+ install-info-target: maybe-install-info-target-libphobos
+-  
+-  .PHONY: do-install-pdf
+-  do-install-pdf:
+-***************
+-*** 1623,1628 ****
+---- 1631,1637 ----
+-  install-pdf-target: maybe-install-pdf-target-rda
+-  install-pdf-target: maybe-install-pdf-target-libada
+-  install-pdf-target: maybe-install-pdf-target-libgomp
+-+ install-pdf-target: maybe-install-pdf-target-libphobos
+-  
+-  .PHONY: do-install-html
+-  do-install-html:
+-***************
+-*** 1729,1734 ****
+---- 1738,1744 ----
+-  install-html-target: maybe-install-html-target-rda
+-  install-html-target: maybe-install-html-target-libada
+-  install-html-target: maybe-install-html-target-libgomp
+-+ install-html-target: maybe-install-html-target-libphobos
+-  
+-  .PHONY: do-installcheck
+-  do-installcheck:
+-***************
+-*** 1835,1840 ****
+---- 1845,1851 ----
+-  installcheck-target: maybe-installcheck-target-rda
+-  installcheck-target: maybe-installcheck-target-libada
+-  installcheck-target: maybe-installcheck-target-libgomp
+-+ installcheck-target: maybe-installcheck-target-libphobos
+-  
+-  .PHONY: do-mostlyclean
+-  do-mostlyclean:
+-***************
+-*** 1941,1946 ****
+---- 1952,1958 ----
+-  mostlyclean-target: maybe-mostlyclean-target-rda
+-  mostlyclean-target: maybe-mostlyclean-target-libada
+-  mostlyclean-target: maybe-mostlyclean-target-libgomp
+-+ mostlyclean-target: maybe-mostlyclean-target-libphobos
+-  
+-  .PHONY: do-clean
+-  do-clean:
+-***************
+-*** 2047,2052 ****
+---- 2059,2065 ----
+-  clean-target: maybe-clean-target-rda
+-  clean-target: maybe-clean-target-libada
+-  clean-target: maybe-clean-target-libgomp
+-+ clean-target: maybe-clean-target-libphobos
+-  
+-  .PHONY: do-distclean
+-  do-distclean:
+-***************
+-*** 2153,2158 ****
+---- 2166,2172 ----
+-  distclean-target: maybe-distclean-target-rda
+-  distclean-target: maybe-distclean-target-libada
+-  distclean-target: maybe-distclean-target-libgomp
+-+ distclean-target: maybe-distclean-target-libphobos
+-  
+-  .PHONY: do-maintainer-clean
+-  do-maintainer-clean:
+-***************
+-*** 2259,2264 ****
+---- 2273,2279 ----
+-  maintainer-clean-target: maybe-maintainer-clean-target-rda
+-  maintainer-clean-target: maybe-maintainer-clean-target-libada
+-  maintainer-clean-target: maybe-maintainer-clean-target-libgomp
+-+ maintainer-clean-target: maybe-maintainer-clean-target-libphobos
+-  
+-  
+-  # Here are the targets which correspond to the do-X targets.
+-***************
+-*** 2418,2424 ****
+-      maybe-check-target-qthreads \
+-      maybe-check-target-rda \
+-      maybe-check-target-libada \
+-!     maybe-check-target-libgomp
+-  
+-  do-check:
+-  	@: $(MAKE); $(unstage)
+---- 2433,2440 ----
+-      maybe-check-target-qthreads \
+-      maybe-check-target-rda \
+-      maybe-check-target-libada \
+-!     maybe-check-target-libgomp \
+-!     maybe-check-target-libphobos
+-  
+-  do-check:
+-  	@: $(MAKE); $(unstage)
+-***************
+-*** 2623,2629 ****
+-      maybe-install-target-qthreads \
+-      maybe-install-target-rda \
+-      maybe-install-target-libada \
+-!     maybe-install-target-libgomp
+-  
+-  uninstall:
+-  	@echo "the uninstall target is not supported in this tree"
+---- 2639,2646 ----
+-      maybe-install-target-qthreads \
+-      maybe-install-target-rda \
+-      maybe-install-target-libada \
+-!     maybe-install-target-libgomp \
+-!     maybe-install-target-libphobos
+-  
+-  uninstall:
+-  	@echo "the uninstall target is not supported in this tree"
+-***************
+-*** 49103,49108 ****
+---- 49120,49566 ----
+-  
+-  
+-  
+-+ 
+-+ 
+-+ .PHONY: configure-target-libphobos maybe-configure-target-libphobos
+-+ maybe-configure-target-libphobos:
+-+ @if gcc-bootstrap
+-+ configure-target-libphobos: stage_current
+-+ @endif gcc-bootstrap
+-+ @if target-libphobos
+-+ maybe-configure-target-libphobos: configure-target-libphobos
+-+ configure-target-libphobos: 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	echo "Checking multilib configuration for libphobos..."; \
+-+ 	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libphobos ; \
+-+ 	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libphobos/multilib.tmp 2> /dev/null ; \
+-+ 	if test -r $(TARGET_SUBDIR)/libphobos/multilib.out; then \
+-+ 	  if cmp -s $(TARGET_SUBDIR)/libphobos/multilib.tmp $(TARGET_SUBDIR)/libphobos/multilib.out; then \
+-+ 	    rm -f $(TARGET_SUBDIR)/libphobos/multilib.tmp; \
+-+ 	  else \
+-+ 	    rm -f $(TARGET_SUBDIR)/libphobos/Makefile; \
+-+ 	    mv $(TARGET_SUBDIR)/libphobos/multilib.tmp $(TARGET_SUBDIR)/libphobos/multilib.out; \
+-+ 	  fi; \
+-+ 	else \
+-+ 	  mv $(TARGET_SUBDIR)/libphobos/multilib.tmp $(TARGET_SUBDIR)/libphobos/multilib.out; \
+-+ 	fi; \
+-+ 	test ! -f $(TARGET_SUBDIR)/libphobos/Makefile || exit 0; \
+-+ 	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libphobos ; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo Configuring in $(TARGET_SUBDIR)/libphobos; \
+-+ 	cd "$(TARGET_SUBDIR)/libphobos" || exit 1; \
+-+ 	case $(srcdir) in \
+-+ 	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+-+ 	  *) topdir=`echo $(TARGET_SUBDIR)/libphobos/ | \
+-+ 		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+-+ 	esac; \
+-+ 	srcdiroption="--srcdir=$${topdir}/libphobos"; \
+-+ 	libsrcdir="$$s/libphobos"; \
+-+ 	rm -f no-such-file || : ; \
+-+ 	CONFIG_SITE=no-such-file $(SHELL) $${libsrcdir}/configure \
+-+ 	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
+-+ 	  --target=${target_alias} $${srcdiroption}  \
+-+ 	  || exit 1
+-+ @endif target-libphobos
+-+ 
+-+ 
+-+ 
+-+ 
+-+ 
+-+ .PHONY: all-target-libphobos maybe-all-target-libphobos
+-+ maybe-all-target-libphobos:
+-+ @if gcc-bootstrap
+-+ all-target-libphobos: stage_current
+-+ @endif gcc-bootstrap
+-+ @if target-libphobos
+-+ TARGET-target-libphobos=all
+-+ maybe-all-target-libphobos: all-target-libphobos
+-+ all-target-libphobos: configure-target-libphobos
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  $(TARGET-target-libphobos))
+-+ @endif target-libphobos
+-+ 
+-+ 
+-+ 
+-+ 
+-+ 
+-+ .PHONY: check-target-libphobos maybe-check-target-libphobos
+-+ maybe-check-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-check-target-libphobos: check-target-libphobos
+-+ 
+-+ check-target-libphobos:
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(TARGET_FLAGS_TO_PASS)   check)
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: install-target-libphobos maybe-install-target-libphobos
+-+ maybe-install-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-install-target-libphobos: install-target-libphobos
+-+ 
+-+ install-target-libphobos: installdirs
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  install)
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ # Other targets (info, dvi, pdf, etc.)
+-+ 
+-+ .PHONY: maybe-info-target-libphobos info-target-libphobos
+-+ maybe-info-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-info-target-libphobos: info-target-libphobos
+-+ 
+-+ info-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing info in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           info) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-dvi-target-libphobos dvi-target-libphobos
+-+ maybe-dvi-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-dvi-target-libphobos: dvi-target-libphobos
+-+ 
+-+ dvi-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing dvi in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           dvi) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-pdf-target-libphobos pdf-target-libphobos
+-+ maybe-pdf-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-pdf-target-libphobos: pdf-target-libphobos
+-+ 
+-+ pdf-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing pdf in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           pdf) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-html-target-libphobos html-target-libphobos
+-+ maybe-html-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-html-target-libphobos: html-target-libphobos
+-+ 
+-+ html-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing html in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           html) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-TAGS-target-libphobos TAGS-target-libphobos
+-+ maybe-TAGS-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-TAGS-target-libphobos: TAGS-target-libphobos
+-+ 
+-+ TAGS-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing TAGS in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           TAGS) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-install-info-target-libphobos install-info-target-libphobos
+-+ maybe-install-info-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-install-info-target-libphobos: install-info-target-libphobos
+-+ 
+-+ install-info-target-libphobos: \
+-+     configure-target-libphobos \
+-+     info-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing install-info in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           install-info) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-install-pdf-target-libphobos install-pdf-target-libphobos
+-+ maybe-install-pdf-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-install-pdf-target-libphobos: install-pdf-target-libphobos
+-+ 
+-+ install-pdf-target-libphobos: \
+-+     configure-target-libphobos \
+-+     pdf-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing install-pdf in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           install-pdf) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-install-html-target-libphobos install-html-target-libphobos
+-+ maybe-install-html-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-install-html-target-libphobos: install-html-target-libphobos
+-+ 
+-+ install-html-target-libphobos: \
+-+     configure-target-libphobos \
+-+     html-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing install-html in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           install-html) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-installcheck-target-libphobos installcheck-target-libphobos
+-+ maybe-installcheck-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-installcheck-target-libphobos: installcheck-target-libphobos
+-+ 
+-+ installcheck-target-libphobos: \
+-+     configure-target-libphobos 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing installcheck in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           installcheck) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-mostlyclean-target-libphobos mostlyclean-target-libphobos
+-+ maybe-mostlyclean-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-mostlyclean-target-libphobos: mostlyclean-target-libphobos
+-+ 
+-+ mostlyclean-target-libphobos: 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing mostlyclean in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           mostlyclean) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-clean-target-libphobos clean-target-libphobos
+-+ maybe-clean-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-clean-target-libphobos: clean-target-libphobos
+-+ 
+-+ clean-target-libphobos: 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing clean in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           clean) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-distclean-target-libphobos distclean-target-libphobos
+-+ maybe-distclean-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-distclean-target-libphobos: distclean-target-libphobos
+-+ 
+-+ distclean-target-libphobos: 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing distclean in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           distclean) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ .PHONY: maybe-maintainer-clean-target-libphobos maintainer-clean-target-libphobos
+-+ maybe-maintainer-clean-target-libphobos:
+-+ @if target-libphobos
+-+ maybe-maintainer-clean-target-libphobos: maintainer-clean-target-libphobos
+-+ 
+-+ maintainer-clean-target-libphobos: 
+-+ 	@: $(MAKE); $(unstage)
+-+ 	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+-+ 	r=`${PWD_COMMAND}`; export r; \
+-+ 	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+-+ 	$(NORMAL_TARGET_EXPORTS) \
+-+ 	echo "Doing maintainer-clean in $(TARGET_SUBDIR)/libphobos" ; \
+-+ 	for flag in $(EXTRA_TARGET_FLAGS); do \
+-+ 	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+-+ 	done; \
+-+ 	(cd $(TARGET_SUBDIR)/libphobos && \
+-+ 	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+-+ 	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+-+ 	          "RANLIB=$${RANLIB}" \
+-+ 	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+-+ 	           maintainer-clean) \
+-+ 	  || exit 1
+-+ 
+-+ @endif target-libphobos
+-+ 
+-+ 
+-+ 
+-  # ----------
+-  # GCC module
+-  # ----------
+-***************
+-*** 51214,51219 ****
+---- 51672,51678 ----
+-  configure-target-rda: stage_last
+-  configure-target-libada: stage_last
+-  configure-target-libgomp: stage_last
+-+ configure-target-libphobos: stage_last
+-  @endif gcc-bootstrap
+-  
+-  @if gcc-no-bootstrap
+-***************
+-*** 51238,51243 ****
+---- 51697,51703 ----
+-  configure-target-rda: maybe-all-gcc
+-  configure-target-libada: maybe-all-gcc
+-  configure-target-libgomp: maybe-all-gcc
+-+ configure-target-libphobos: maybe-all-gcc
+-  @endif gcc-no-bootstrap
+-  
+-  
+-***************
+-*** 51929,51934 ****
+---- 52389,52395 ----
+-  configure-target-rda: maybe-all-target-libgcc
+-  configure-target-libada: maybe-all-target-libgcc
+-  configure-target-libgomp: maybe-all-target-libgcc
+-+ configure-target-libphobos: maybe-all-target-libgcc
+-  @endif gcc-no-bootstrap
+-  
+-  
+-***************
+-*** 51972,51977 ****
+---- 52433,52440 ----
+-  
+-  configure-target-libgomp: maybe-all-target-newlib maybe-all-target-libgloss
+-  
+-+ configure-target-libphobos: maybe-all-target-newlib maybe-all-target-libgloss
+-+ 
+-  
+-  CONFIGURE_GDB_TK = @CONFIGURE_GDB_TK@
+-  GDB_TK = @GDB_TK@
+-diff -c gcc-4.3.1-orig/configure gcc-4.3.1/configure
+-*** gcc-4.3.1-orig/configure	2008-02-01 22:29:30.000000000 -0500
+---- gcc-4.3.1/configure	2008-07-24 09:35:48.000000000 -0400
+-***************
+-*** 1875,1880 ****
+---- 1875,1881 ----
+-  		target-boehm-gc \
+-  		${libgcj} \
+-  		target-libobjc \
+-+ 		target-libphobos \
+-  		target-libada"
+-  
+-  # these tools are built using the target libraries, and are intended to
+-diff -c gcc-4.3.1-orig/configure.ac gcc-4.3.1/configure.ac
+-*** gcc-4.3.1-orig/configure.ac	2008-02-01 22:29:30.000000000 -0500
+---- gcc-4.3.1/configure.ac	2008-07-24 09:35:44.000000000 -0400
+-***************
+-*** 185,190 ****
+---- 185,191 ----
+-  		target-boehm-gc \
+-  		${libgcj} \
+-  		target-libobjc \
+-+ 		target-libphobos \
+-  		target-libada"
+-  
+-  # these tools are built using the target libraries, and are intended to
++Index: gcc-4.3/configure
++===================================================================
++--- gcc-4.3/configure	(revision 158462)
+++++ gcc-4.3/configure	(working copy)
++@@ -1875,6 +1875,7 @@
++ 		target-boehm-gc \
++ 		${libgcj} \
++ 		target-libobjc \
+++		target-libphobos \
++ 		target-libada"
++ 
++ # these tools are built using the target libraries, and are intended to
++Index: gcc-4.3/Makefile.in
++===================================================================
++--- gcc-4.3/Makefile.in	(revision 158462)
+++++ gcc-4.3/Makefile.in	(working copy)
++@@ -723,7 +723,8 @@
++     maybe-configure-target-qthreads \
++     maybe-configure-target-rda \
++     maybe-configure-target-libada \
++-    maybe-configure-target-libgomp
+++    maybe-configure-target-libgomp \
+++    maybe-configure-target-libphobos
++ 
++ # The target built for a native non-bootstrap build.
++ .PHONY: all
++@@ -877,6 +878,7 @@
++ all-target: maybe-all-target-rda
++ all-target: maybe-all-target-libada
++ all-target: maybe-all-target-libgomp
+++all-target: maybe-all-target-libphobos
++ 
++ # Do a target for all the subdirectories.  A ``make do-X'' will do a
++ # ``make X'' in all subdirectories (because, in general, there is a
++@@ -988,6 +990,7 @@
++ info-target: maybe-info-target-rda
++ info-target: maybe-info-target-libada
++ info-target: maybe-info-target-libgomp
+++info-target: maybe-info-target-libphobos
++ 
++ .PHONY: do-dvi
++ do-dvi:
++@@ -1094,6 +1097,7 @@
++ dvi-target: maybe-dvi-target-rda
++ dvi-target: maybe-dvi-target-libada
++ dvi-target: maybe-dvi-target-libgomp
+++dvi-target: maybe-dvi-target-libphobos
++ 
++ .PHONY: do-pdf
++ do-pdf:
++@@ -1200,6 +1204,7 @@
++ pdf-target: maybe-pdf-target-rda
++ pdf-target: maybe-pdf-target-libada
++ pdf-target: maybe-pdf-target-libgomp
+++pdf-target: maybe-pdf-target-libphobos
++ 
++ .PHONY: do-html
++ do-html:
++@@ -1306,6 +1311,7 @@
++ html-target: maybe-html-target-rda
++ html-target: maybe-html-target-libada
++ html-target: maybe-html-target-libgomp
+++html-target: maybe-html-target-libphobos
++ 
++ .PHONY: do-TAGS
++ do-TAGS:
++@@ -1412,6 +1418,7 @@
++ TAGS-target: maybe-TAGS-target-rda
++ TAGS-target: maybe-TAGS-target-libada
++ TAGS-target: maybe-TAGS-target-libgomp
+++TAGS-target: maybe-TAGS-target-libphobos
++ 
++ .PHONY: do-install-info
++ do-install-info:
++@@ -1518,6 +1525,7 @@
++ install-info-target: maybe-install-info-target-rda
++ install-info-target: maybe-install-info-target-libada
++ install-info-target: maybe-install-info-target-libgomp
+++install-info-target: maybe-install-info-target-libphobos
++ 
++ .PHONY: do-install-pdf
++ do-install-pdf:
++@@ -1624,6 +1632,7 @@
++ install-pdf-target: maybe-install-pdf-target-rda
++ install-pdf-target: maybe-install-pdf-target-libada
++ install-pdf-target: maybe-install-pdf-target-libgomp
+++install-pdf-target: maybe-install-pdf-target-libphobos
++ 
++ .PHONY: do-install-html
++ do-install-html:
++@@ -1730,6 +1739,7 @@
++ install-html-target: maybe-install-html-target-rda
++ install-html-target: maybe-install-html-target-libada
++ install-html-target: maybe-install-html-target-libgomp
+++install-html-target: maybe-install-html-target-libphobos
++ 
++ .PHONY: do-installcheck
++ do-installcheck:
++@@ -1836,6 +1846,7 @@
++ installcheck-target: maybe-installcheck-target-rda
++ installcheck-target: maybe-installcheck-target-libada
++ installcheck-target: maybe-installcheck-target-libgomp
+++installcheck-target: maybe-installcheck-target-libphobos
++ 
++ .PHONY: do-mostlyclean
++ do-mostlyclean:
++@@ -1942,6 +1953,7 @@
++ mostlyclean-target: maybe-mostlyclean-target-rda
++ mostlyclean-target: maybe-mostlyclean-target-libada
++ mostlyclean-target: maybe-mostlyclean-target-libgomp
+++mostlyclean-target: maybe-mostlyclean-target-libphobos
++ 
++ .PHONY: do-clean
++ do-clean:
++@@ -2048,6 +2060,7 @@
++ clean-target: maybe-clean-target-rda
++ clean-target: maybe-clean-target-libada
++ clean-target: maybe-clean-target-libgomp
+++clean-target: maybe-clean-target-libphobos
++ 
++ .PHONY: do-distclean
++ do-distclean:
++@@ -2154,6 +2167,7 @@
++ distclean-target: maybe-distclean-target-rda
++ distclean-target: maybe-distclean-target-libada
++ distclean-target: maybe-distclean-target-libgomp
+++distclean-target: maybe-distclean-target-libphobos
++ 
++ .PHONY: do-maintainer-clean
++ do-maintainer-clean:
++@@ -2260,6 +2274,7 @@
++ maintainer-clean-target: maybe-maintainer-clean-target-rda
++ maintainer-clean-target: maybe-maintainer-clean-target-libada
++ maintainer-clean-target: maybe-maintainer-clean-target-libgomp
+++maintainer-clean-target: maybe-maintainer-clean-target-libphobos
++ 
++ 
++ # Here are the targets which correspond to the do-X targets.
++@@ -2419,7 +2434,8 @@
++     maybe-check-target-qthreads \
++     maybe-check-target-rda \
++     maybe-check-target-libada \
++-    maybe-check-target-libgomp
+++    maybe-check-target-libgomp \
+++    maybe-check-target-libphobos
++ 
++ do-check:
++ 	@: $(MAKE); $(unstage)
++@@ -2624,7 +2640,8 @@
++     maybe-install-target-qthreads \
++     maybe-install-target-rda \
++     maybe-install-target-libada \
++-    maybe-install-target-libgomp
+++    maybe-install-target-libgomp \
+++    maybe-install-target-libphobos
++ 
++ uninstall:
++ 	@echo "the uninstall target is not supported in this tree"
++@@ -49104,6 +49121,447 @@
++ 
++ 
++ 
+++
+++
+++.PHONY: configure-target-libphobos maybe-configure-target-libphobos
+++maybe-configure-target-libphobos:
+++@if gcc-bootstrap
+++configure-target-libphobos: stage_current
+++@endif gcc-bootstrap
+++@if target-libphobos
+++maybe-configure-target-libphobos: configure-target-libphobos
+++configure-target-libphobos: 
+++	@: $(MAKE); $(unstage)
+++	@r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	echo "Checking multilib configuration for libphobos..."; \
+++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libphobos ; \
+++	$(CC_FOR_TARGET) --print-multi-lib > $(TARGET_SUBDIR)/libphobos/multilib.tmp 2> /dev/null ; \
+++	if test -r $(TARGET_SUBDIR)/libphobos/multilib.out; then \
+++	  if cmp -s $(TARGET_SUBDIR)/libphobos/multilib.tmp $(TARGET_SUBDIR)/libphobos/multilib.out; then \
+++	    rm -f $(TARGET_SUBDIR)/libphobos/multilib.tmp; \
+++	  else \
+++	    rm -f $(TARGET_SUBDIR)/libphobos/Makefile; \
+++	    mv $(TARGET_SUBDIR)/libphobos/multilib.tmp $(TARGET_SUBDIR)/libphobos/multilib.out; \
+++	  fi; \
+++	else \
+++	  mv $(TARGET_SUBDIR)/libphobos/multilib.tmp $(TARGET_SUBDIR)/libphobos/multilib.out; \
+++	fi; \
+++	test ! -f $(TARGET_SUBDIR)/libphobos/Makefile || exit 0; \
+++	$(SHELL) $(srcdir)/mkinstalldirs $(TARGET_SUBDIR)/libphobos ; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo Configuring in $(TARGET_SUBDIR)/libphobos; \
+++	cd "$(TARGET_SUBDIR)/libphobos" || exit 1; \
+++	case $(srcdir) in \
+++	  /* | [A-Za-z]:[\\/]*) topdir=$(srcdir) ;; \
+++	  *) topdir=`echo $(TARGET_SUBDIR)/libphobos/ | \
+++		sed -e 's,\./,,g' -e 's,[^/]*/,../,g' `$(srcdir) ;; \
+++	esac; \
+++	srcdiroption="--srcdir=$${topdir}/libphobos"; \
+++	libsrcdir="$$s/libphobos"; \
+++	rm -f no-such-file || : ; \
+++	CONFIG_SITE=no-such-file $(SHELL) $${libsrcdir}/configure \
+++	  $(TARGET_CONFIGARGS) --build=${build_alias} --host=${target_alias} \
+++	  --target=${target_alias} $${srcdiroption}  \
+++	  || exit 1
+++@endif target-libphobos
+++
+++
+++
+++
+++
+++.PHONY: all-target-libphobos maybe-all-target-libphobos
+++maybe-all-target-libphobos:
+++@if gcc-bootstrap
+++all-target-libphobos: stage_current
+++@endif gcc-bootstrap
+++@if target-libphobos
+++TARGET-target-libphobos=all
+++maybe-all-target-libphobos: all-target-libphobos
+++all-target-libphobos: configure-target-libphobos
+++	@: $(MAKE); $(unstage)
+++	@r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  $(TARGET-target-libphobos))
+++@endif target-libphobos
+++
+++
+++
+++
+++
+++.PHONY: check-target-libphobos maybe-check-target-libphobos
+++maybe-check-target-libphobos:
+++@if target-libphobos
+++maybe-check-target-libphobos: check-target-libphobos
+++
+++check-target-libphobos:
+++	@: $(MAKE); $(unstage)
+++	@r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(TARGET_FLAGS_TO_PASS)   check)
+++
+++@endif target-libphobos
+++
+++.PHONY: install-target-libphobos maybe-install-target-libphobos
+++maybe-install-target-libphobos:
+++@if target-libphobos
+++maybe-install-target-libphobos: install-target-libphobos
+++
+++install-target-libphobos: installdirs
+++	@: $(MAKE); $(unstage)
+++	@r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(TARGET_FLAGS_TO_PASS)  install)
+++
+++@endif target-libphobos
+++
+++# Other targets (info, dvi, pdf, etc.)
+++
+++.PHONY: maybe-info-target-libphobos info-target-libphobos
+++maybe-info-target-libphobos:
+++@if target-libphobos
+++maybe-info-target-libphobos: info-target-libphobos
+++
+++info-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing info in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           info) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-dvi-target-libphobos dvi-target-libphobos
+++maybe-dvi-target-libphobos:
+++@if target-libphobos
+++maybe-dvi-target-libphobos: dvi-target-libphobos
+++
+++dvi-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing dvi in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           dvi) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-pdf-target-libphobos pdf-target-libphobos
+++maybe-pdf-target-libphobos:
+++@if target-libphobos
+++maybe-pdf-target-libphobos: pdf-target-libphobos
+++
+++pdf-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing pdf in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           pdf) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-html-target-libphobos html-target-libphobos
+++maybe-html-target-libphobos:
+++@if target-libphobos
+++maybe-html-target-libphobos: html-target-libphobos
+++
+++html-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing html in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           html) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-TAGS-target-libphobos TAGS-target-libphobos
+++maybe-TAGS-target-libphobos:
+++@if target-libphobos
+++maybe-TAGS-target-libphobos: TAGS-target-libphobos
+++
+++TAGS-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing TAGS in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           TAGS) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-install-info-target-libphobos install-info-target-libphobos
+++maybe-install-info-target-libphobos:
+++@if target-libphobos
+++maybe-install-info-target-libphobos: install-info-target-libphobos
+++
+++install-info-target-libphobos: \
+++    configure-target-libphobos \
+++    info-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing install-info in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           install-info) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-install-pdf-target-libphobos install-pdf-target-libphobos
+++maybe-install-pdf-target-libphobos:
+++@if target-libphobos
+++maybe-install-pdf-target-libphobos: install-pdf-target-libphobos
+++
+++install-pdf-target-libphobos: \
+++    configure-target-libphobos \
+++    pdf-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing install-pdf in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           install-pdf) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-install-html-target-libphobos install-html-target-libphobos
+++maybe-install-html-target-libphobos:
+++@if target-libphobos
+++maybe-install-html-target-libphobos: install-html-target-libphobos
+++
+++install-html-target-libphobos: \
+++    configure-target-libphobos \
+++    html-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing install-html in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           install-html) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-installcheck-target-libphobos installcheck-target-libphobos
+++maybe-installcheck-target-libphobos:
+++@if target-libphobos
+++maybe-installcheck-target-libphobos: installcheck-target-libphobos
+++
+++installcheck-target-libphobos: \
+++    configure-target-libphobos 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing installcheck in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           installcheck) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-mostlyclean-target-libphobos mostlyclean-target-libphobos
+++maybe-mostlyclean-target-libphobos:
+++@if target-libphobos
+++maybe-mostlyclean-target-libphobos: mostlyclean-target-libphobos
+++
+++mostlyclean-target-libphobos: 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing mostlyclean in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           mostlyclean) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-clean-target-libphobos clean-target-libphobos
+++maybe-clean-target-libphobos:
+++@if target-libphobos
+++maybe-clean-target-libphobos: clean-target-libphobos
+++
+++clean-target-libphobos: 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing clean in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           clean) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-distclean-target-libphobos distclean-target-libphobos
+++maybe-distclean-target-libphobos:
+++@if target-libphobos
+++maybe-distclean-target-libphobos: distclean-target-libphobos
+++
+++distclean-target-libphobos: 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing distclean in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           distclean) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++.PHONY: maybe-maintainer-clean-target-libphobos maintainer-clean-target-libphobos
+++maybe-maintainer-clean-target-libphobos:
+++@if target-libphobos
+++maybe-maintainer-clean-target-libphobos: maintainer-clean-target-libphobos
+++
+++maintainer-clean-target-libphobos: 
+++	@: $(MAKE); $(unstage)
+++	@[ -f $(TARGET_SUBDIR)/libphobos/Makefile ] || exit 0 ; \
+++	r=`${PWD_COMMAND}`; export r; \
+++	s=`cd $(srcdir); ${PWD_COMMAND}`; export s; \
+++	$(NORMAL_TARGET_EXPORTS) \
+++	echo "Doing maintainer-clean in $(TARGET_SUBDIR)/libphobos" ; \
+++	for flag in $(EXTRA_TARGET_FLAGS); do \
+++	  eval `echo "$$flag" | sed -e "s|^\([^=]*\)=\(.*\)|\1='\2'; export \1|"`; \
+++	done; \
+++	(cd $(TARGET_SUBDIR)/libphobos && \
+++	  $(MAKE) $(BASE_FLAGS_TO_PASS) "AR=$${AR}" "AS=$${AS}" \
+++	          "CC=$${CC}" "CXX=$${CXX}" "LD=$${LD}" "NM=$${NM}" \
+++	          "RANLIB=$${RANLIB}" \
+++	          "DLLTOOL=$${DLLTOOL}" "WINDRES=$${WINDRES}" "WINDMC=$${WINDMC}" \
+++	           maintainer-clean) \
+++	  || exit 1
+++
+++@endif target-libphobos
+++
+++
+++
++ # ----------
++ # GCC module
++ # ----------
++@@ -51217,6 +51675,7 @@
++ configure-target-rda: stage_last
++ configure-target-libada: stage_last
++ configure-target-libgomp: stage_last
+++configure-target-libphobos: stage_last
++ @endif gcc-bootstrap
++ 
++ @if gcc-no-bootstrap
++@@ -51241,6 +51700,7 @@
++ configure-target-rda: maybe-all-gcc
++ configure-target-libada: maybe-all-gcc
++ configure-target-libgomp: maybe-all-gcc
+++configure-target-libphobos: maybe-all-gcc
++ @endif gcc-no-bootstrap
++ 
++ 
++@@ -51932,6 +52392,7 @@
++ configure-target-rda: maybe-all-target-libgcc
++ configure-target-libada: maybe-all-target-libgcc
++ configure-target-libgomp: maybe-all-target-libgcc
+++configure-target-libphobos: maybe-all-target-libgcc
++ @endif gcc-no-bootstrap
++ 
++ 
++@@ -51975,7 +52436,9 @@
++ 
++ configure-target-libgomp: maybe-all-target-newlib maybe-all-target-libgloss
++ 
+++configure-target-libphobos: maybe-all-target-newlib maybe-all-target-libgloss
++ 
+++
++ CONFIGURE_GDB_TK = @CONFIGURE_GDB_TK@
++ GDB_TK = @GDB_TK@
++ INSTALL_GDB_TK = @INSTALL_GDB_TK@
++Index: gcc-4.3/configure.ac
++===================================================================
++--- gcc-4.3/configure.ac	(revision 158462)
+++++ gcc-4.3/configure.ac	(working copy)
++@@ -185,6 +185,7 @@
++ 		target-boehm-gc \
++ 		${libgcj} \
++ 		target-libobjc \
+++		target-libphobos \
++ 		target-libada"
++ 
++ # these tools are built using the target libraries, and are intended to
++Index: gcc-4.3/Makefile.def
++===================================================================
++--- gcc-4.3/Makefile.def	(revision 158462)
+++++ gcc-4.3/Makefile.def	(working copy)
++@@ -143,6 +143,7 @@
++ target_modules = { module= rda; };
++ target_modules = { module= libada; };
++ target_modules = { module= libgomp; lib_path=.libs; };
+++target_modules = { module= libphobos; };
++ 
++ // These are (some of) the make targets to be done in each subdirectory.
++ // Not all; these are the ones which don't have special options.

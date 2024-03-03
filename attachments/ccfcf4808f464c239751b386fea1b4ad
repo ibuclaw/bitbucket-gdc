@@ -1,0 +1,2003 @@
+diff -aruw dmd62/backend/dwarf.c dmd63/backend/dwarf.c
+--- dmd62/backend/dwarf.c	2010-06-09 19:06:32.000000000 -0400
++++ dmd63/backend/dwarf.c	2010-08-09 14:33:14.000000000 -0400
+@@ -1,5 +1,5 @@
+ 
+-// Copyright (c) 1999-2009 by Digital Mars
++// Copyright (c) 1999-2010 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -83,7 +83,18 @@
+ void dwarf_addrel(int seg, targ_size_t offset, int targseg)
+ {
+ #if ELFOBJ
+-    elf_addrel(seg, offset, RI_TYPE_SYM32, MAP_SEG2SYMIDX(targseg),0);
++    elf_addrel(seg, offset, I64 ? R_X86_64_32 : RI_TYPE_SYM32, MAP_SEG2SYMIDX(targseg),0);
++#elif MACHOBJ
++    mach_addrel(seg, offset, NULL, targseg, 0);
++#else
++    assert(0);
++#endif
++}
++
++void dwarf_addrel64(int seg, targ_size_t offset, int targseg)
++{
++#if ELFOBJ
++    elf_addrel(seg, offset, R_X86_64_64, MAP_SEG2SYMIDX(targseg),0);
+ #elif MACHOBJ
+     mach_addrel(seg, offset, NULL, targseg, 0);
+ #else
+@@ -644,10 +655,20 @@
+ 
+             // Set address to start of segment with DW_LNE_set_address
+             linebuf->writeByte(0);
++            if (I64)
++            {
++                linebuf->writeByte(9);
++                linebuf->writeByte(2);
++                dwarf_addrel64(lineseg,linebuf->size(),seg);
++                linebuf->write64(0);
++            }
++            else
++            {
+             linebuf->writeByte(5);
+             linebuf->writeByte(2);
+             dwarf_addrel(lineseg,linebuf->size(),seg);
+             linebuf->write32(0);
++            }
+ 
+             // Dwarf2 6.2.2 State machine registers
+             unsigned address = 0;       // instruction address
+diff -aruw dmd62/backend/machobj.c dmd63/backend/machobj.c
+--- dmd62/backend/machobj.c	2010-06-09 19:06:32.000000000 -0400
++++ dmd63/backend/machobj.c	2010-08-09 14:33:14.000000000 -0400
+@@ -1685,7 +1685,7 @@
+  *      actual seg
+  */
+ 
+-int elf_data_start(Symbol *sdata,int datasize,int seg)
++int elf_data_start(Symbol *sdata, targ_size_t datasize, int seg)
+ {
+     targ_size_t alignbytes;
+     //dbg_printf("elf_data_start(%s,size %d,seg %d)\n",sdata->Sident,datasize,seg);
+@@ -2326,28 +2326,6 @@
+ 
+ #endif
+ 
+-/************************************
+- * Output long word of data.
+- * Input:
+- *      seg     CODE, DATA, CDATA, UDATA
+- *      offset  offset of start of data
+- *      data    long word of data
+- *   Present only if size == 2:
+- *      lcfd    LCxxxx | FDxxxx
+- *      if (FD_F2 | FD_T6)
+- *              idx1 = external Symbol #
+- *      else
+- *              idx1 = frame datum
+- *              idx2 = target datum
+- */
+-
+-void obj_long(int seg,targ_size_t offset,unsigned long data,
+-        unsigned lcfd,unsigned idx1,unsigned idx2)
+-{
+-    printf("obj_long\n");
+-    exit(1);
+-}
+-
+ /*************************************
+  */
+ 
+diff -aruw dmd62/backend/melf.h dmd63/backend/melf.h
+--- dmd62/backend/melf.h	2010-06-09 19:06:32.000000000 -0400
++++ dmd63/backend/melf.h	2010-08-09 14:33:14.000000000 -0400
+@@ -341,32 +341,35 @@
+ 
+         // X86-64 Relocation types
+ 
+-        #define R_X86_64_NONE      0
+-        #define R_X86_64_64        1
+-        #define R_X86_64_PC32      2
+-        #define R_X86_64_GOT32     3
+-        #define R_X86_64_PLT32     4
+-        #define R_X86_64_COPY      5
+-        #define R_X86_64_GLOB_DAT  6
+-        #define R_X86_64_JUMP_SLOT 7
+-        #define R_X86_64_RELATIVE  8
+-        #define R_X86_64_GOTPCREL  9
+-        #define R_X86_64_32       10
+-        #define R_X86_64_32S      11
+-        #define R_X86_64_16       12
+-        #define R_X86_64_PC16     13
+-        #define R_X86_64_8        14
+-        #define R_X86_64_PC8      15
+-        #define R_X86_64_DTPMOD64 16
+-        #define R_X86_64_DTPOFF64 17
+-        #define R_X86_64_TPOFF64  18
+-        #define R_X86_64_TLSGD    19
+-        #define R_X86_64_TLSLD    20
+-        #define R_X86_64_DTPOFF32 21
+-        #define R_X86_64_GOTTPOFF 22
+-        #define R_X86_64_TPOFF32  23
+-        #define R_X86_64_GNU_VTINHERIT 250
+-        #define R_X86_64_GNU_VTENTRY   251
++        #define R_X86_64_NONE      0     // -- No relocation
++        #define R_X86_64_64        1     // 64 Direct 64 bit
++        #define R_X86_64_PC32      2     // 32 PC relative 32 bit signed
++        #define R_X86_64_GOT32     3     // 32 32 bit GOT entry
++        #define R_X86_64_PLT32     4     // 32 bit PLT address
++        #define R_X86_64_COPY      5     // -- Copy symbol at runtime
++        #define R_X86_64_GLOB_DAT  6     // 64 Create GOT entry
++        #define R_X86_64_JUMP_SLOT 7     // 64 Create PLT entry
++        #define R_X86_64_RELATIVE  8     // 64 Adjust by program base
++        #define R_X86_64_GOTPCREL  9     // 32 32 bit signed pc relative offset to GOT
++        #define R_X86_64_32       10     // 32 Direct 32 bit zero extended
++        #define R_X86_64_32S      11     // 32 Direct 32 bit sign extended
++        #define R_X86_64_16       12     // 16 Direct 16 bit zero extended
++        #define R_X86_64_PC16     13     // 16 16 bit sign extended pc relative
++        #define R_X86_64_8        14     //  8 Direct 8 bit sign extended
++        #define R_X86_64_PC8      15     //  8 8 bit sign extended pc relative
++        #define R_X86_64_DTPMOD64 16     // 64 ID of module containing symbol
++        #define R_X86_64_DTPOFF64 17     // 64 Offset in TLS block
++        #define R_X86_64_TPOFF64  18     // 64 Offset in initial TLS block
++        #define R_X86_64_TLSGD    19     // 32 PC relative offset to GD GOT block
++        #define R_X86_64_TLSLD    20     // 32 PC relative offset to LD GOT block
++        #define R_X86_64_DTPOFF32 21     // 32 Offset in TLS block
++        #define R_X86_64_GOTTPOFF 22     // 32 PC relative offset to IE GOT entry
++        #define R_X86_64_TPOFF32  23     // 32 Offset in initial TLS block
++        #define R_X86_64_PC64     24     // 64
++        #define R_X86_64_GOTOFF64 25     // 64
++        #define R_X86_64_GOTPC32  26     // 32
++        #define R_X86_64_GNU_VTINHERIT 250    // GNU C++ hack
++        #define R_X86_64_GNU_VTENTRY   251    // GNU C++ hack
+ } Elf64_Rel;
+ 
+ typedef struct {
+diff -aruw dmd62/cppmangle.c dmd63/cppmangle.c
+--- dmd62/cppmangle.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/cppmangle.c	2010-08-09 14:33:14.000000000 -0400
+@@ -1,6 +1,6 @@
+ 
+ // Compiler implementation of the D programming language
+-// Copyright (c) 1999-2007 by Digital Mars
++// Copyright (c) 1999-2010 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -25,7 +25,7 @@
+ #include "import.h"
+ #include "aggregate.h"
+ 
+-#if DMDV2
++#if CPP_MANGLE
+ 
+ /* Do mangling for C++ linkage.
+  * Follows Itanium C++ ABI 1.86
+@@ -198,6 +198,9 @@
+      * u <source-name>  # vendor extended type
+      */
+ 
++    if (isConst())
++        buf->writeByte('K');
++
+     switch (ty)
+     {
+         case Tvoid:     c = 'v';        break;
+diff -aruw dmd62/declaration.c dmd63/declaration.c
+--- dmd62/declaration.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/declaration.c	2010-08-09 14:33:14.000000000 -0400
+@@ -616,6 +616,8 @@
+     {   error("recursive alias declaration");
+         aliassym = new TypedefDeclaration(loc, ident, Type::terror, NULL);
+     }
++    else if (!aliassym && scope)
++        semantic(scope);
+     Dsymbol *s = aliassym ? aliassym->toAlias() : this;
+     return s;
+ }
+@@ -1319,6 +1321,9 @@
+             nestedref = 1;
+             fdv->nestedFrameRef = 1;
+             //printf("var %s in function %s is nested ref\n", toChars(), fdv->toChars());
++            // __dollar creates problems because it isn't a real variable Bugzilla 3326
++            if (ident == Id::dollar)
++                ::error(loc, "cannnot use $ inside a function literal");
+         }
+     }
+ }
+diff -aruw dmd62/declaration.h dmd63/declaration.h
+--- dmd62/declaration.h	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/declaration.h	2010-08-09 14:33:14.000000000 -0400
+@@ -98,6 +98,14 @@
+         int (*fp)(void *, FuncDeclaration *),
+         void *param);
+ 
++enum Semantic
++{
++    SemanticStart,      // semantic has not been run
++    SemanticIn,         // semantic() is in progress
++    SemanticDone,       // semantic() has been run
++    Semantic2Done,      // semantic2() has been run
++};
++
+ /**************************************************************/
+ 
+ struct Declaration : Dsymbol
+@@ -456,6 +464,13 @@
+ 
+     void toDt(dt_t **pdt);
+ };
++
++struct TypeInfoWildDeclaration : TypeInfoDeclaration
++{
++    TypeInfoWildDeclaration(Type *tinfo);
++
++    void toDt(dt_t **pdt);
++};
+ #endif
+ 
+ /**************************************************************/
+@@ -598,6 +613,8 @@
+     int isCodeseg();
+     int isOverloadable();
+     int isPure();
++    int isSafe();
++    int isTrusted();
+     virtual int isNested();
+     int needThis();
+     virtual int isVirtual();
+@@ -735,6 +752,17 @@
+     StaticCtorDeclaration *isStaticCtorDeclaration() { return this; }
+ };
+ 
++#if DMDV2
++struct SharedStaticCtorDeclaration : StaticCtorDeclaration
++{
++    SharedStaticCtorDeclaration(Loc loc, Loc endloc);
++    Dsymbol *syntaxCopy(Dsymbol *);
++    void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
++
++    SharedStaticCtorDeclaration *isSharedStaticCtorDeclaration() { return this; }
++};
++#endif
++
+ struct StaticDtorDeclaration : FuncDeclaration
+ {   VarDeclaration *vgate;      // 'gate' variable
+ 
+@@ -753,6 +781,17 @@
+     StaticDtorDeclaration *isStaticDtorDeclaration() { return this; }
+ };
+ 
++#if DMDV2
++struct SharedStaticDtorDeclaration : StaticDtorDeclaration
++{
++    SharedStaticDtorDeclaration(Loc loc, Loc endloc);
++    Dsymbol *syntaxCopy(Dsymbol *);
++    void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
++
++    SharedStaticDtorDeclaration *isSharedStaticDtorDeclaration() { return this; }
++};
++#endif
++
+ struct InvariantDeclaration : FuncDeclaration
+ {
+     InvariantDeclaration(Loc loc, Loc endloc);
+@@ -768,7 +807,6 @@
+     InvariantDeclaration *isInvariantDeclaration() { return this; }
+ };
+ 
+-
+ struct UnitTestDeclaration : FuncDeclaration
+ {
+     UnitTestDeclaration(Loc loc, Loc endloc);
+diff -aruw dmd62/dsymbol.c dmd63/dsymbol.c
+--- dmd62/dsymbol.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/dsymbol.c	2010-08-09 14:33:14.000000000 -0400
+@@ -286,6 +286,10 @@
+  * Does semantic analysis on the public face of declarations.
+  */
+ 
++void Dsymbol::semantic0(Scope *sc)
++{
++}
++
+ void Dsymbol::semantic(Scope *sc)
+ {
+     error("%p has no semantic routine", this);
+diff -aruw dmd62/dsymbol.h dmd63/dsymbol.h
+--- dmd62/dsymbol.h	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/dsymbol.h	2010-08-09 14:33:14.000000000 -0400
+@@ -143,6 +143,7 @@
+     virtual int addMember(Scope *sc, ScopeDsymbol *s, int memnum);
+     virtual void setScope(Scope *sc);
+     virtual void importAll(Scope *sc);
++    virtual void semantic0(Scope *sc);
+     virtual void semantic(Scope *sc);
+     virtual void semantic2(Scope *sc);
+     virtual void semantic3(Scope *sc);
+diff -aruw dmd62/e2ir.c dmd63/e2ir.c
+--- dmd62/e2ir.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/e2ir.c	2010-08-09 14:33:14.000000000 -0400
+@@ -280,9 +280,15 @@
+             e = el_una(op,tyret,ep);
+     }
+     else if (ep)
+-        e = el_bin(OPcall,tyret,ec,ep);
++    {   e = el_bin(OPcall,tyret,ec,ep);
++        if (tf->varargs)
++            e->Eflags |= EFLAGS_variadic;
++    }
+     else
+-        e = el_una(OPucall,tyret,ec);
++    {   e = el_una(OPucall,tyret,ec);
++        if (tf->varargs)
++            e->Eflags |= EFLAGS_variadic;
++    }
+ 
+     if (retmethod == RETstack)
+     {
+@@ -933,7 +939,7 @@
+             print();
+             type->print();
+             type->toBasetype()->print();
+-            printf("ty = %d, tym = %lx\n", type->ty, ty);
++            printf("ty = %d, tym = %x\n", type->ty, ty);
+             assert(0);
+     }
+     return el_const(ty, &c);
+@@ -1691,9 +1697,10 @@
+     Type *tb1 = e1->type->toBasetype();
+     Type *tb2 = e2->type->toBasetype();
+ 
+-    if ((tb1->ty == Tarray || tb1->ty == Tsarray) &&
+-        (tb2->ty == Tarray || tb2->ty == Tsarray) &&
+-        op != OPeq
++    if ((tb1->ty == Tarray || tb1->ty == Tsarray ||
++         tb2->ty == Tarray || tb2->ty == Tsarray) &&
++        tb2->ty != Tvoid &&
++        op != OPeq && op != OPandand && op != OPoror
+        )
+     {
+         error("Array operation %s not implemented", toChars());
+@@ -1773,6 +1780,7 @@
+                            ta->getTypeInfo(NULL)->toElem(irs),
+                            NULL);
+             e = el_bin(OPcall, TYdarray, el_var(rtlsym[RTLSYM_ARRAYCATNT]), ep);
++            e->Eflags |= EFLAGS_variadic;
+ #else
+             ep = el_params(
+                            ep,
+@@ -1780,6 +1788,7 @@
+                            el_long(TYint, tn->size()),
+                            NULL);
+             e = el_bin(OPcall, TYdarray, el_var(rtlsym[RTLSYM_ARRAYCATN]), ep);
++            e->Eflags |= EFLAGS_variadic;
+ #endif
+         }
+         else
+@@ -4217,11 +4226,13 @@
+ 
+     // call _d_arrayliteralT(ti, dim, ...)
+     e = el_bin(OPcall,TYnptr,el_var(rtlsym[RTLSYM_ARRAYLITERALT]),e);
++    e->Eflags |= EFLAGS_variadic;
+ #else
+     e = el_param(e, el_long(TYint, tb->next->size()));
+ 
+     // call _d_arrayliteral(size, dim, ...)
+     e = el_bin(OPcall,TYnptr,el_var(rtlsym[RTLSYM_ARRAYLITERAL]),e);
++    e->Eflags |= EFLAGS_variadic;
+ #endif
+     if (tb->ty == Tarray)
+     {
+@@ -4270,6 +4281,7 @@
+ 
+     // call _d_assocarrayliteralT(ti, dim, ...)
+     e = el_bin(OPcall,TYnptr,el_var(rtlsym[RTLSYM_ASSOCARRAYLITERALT]),e);
++    e->Eflags |= EFLAGS_variadic;
+ 
+     el_setLoc(e,loc);
+     return e;
+diff -aruw dmd62/enum.c dmd63/enum.c
+--- dmd62/enum.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/enum.c	2010-08-09 14:33:14.000000000 -0400
+@@ -49,6 +49,34 @@
+     return ed;
+ }
+ 
++void EnumDeclaration::semantic0(Scope *sc)
++{
++    /* This function is a hack to get around a significant problem.
++     * The members of anonymous enums, like:
++     *  enum { A, B, C }
++     * don't get installed into the symbol table until after they are
++     * semantically analyzed, yet they're supposed to go into the enclosing
++     * scope's table. Hence, when forward referenced, they come out as
++     * 'undefined'. The real fix is to add them in at addSymbol() time.
++     * But to get code to compile, we'll just do this quick hack at the moment
++     * to compile it if it doesn't depend on anything else.
++     */
++
++    if (isdone || !scope)
++        return;
++    if (!isAnonymous() || memtype)
++        return;
++    for (int i = 0; i < members->dim; i++)
++    {
++        EnumMember *em = ((Dsymbol *)members->data[i])->isEnumMember();
++        if (em && em->value)
++            return;
++    }
++
++    // Can do it
++    semantic(sc);
++}
++
+ void EnumDeclaration::semantic(Scope *sc)
+ {   int i;
+     uinteger_t number;
+diff -aruw dmd62/enum.h dmd63/enum.h
+--- dmd62/enum.h	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/enum.h	2010-08-09 14:33:14.000000000 -0400
+@@ -47,6 +47,7 @@
+ 
+     EnumDeclaration(Loc loc, Identifier *id, Type *memtype);
+     Dsymbol *syntaxCopy(Dsymbol *s);
++    void semantic0(Scope *sc);
+     void semantic(Scope *sc);
+     int oneMember(Dsymbol **ps);
+     void toCBuffer(OutBuffer *buf, HdrGenState *hgs);
+diff -aruw dmd62/expression.c dmd63/expression.c
+--- dmd62/expression.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/expression.c	2010-08-09 14:33:14.000000000 -0400
+@@ -50,148 +50,6 @@
+ 
+ #define LOGSEMANTIC     0
+ 
+-/**********************************
+- * Set operator precedence for each operator.
+- */
+-
+-// Operator precedence - greater values are higher precedence
+-
+-enum PREC
+-{
+-    PREC_zero,
+-    PREC_expr,
+-    PREC_assign,
+-    PREC_cond,
+-    PREC_oror,
+-    PREC_andand,
+-    PREC_or,
+-    PREC_xor,
+-    PREC_and,
+-    PREC_equal,
+-    PREC_rel,
+-    PREC_shift,
+-    PREC_add,
+-    PREC_mul,
+-    PREC_unary,
+-    PREC_primary,
+-};
+-
+-enum PREC precedence[TOKMAX];
+-
+-void initPrecedence()
+-{
+-    precedence[TOKdotvar] = PREC_primary;
+-    precedence[TOKimport] = PREC_primary;
+-    precedence[TOKidentifier] = PREC_primary;
+-    precedence[TOKthis] = PREC_primary;
+-    precedence[TOKsuper] = PREC_primary;
+-    precedence[TOKint64] = PREC_primary;
+-    precedence[TOKfloat64] = PREC_primary;
+-    precedence[TOKnull] = PREC_primary;
+-    precedence[TOKstring] = PREC_primary;
+-    precedence[TOKarrayliteral] = PREC_primary;
+-    precedence[TOKtypeid] = PREC_primary;
+-    precedence[TOKis] = PREC_primary;
+-    precedence[TOKassert] = PREC_primary;
+-    precedence[TOKfunction] = PREC_primary;
+-    precedence[TOKvar] = PREC_primary;
+-#if DMDV2
+-    precedence[TOKdefault] = PREC_primary;
+-#endif
+-
+-    // post
+-    precedence[TOKdotti] = PREC_primary;
+-    precedence[TOKdot] = PREC_primary;
+-//  precedence[TOKarrow] = PREC_primary;
+-    precedence[TOKplusplus] = PREC_primary;
+-    precedence[TOKminusminus] = PREC_primary;
+-    precedence[TOKcall] = PREC_primary;
+-    precedence[TOKslice] = PREC_primary;
+-    precedence[TOKarray] = PREC_primary;
+-
+-    precedence[TOKaddress] = PREC_unary;
+-    precedence[TOKstar] = PREC_unary;
+-    precedence[TOKneg] = PREC_unary;
+-    precedence[TOKuadd] = PREC_unary;
+-    precedence[TOKnot] = PREC_unary;
+-    precedence[TOKtobool] = PREC_add;
+-    precedence[TOKtilde] = PREC_unary;
+-    precedence[TOKdelete] = PREC_unary;
+-    precedence[TOKnew] = PREC_unary;
+-    precedence[TOKcast] = PREC_unary;
+-
+-    precedence[TOKmul] = PREC_mul;
+-    precedence[TOKdiv] = PREC_mul;
+-    precedence[TOKmod] = PREC_mul;
+-
+-    precedence[TOKadd] = PREC_add;
+-    precedence[TOKmin] = PREC_add;
+-    precedence[TOKcat] = PREC_add;
+-
+-    precedence[TOKshl] = PREC_shift;
+-    precedence[TOKshr] = PREC_shift;
+-    precedence[TOKushr] = PREC_shift;
+-
+-    precedence[TOKlt] = PREC_rel;
+-    precedence[TOKle] = PREC_rel;
+-    precedence[TOKgt] = PREC_rel;
+-    precedence[TOKge] = PREC_rel;
+-    precedence[TOKunord] = PREC_rel;
+-    precedence[TOKlg] = PREC_rel;
+-    precedence[TOKleg] = PREC_rel;
+-    precedence[TOKule] = PREC_rel;
+-    precedence[TOKul] = PREC_rel;
+-    precedence[TOKuge] = PREC_rel;
+-    precedence[TOKug] = PREC_rel;
+-    precedence[TOKue] = PREC_rel;
+-    precedence[TOKin] = PREC_rel;
+-
+-#if 0
+-    precedence[TOKequal] = PREC_equal;
+-    precedence[TOKnotequal] = PREC_equal;
+-    precedence[TOKidentity] = PREC_equal;
+-    precedence[TOKnotidentity] = PREC_equal;
+-#else
+-    /* Note that we changed precedence, so that < and != have the same
+-     * precedence. This change is in the parser, too.
+-     */
+-    precedence[TOKequal] = PREC_rel;
+-    precedence[TOKnotequal] = PREC_rel;
+-    precedence[TOKidentity] = PREC_rel;
+-    precedence[TOKnotidentity] = PREC_rel;
+-#endif
+-
+-    precedence[TOKand] = PREC_and;
+-
+-    precedence[TOKxor] = PREC_xor;
+-
+-    precedence[TOKor] = PREC_or;
+-
+-    precedence[TOKandand] = PREC_andand;
+-
+-    precedence[TOKoror] = PREC_oror;
+-
+-    precedence[TOKquestion] = PREC_cond;
+-
+-    precedence[TOKassign] = PREC_assign;
+-    precedence[TOKconstruct] = PREC_assign;
+-    precedence[TOKblit] = PREC_assign;
+-    precedence[TOKaddass] = PREC_assign;
+-    precedence[TOKminass] = PREC_assign;
+-    precedence[TOKcatass] = PREC_assign;
+-    precedence[TOKmulass] = PREC_assign;
+-    precedence[TOKdivass] = PREC_assign;
+-    precedence[TOKmodass] = PREC_assign;
+-    precedence[TOKshlass] = PREC_assign;
+-    precedence[TOKshrass] = PREC_assign;
+-    precedence[TOKushrass] = PREC_assign;
+-    precedence[TOKandass] = PREC_assign;
+-    precedence[TOKorass] = PREC_assign;
+-    precedence[TOKxorass] = PREC_assign;
+-
+-    precedence[TOKcomma] = PREC_expr;
+-}
+-
+ /*************************************************************
+  * Given var, we need to get the
+  * right 'this' pointer if var is in an outer class, but our
+@@ -6194,6 +6052,11 @@
+         AggregateDeclaration *ad = func->toParent()->isAggregateDeclaration();
+         if (func->needThis())
+             e1 = getRightThis(loc, sc, ad, e1, func);
++        if (ad && ad->isClassDeclaration() && ad->type != e1->type)
++        {   // A downcast is required for interfaces, see Bugzilla 3706
++            e1 = new CastExp(loc, e1, ad->type);
++            e1 = e1->semantic(sc);
++        }
+     }
+     return this;
+ }
+diff -aruw dmd62/func.c dmd63/func.c
+--- dmd62/func.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/func.c	2010-08-09 14:33:14.000000000 -0400
+@@ -1037,7 +1037,6 @@
+             if (fensure)
+             {   returnLabel = new LabelDsymbol(Id::returnLabel);
+                 LabelStatement *ls = new LabelStatement(0, Id::returnLabel, fensure);
+-                ls->isReturnLabel = 1;
+                 returnLabel->statement = ls;
+             }
+             sc2 = sc2->pop();
+@@ -1217,19 +1216,38 @@
+ #else
+                 Type *t = argptr->type;
+                 VarDeclaration *p;
+-                unsigned offset;
++                unsigned offset = 0;
+ 
+                 Expression *e1 = new VarExp(0, argptr);
++                // Find the last non-ref parameter
+                 if (parameters && parameters->dim)
+-                    p = (VarDeclaration *)parameters->data[parameters->dim - 1];
++                {
++                    int lastNonref = parameters->dim -1;
++                    p = (VarDeclaration *)parameters->data[lastNonref];
++                    /* The trouble with out and ref parameters is that taking
++                     * the address of it doesn't work, because later processing
++                     * adds in an extra level of indirection. So we skip over them.
++                     */
++                    while (p->storage_class & (STCout | STCref))
++                    {
++                        --lastNonref;
++                        offset += PTRSIZE;
++                        if (lastNonref < 0)
++                        {
++                            p = v_arguments;
++                            break;
++                        }
++                        p = (VarDeclaration *)parameters->data[lastNonref];
++                    }
++                }
+                 else
+                     p = v_arguments;            // last parameter is _arguments[]
+                 if (p->storage_class & STClazy)
+                     // If the last parameter is lazy, it's the size of a delegate
+-                    offset = PTRSIZE * 2;
++                    offset += PTRSIZE * 2;
+                 else
+-                    offset = p->type->size();
+-                offset = (offset + 3) & ~3;     // assume stack aligns on 4
++                    offset += p->type->size();
++                offset = (offset + PTRSIZE - 1) & ~(PTRSIZE - 1);  // assume stack aligns on pointer size
+                 Expression *e = new SymOffExp(0, p, offset);
+                 e->type = Type::tvoidptr;
+                 //e = e->semantic(sc);
+diff -aruw dmd62/glue.c dmd63/glue.c
+--- dmd62/glue.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/glue.c	2010-08-09 14:33:14.000000000 -0400
+@@ -1,6 +1,6 @@
+ 
+ // Compiler implementation of the D programming language
+-// Copyright (c) 1999-2009 by Digital Mars
++// Copyright (c) 1999-2010 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -53,10 +53,16 @@
+ elem *eictor;
+ symbol *ictorlocalgot;
+ elem *ector;
++Array ectorgates;
+ elem *edtor;
+ elem *etest;
+ 
++elem *esharedctor;
++Array esharedctorgates;
++elem *eshareddtor;
++
+ int dtorcount;
++int shareddtorcount;
+ 
+ char *lastmname;
+ 
+@@ -104,7 +110,7 @@
+         Identifier *id = new Identifier(idstr, TOKidentifier);
+ 
+         Module *md = new Module(mname, id, 0, 0);
+-        md->members = new Array();
++        md->members = new Dsymbols();
+         md->members->push(s);   // its only 'member' is s
+         if (m)
+         {
+@@ -112,6 +118,7 @@
+             md->md = m->md;
+             md->aimports.push(m);       // it only 'imports' m
+             md->massert = m->massert;
++            md->munittest = m->munittest;
+             md->marray = m->marray;
+         }
+ 
+@@ -206,9 +213,14 @@
+     eictor = NULL;
+     ictorlocalgot = NULL;
+     ector = NULL;
++    ectorgates.setDim(0);
+     edtor = NULL;
++    esharedctor = NULL;
++    esharedctorgates.setDim(0);
++    eshareddtor = NULL;
+     etest = NULL;
+     dtorcount = 0;
++    shareddtorcount = 0;
+ 
+     if (doppelganger)
+     {
+@@ -343,6 +355,18 @@
+         {
+             localgot = NULL;
+             sctor = toSymbolX("__modctor", SCglobal, t, moddeco);
++#if DMDV2
++            cstate.CSpsymtab = &sctor->Sfunc->Flocsym;
++
++            for (int i = 0; i < ectorgates.dim; i++)
++            {   StaticDtorDeclaration *f = (StaticDtorDeclaration *)ectorgates.data[i];
++
++                Symbol *s = f->vgate->toSymbol();
++                elem *e = el_var(s);
++                e = el_bin(OPaddass, TYint, e, el_long(TYint, 1));
++                ector = el_combine(ector, e);
++            }
++#endif
+ 
+             block *b = block_calloc();
+             b->BC = BCret;
+@@ -366,6 +390,45 @@
+             writefunc(sdtor);
+         }
+ 
++#if DMDV2
++        if (esharedctor || esharedctorgates.dim)
++        {
++            localgot = NULL;
++            ssharedctor = toSymbolX("__modsharedctor", SCglobal, t, moddeco);
++            cstate.CSpsymtab = &ssharedctor->Sfunc->Flocsym;
++
++            for (int i = 0; i < esharedctorgates.dim; i++)
++            {   SharedStaticDtorDeclaration *f = (SharedStaticDtorDeclaration *)esharedctorgates.data[i];
++
++                Symbol *s = f->vgate->toSymbol();
++                elem *e = el_var(s);
++                e = el_bin(OPaddass, TYint, e, el_long(TYint, 1));
++                esharedctor = el_combine(esharedctor, e);
++            }
++
++            block *b = block_calloc();
++            b->BC = BCret;
++            b->Belem = esharedctor;
++            ssharedctor->Sfunc->Fstartblock = b;
++            writefunc(ssharedctor);
++#if STATICCTOR
++            obj_staticctor(ssharedctor, shareddtorcount, 1);
++#endif
++        }
++
++        if (eshareddtor)
++        {
++            localgot = NULL;
++            sshareddtor = toSymbolX("__modshareddtor", SCglobal, t, moddeco);
++
++            block *b = block_calloc();
++            b->BC = BCret;
++            b->Belem = eshareddtor;
++            sshareddtor->Sfunc->Fstartblock = b;
++            writefunc(sshareddtor);
++        }
++#endif
++
+         if (etest)
+         {
+             localgot = NULL;
+@@ -390,7 +453,7 @@
+ 
+     if (global.params.multiobj)
+     {   /* This is necessary because the main .obj for this module is written
+-         * first, but determining whether marray or massert are needed is done
++         * first, but determining whether marray or massert or munittest are needed is done
+          * possibly later in the doppelganger modules.
+          * Another way to fix it is do the main one last.
+          */
+@@ -402,21 +465,26 @@
+     // If module assert
+     for (int i = 0; i < 2; i++)
+     {
+-        Symbol *ma = i ? marray : massert;
++        Symbol *ma;
++        unsigned rt;
++        switch (i)
++        {
++            case 0:     ma = marray;    rt = RTLSYM_DARRAY;     break;
++            case 1:     ma = massert;   rt = RTLSYM_DASSERT;   break;
++            case 2:     ma = munittest; rt = RTLSYM_DUNITTESTM; break;
++            default:    assert(0);
++        }
+ 
+         if (ma)
+         {
+             elem *elinnum;
+-            elem *efilename;
+ 
+             localgot = NULL;
+ 
+             // Call dassert(filename, line)
+             // Get sole parameter, linnum
+             {
+-                Symbol *sp;
+-
+-                sp = symbol_calloc("linnum");
++                Symbol *sp = symbol_calloc("linnum");
+                 sp->Stype = type_fake(TYint);
+                 sp->Stype->Tcount++;
+                 sp->Sclass = SCfastpar;
+@@ -429,9 +497,9 @@
+                 elinnum = el_var(sp);
+             }
+ 
+-            efilename = toEmodulename();
++            elem *efilename = toEmodulename();
+ 
+-            elem *e = el_var(rtlsym[i ? RTLSYM_DARRAY : RTLSYM_DASSERT]);
++            elem *e = el_var(rtlsym[rt]);
+             e = el_bin(OPcall, TYvoid, e, el_param(elinnum, efilename));
+ 
+             block *b = block_calloc();
+@@ -459,8 +527,6 @@
+ 
+ void FuncDeclaration::toObjFile(int multiobj)
+ {
+-    Symbol *s;
+-    func_t *f;
+     Symbol *senter;
+     Symbol *sexit;
+     FuncDeclaration *func = this;
+@@ -469,7 +535,7 @@
+     int i;
+     int has_arguments;
+ 
+-    //printf("FuncDeclaration::toObjFile(%p, %s)\n", func, func->toChars());
++    //printf("FuncDeclaration::toObjFile(%p, %s.%s)\n", func, parent->toChars(), func->toChars());
+ #if 0
+     //printf("line = %d\n",func->getWhere() / LINEINC);
+     EEcontext *ee = env->getEEcontext();
+@@ -502,8 +568,8 @@
+     if (global.params.verbose)
+         printf("function  %s\n",func->toChars());
+ 
+-    s = func->toSymbol();
+-    f = s->Sfunc;
++    Symbol *s = func->toSymbol();
++    func_t *f = s->Sfunc;
+ 
+ #if TARGET_WINDOS
+     /* This is done so that the 'this' pointer on the stack is the same
+@@ -670,9 +736,8 @@
+     if (reverse)
+     {   // Reverse params[] entries
+         for (i = 0; i < pi/2; i++)
+-        {   Symbol *sptmp;
+-
+-            sptmp = params[i];
++        {
++            Symbol *sptmp = params[i];
+             params[i] = params[pi - 1 - i];
+             params[pi - 1 - i] = sptmp;
+         }
+@@ -723,9 +788,45 @@
+         symbol_add(sp);
+     }
+ 
+-    // First parameter goes in register
++    // Determine register assignments
+     if (pi)
+     {
++        if (global.params.isX86_64)
++        {
++            // Order of assignment of pointer or integer parameters
++            static const unsigned char argregs[6] = { DI,SI,DX,CX,R8,R9 };
++            int r = 0;
++            int xmmcnt = XMM0;
++
++            for (int i = 0; i < pi; i++)
++            {   Symbol *sp = params[i];
++                tym_t ty = tybasic(sp->Stype->Tty);
++                // BUG: doesn't work for structs
++                if (r < sizeof(argregs)/sizeof(argregs[0]))
++                {
++                    if (type_jparam(sp->Stype))
++                    {
++                        sp->Sclass = SCfastpar;
++                        sp->Spreg = argregs[r];
++                        sp->Sfl = FLauto;
++                        ++r;
++                    }
++                }
++                if (xmmcnt < XMM7)
++                {
++                    if (tyfloating(ty) && tysize(ty) <= 8)
++                    {
++                        sp->Sclass = SCfastpar;
++                        sp->Spreg = xmmcnt;
++                        sp->Sfl = FLauto;
++                        ++xmmcnt;
++                    }
++                }
++            }
++        }
++        else
++        {
++            // First parameter goes in register
+         Symbol *sp = params[0];
+         if ((tyf == TYjfunc || tyf == TYmfunc) &&
+             type_jparam(sp->Stype))
+@@ -735,6 +836,7 @@
+             //printf("'%s' is SCfastpar\n",sp->Sident);
+         }
+     }
++    }
+ 
+     if (func->fbody)
+     {   block *b;
+@@ -753,6 +855,9 @@
+         bx.member = func;
+         bx.module = getModule();
+         irs.blx = &bx;
++#if DMDV2
++        buildClosure(&irs);
++#endif
+ 
+ #if 0
+         if (func->isSynchronized())
+@@ -826,14 +931,46 @@
+     }
+ 
+     // If static constructor
+-    if (isStaticConstructor())
++#if DMDV2
++    if (isSharedStaticCtorDeclaration())        // must come first because it derives from StaticCtorDeclaration
++    {
++        elem *e = el_una(OPucall, TYvoid, el_var(s));
++        esharedctor = el_combine(esharedctor, e);
++    }
++    else
++#endif
++    if (isStaticCtorDeclaration())
+     {
+         elem *e = el_una(OPucall, TYvoid, el_var(s));
+         ector = el_combine(ector, e);
+     }
+ 
+     // If static destructor
+-    if (isStaticDestructor())
++#if DMDV2
++    if (isSharedStaticDtorDeclaration())        // must come first because it derives from StaticDtorDeclaration
++    {
++        elem *e;
++
++#if STATICCTOR
++        e = el_bin(OPcall, TYvoid, el_var(rtlsym[RTLSYM_FATEXIT]), el_ptr(s));
++        esharedctor = el_combine(esharedctor, e);
++        shareddtorcount++;
++#else
++        SharedStaticDtorDeclaration *f = isSharedStaticDtorDeclaration();
++        assert(f);
++        if (f->vgate)
++        {   /* Increment destructor's vgate at construction time
++             */
++            esharedctorgates.push(f);
++        }
++
++        e = el_una(OPucall, TYvoid, el_var(s));
++        eshareddtor = el_combine(e, eshareddtor);
++#endif
++    }
++    else
++#endif
++    if (isStaticDtorDeclaration())
+     {
+         elem *e;
+ 
+@@ -845,7 +982,7 @@
+         StaticDtorDeclaration *f = isStaticDtorDeclaration();
+         assert(f);
+         if (f->vgate)
+-        {   /* Increment vgate at construction time
++        {   /* Increment destructor's vgate at construction time
+              */
+             Symbol *s = f->vgate->toSymbol();
+             e = el_var(s);
+@@ -940,7 +1077,11 @@
+         case Tpointer:  t = TYnptr;     break;
+         case Tdelegate: t = TYdelegate; break;
+         case Tarray:    t = TYdarray;   break;
++#if SARRAYVALUE
++        case Tsarray:   t = TYstruct;   break;
++#else
+         case Tsarray:   t = TYarray;    break;
++#endif
+         case Tstruct:   t = TYstruct;   break;
+ 
+         case Tenum:
+@@ -972,6 +1113,7 @@
+         case 0:
+             break;
+         case MODconst:
++        case MODwild:
+             t |= mTYconst;
+             break;
+         case MODimmutable:
+@@ -980,6 +1122,7 @@
+         case MODshared:
+             t |= mTYshared;
+             break;
++        case MODshared | MODwild:
+         case MODshared | MODconst:
+             t |= mTYshared | mTYconst;
+             break;
+diff -aruw dmd62/init.c dmd63/init.c
+--- dmd62/init.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/init.c	2010-08-09 14:33:14.000000000 -0400
+@@ -341,7 +341,7 @@
+ Initializer *ArrayInitializer::semantic(Scope *sc, Type *t)
+ {   unsigned i;
+     unsigned length;
+-    const unsigned long amax = 0x80000000;
++    const unsigned amax = 0x80000000;
+ 
+     //printf("ArrayInitializer::semantic(%s)\n", t->toChars());
+     if (sem)                            // if semantic() already run
+@@ -394,7 +394,7 @@
+     }
+ 
+     if ((unsigned long) dim * t->nextOf()->size() >= amax)
+-    {   error(loc, "array dimension %u exceeds max of %ju", dim, amax / t->nextOf()->size());
++    {   error(loc, "array dimension %u exceeds max of %u", dim, amax / t->nextOf()->size());
+         goto Lerr;
+     }
+     return this;
+diff -aruw dmd62/interpret.c dmd63/interpret.c
+--- dmd62/interpret.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/interpret.c	2010-08-09 14:33:14.000000000 -0400
+@@ -1110,8 +1110,9 @@
+ 
+ Expression *ThisExp::interpret(InterState *istate)
+ {
+-    if (istate->localThis)
++    if (istate && istate->localThis)
+         return istate->localThis->interpret(istate);
++    error("value of 'this' is not known at compile time");
+     return EXP_CANT_INTERPRET;
+ }
+ 
+@@ -2105,6 +2106,11 @@
+ #endif
+     Expression *e = EXP_CANT_INTERPRET;
+     Expression *e1 = this->e1;
++    if (!istate)
++    {
++        error("value of %s is not known at compile time", e1->toChars());
++        return e;
++    }
+ 
+     if (fp)
+     {
+diff -aruw dmd62/libelf.c dmd63/libelf.c
+--- dmd62/libelf.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/libelf.c	2010-08-09 14:33:14.000000000 -0400
+@@ -161,6 +161,8 @@
+     assert(len <= 12);
+     memset(h->file_time + len, ' ', 12 - len);
+ 
++    if (om->user_id > 999999)
++        om->user_id = 0;
+     len = sprintf(h->user_id, "%u", om->user_id);
+     assert(len <= 6);
+     memset(h->user_id + len, ' ', 6 - len);
+diff -aruw dmd62/libmach.c dmd63/libmach.c
+--- dmd62/libmach.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/libmach.c	2010-08-09 14:33:14.000000000 -0400
+@@ -164,10 +164,14 @@
+     assert(len <= 12);
+     memset(h->file_time + len, ' ', 12 - len);
+ 
++    if (om->user_id > 999999)           // yes, it happens
++        om->user_id = 0;                // don't really know what to do here
+     len = sprintf(h->user_id, "%u", om->user_id);
+     assert(len <= 6);
+     memset(h->user_id + len, ' ', 6 - len);
+ 
++    if (om->group_id > 999999)          // yes, it happens
++        om->group_id = 0;               // don't really know what to do here
+     len = sprintf(h->group_id, "%u", om->group_id);
+     assert(len <= 6);
+     memset(h->group_id + len, ' ', 6 - len);
+diff -aruw dmd62/link.c dmd63/link.c
+--- dmd62/link.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/link.c	2010-08-09 14:33:14.000000000 -0400
+@@ -210,11 +210,20 @@
+     argv.push((void *)cc);
+     argv.insert(1, global.params.objfiles);
+ 
++#if __APPLE__
++    // If we are on Mac OS X and linking a dynamic library,
++    // add the "-dynamiclib" flag
++    if (global.params.dll)
++        argv.push((void *) "-dynamiclib");
++#endif
++
+     // None of that a.out stuff. Use explicit exe file name, or
+     // generate one from name of first source file.
+     argv.push((void *)"-o");
+     if (global.params.exefile)
+     {
++        if (global.params.dll)
++            global.params.exefile = FileName::forceExt(global.params.exefile, global.dll_ext)->toChars();
+         argv.push(global.params.exefile);
+     }
+     else
+@@ -231,6 +240,9 @@
+             ex = (char *)mem.malloc(e - n + 1);
+             memcpy(ex, n, e - n);
+             ex[e - n] = 0;
++            // If generating dll then force dll extension
++            if (global.params.dll)
++                ex = FileName::forceExt(ex, global.dll_ext)->toChars();
+         }
+         else
+             ex = (char *)"a.out";       // no extension, so give up
+@@ -357,9 +369,17 @@
+ 
+     waitpid(childpid, &status, 0);
+ 
++    if (WIFEXITED(status))
++    {
+     status=WEXITSTATUS(status);
+     if (status)
+         printf("--- errorlevel %d\n", status);
++    }
++    else if (WIFSIGNALED(status))
++    {
++        printf("--- killed by signal %d\n", WTERMSIG(status));
++        status = 1;
++    }
+     return status;
+ #else
+     printf ("Linking is not yet supported for this version of DMD.\n");
+@@ -546,7 +566,16 @@
+ 
+     waitpid(childpid, &status, 0);
+ 
++    if (WIFEXITED(status))
++    {
+     status = WEXITSTATUS(status);
++        //printf("--- errorlevel %d\n", status);
++    }
++    else if (WIFSIGNALED(status))
++    {
++        printf("--- killed by signal %d\n", WTERMSIG(status));
++        status = 1;
++    }
+     return status;
+ #else
+     assert(0);
+diff -aruw dmd62/mars.c dmd63/mars.c
+--- dmd62/mars.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/mars.c	2010-08-09 14:33:14.000000000 -0400
+@@ -75,13 +75,23 @@
+ #error "fix this"
+ #endif
+ 
++#if TARGET_WINDOS
++    dll_ext  = "dll";
++#elif TARGET_LINUX || TARGET_FREEBSD || TARGET_SOLARIS
++    dll_ext  = "so";
++#elif TARGET_OSX
++    dll_ext = "dylib";
++#else
++#error "fix this"
++#endif
++
+     copyright = "Copyright (c) 1999-2010 by Digital Mars";
+     written = "written by Walter Bright"
+ #if TARGET_NET
+     "\nMSIL back-end (alpha release) by Cristian L. Vlasceanu and associates.";
+ #endif
+     ;
+-    version = "v1.062";
++    version = "v1.063";
+     global.structalign = 8;
+ 
+     memset(&params, 0, sizeof(Param));
+@@ -253,8 +263,11 @@
+   -debug=ident   compile in debug code identified by ident\n\
+   -debuglib=name    set symbolic debug library to name\n\
+   -defaultlib=name  set default library to name\n\
+-  -deps=filename write module dependencies to filename\n%s\
+-  -g             add symbolic debug info\n\
++  -deps=filename write module dependencies to filename\n%s"
++#if TARGET_OSX
++"  -dylib         generate dylib\n"
++#endif
++"  -g             add symbolic debug info\n\
+   -gc            add symbolic debug info, pretend to be C\n\
+   -H             generate 'header' file\n\
+   -Hddirectory   write 'header' file to directory\n\
+@@ -419,6 +432,10 @@
+             else if (strcmp(p + 1, "fPIC") == 0)
+                 global.params.pic = 1;
+ #endif
++#if TARGET_OSX
++            else if (strcmp(p + 1, "dylib") == 0)
++                global.params.dll = 1;
++#endif
+             else if (strcmp(p + 1, "map") == 0)
+                 global.params.map = 1;
+             else if (strcmp(p + 1, "multiobj") == 0)
+@@ -431,6 +448,8 @@
+             {   error("use -profile instead of -gt\n");
+                 global.params.trace = 1;
+             }
++            else if (strcmp(p + 1, "m32") == 0)
++                global.params.isX86_64 = 0;
+             else if (strcmp(p + 1, "m64") == 0)
+                 global.params.isX86_64 = 1;
+             else if (strcmp(p + 1, "profile") == 0)
+diff -aruw dmd62/mars.h dmd63/mars.h
+--- dmd62/mars.h	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/mars.h	2010-08-09 14:33:14.000000000 -0400
+@@ -119,6 +119,7 @@
+ {
+     char obj;           // write object file
+     char link;          // perform link
++    char dll;           // generate shared dynamic library
+     char lib;           // write library file instead of object file(s)
+     char multiobj;      // break one object file into multiple ones
+     char oneobj;        // write one object file instead of multiple ones
+@@ -142,7 +143,10 @@
+     char useInvariants; // generate class invariant checks
+     char useIn;         // generate precondition checks
+     char useOut;        // generate postcondition checks
+-    char useArrayBounds; // generate array bounds checks
++    char useArrayBounds; // 0: no array bounds checks
++                         // 1: array bounds checks for safe functions only
++                         // 2: array bounds checks for all functions
++    char noboundscheck; // no array bounds checking at all
+     char useSwitchError; // check for switches without a default
+     char useUnitTests;  // generate unittest code
+     char useInline;     // inline expand functions
+@@ -221,6 +225,7 @@
+     const char *sym_ext;
+     const char *obj_ext;
+     const char *lib_ext;
++    const char *dll_ext;
+     const char *doc_ext;        // for Ddoc generated files
+     const char *ddoc_ext;       // for Ddoc macro include files
+     const char *hdr_ext;        // for D 'header' import files
+diff -aruw dmd62/module.c dmd63/module.c
+--- dmd62/module.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/module.c	2010-08-09 14:33:14.000000000 -0400
+@@ -89,6 +89,7 @@
+     decldefs = NULL;
+     vmoduleinfo = NULL;
+     massert = NULL;
++    munittest = NULL;
+     marray = NULL;
+     sictor = NULL;
+     sctor = NULL;
+@@ -350,16 +351,21 @@
+ {
+     //printf("Module::read('%s') file '%s'\n", toChars(), srcfile->toChars());
+     if (srcfile->read())
+-    {   error(loc, "cannot read file '%s'", srcfile->toChars());
++    {   error(loc, "is in file '%s' which cannot be read", srcfile->toChars());
+         if (!global.gag)
+         {   /* Print path
+              */
+-            for (size_t i = 0; i < global.path->dim; i++)
++            if (global.path)
++            {
++                for (int i = 0; i < global.path->dim; i++)
+             {
+                 char *p = (char *)global.path->data[i];
+                 fprintf(stdmsg, "import path[%d] = %s\n", i, p);
+             }
+         }
++            else
++                fprintf(stdmsg, "Specify path to file '%s' with -I switch\n", srcfile->toChars());
++        }
+         fatal();
+     }
+ }
+@@ -756,6 +762,14 @@
+     }
+ #endif
+ 
++    // Do semantic() on members that don't depend on others
++    for (int i = 0; i < members->dim; i++)
++    {   Dsymbol *s = (Dsymbol *)members->data[i];
++
++        //printf("\tModule('%s'): '%s'.semantic0()\n", toChars(), s->toChars());
++        s->semantic0(sc);
++    }
++
+     // Pass 1 semantic routines: do public side of the definition
+     for (int i = 0; i < members->dim; i++)
+     {   Dsymbol *s = (Dsymbol *)members->data[i];
+diff -aruw dmd62/module.h dmd63/module.h
+--- dmd62/module.h	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/module.h	2010-08-09 14:33:14.000000000 -0400
+@@ -160,6 +160,9 @@
+     Symbol *massert;            // module assert function
+     Symbol *toModuleAssert();   // get module assert function
+ 
++    Symbol *munittest;          // module unittest failure function
++    Symbol *toModuleUnittest(); // get module unittest failure function
++
+     Symbol *marray;             // module array bounds function
+     Symbol *toModuleArray();    // get module array bounds function
+ 
+diff -aruw dmd62/msc.c dmd63/msc.c
+--- dmd62/msc.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/msc.c	2010-08-09 14:33:14.000000000 -0400
+@@ -1,6 +1,6 @@
+ 
+ // Compiler implementation of the D programming language
+-// Copyright (c) 1999-2009 by Digital Mars
++// Copyright (c) 1999-2010 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -27,6 +27,7 @@
+ #include        "tassert.h"
+ 
+ extern Global global;
++extern int REALSIZE;
+ 
+ Config config;
+ Configv configv;
+@@ -39,6 +40,7 @@
+ 
+ void out_config_init()
+ {
++    //printf("out_config_init()\n");
+     Param *params = &global.params;
+ 
+     if (!config.target_cpu)
+@@ -230,6 +232,9 @@
+             tysize[TYfptr + i] = 10;    // NOTE: There are codgen test that check
+             tysize[TYvptr + i] = 10;    // tysize[x] == tysize[TYfptr] so don't set
+             tysize[TYfref + i] = 10;    // tysize[TYfptr] to tysize[TYnptr]
++            tysize[TYldouble + i] = REALSIZE;
++            tysize[TYildouble + i] = REALSIZE;
++            tysize[TYcldouble + i] = 2 * REALSIZE;
+         }
+     }
+ 
+diff -aruw dmd62/mtype.c dmd63/mtype.c
+--- dmd62/mtype.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/mtype.c	2010-08-09 14:33:14.000000000 -0400
+@@ -75,10 +75,12 @@
+ int REALSIZE = 12;
+ int REALPAD = 2;
+ int REALALIGNSIZE = 4;
+-#else
++#elif TARGET_WINDOS
+ int REALSIZE = 10;
+ int REALPAD = 0;
+ int REALALIGNSIZE = 2;
++#else
++#error "fix this"
+ #endif
+ 
+ int Tsize_t = Tuns32;
+@@ -235,9 +237,11 @@
+     {
+         PTRSIZE = 8;
+         if (global.params.isLinux || global.params.isFreeBSD || global.params.isSolaris)
+-            REALSIZE = 10;
+-        else
+-            REALSIZE = 8;
++        {
++            REALSIZE = 16;
++            REALPAD = 6;
++            REALALIGNSIZE = 16;
++        }
+         Tsize_t = Tuns64;
+         Tptrdiff_t = Tint64;
+     }
+@@ -4739,6 +4743,9 @@
+         exps->reserve(sym->fields.dim);
+         for (size_t i = 0; i < sym->fields.dim; i++)
+         {   VarDeclaration *v = (VarDeclaration *)sym->fields.data[i];
++            // Don't include hidden 'this' pointer
++            if (v->isThisDeclaration())
++                continue;
+             Expression *fe = new DotVarExp(e->loc, e, v);
+             exps->push(fe);
+         }
+Only in dmd62: objfile.h
+diff -aruw dmd62/parse.c dmd63/parse.c
+--- dmd62/parse.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/parse.c	2010-08-09 14:33:14.000000000 -0400
+@@ -5456,6 +5456,123 @@
+     token.lineComment = NULL;
+ }
+ 
++/**********************************
++ * Set operator precedence for each operator.
++ */
++
++enum PREC precedence[TOKMAX];
++
++void initPrecedence()
++{
++    precedence[TOKdotvar] = PREC_primary;
++    precedence[TOKimport] = PREC_primary;
++    precedence[TOKidentifier] = PREC_primary;
++    precedence[TOKthis] = PREC_primary;
++    precedence[TOKsuper] = PREC_primary;
++    precedence[TOKint64] = PREC_primary;
++    precedence[TOKfloat64] = PREC_primary;
++    precedence[TOKnull] = PREC_primary;
++    precedence[TOKstring] = PREC_primary;
++    precedence[TOKarrayliteral] = PREC_primary;
++    precedence[TOKtypeid] = PREC_primary;
++    precedence[TOKis] = PREC_primary;
++    precedence[TOKassert] = PREC_primary;
++    precedence[TOKfunction] = PREC_primary;
++    precedence[TOKvar] = PREC_primary;
++#if DMDV2
++    precedence[TOKdefault] = PREC_primary;
++#endif
++
++    // post
++    precedence[TOKdotti] = PREC_primary;
++    precedence[TOKdot] = PREC_primary;
++//  precedence[TOKarrow] = PREC_primary;
++    precedence[TOKplusplus] = PREC_primary;
++    precedence[TOKminusminus] = PREC_primary;
++    precedence[TOKcall] = PREC_primary;
++    precedence[TOKslice] = PREC_primary;
++    precedence[TOKarray] = PREC_primary;
++
++    precedence[TOKaddress] = PREC_unary;
++    precedence[TOKstar] = PREC_unary;
++    precedence[TOKneg] = PREC_unary;
++    precedence[TOKuadd] = PREC_unary;
++    precedence[TOKnot] = PREC_unary;
++    precedence[TOKtobool] = PREC_add;
++    precedence[TOKtilde] = PREC_unary;
++    precedence[TOKdelete] = PREC_unary;
++    precedence[TOKnew] = PREC_unary;
++    precedence[TOKcast] = PREC_unary;
++
++    precedence[TOKmul] = PREC_mul;
++    precedence[TOKdiv] = PREC_mul;
++    precedence[TOKmod] = PREC_mul;
++
++    precedence[TOKadd] = PREC_add;
++    precedence[TOKmin] = PREC_add;
++    precedence[TOKcat] = PREC_add;
++
++    precedence[TOKshl] = PREC_shift;
++    precedence[TOKshr] = PREC_shift;
++    precedence[TOKushr] = PREC_shift;
++
++    precedence[TOKlt] = PREC_rel;
++    precedence[TOKle] = PREC_rel;
++    precedence[TOKgt] = PREC_rel;
++    precedence[TOKge] = PREC_rel;
++    precedence[TOKunord] = PREC_rel;
++    precedence[TOKlg] = PREC_rel;
++    precedence[TOKleg] = PREC_rel;
++    precedence[TOKule] = PREC_rel;
++    precedence[TOKul] = PREC_rel;
++    precedence[TOKuge] = PREC_rel;
++    precedence[TOKug] = PREC_rel;
++    precedence[TOKue] = PREC_rel;
++    precedence[TOKin] = PREC_rel;
+ 
+-/********************************* ***************************/
++#if 0
++    precedence[TOKequal] = PREC_equal;
++    precedence[TOKnotequal] = PREC_equal;
++    precedence[TOKidentity] = PREC_equal;
++    precedence[TOKnotidentity] = PREC_equal;
++#else
++    /* Note that we changed precedence, so that < and != have the same
++     * precedence. This change is in the parser, too.
++     */
++    precedence[TOKequal] = PREC_rel;
++    precedence[TOKnotequal] = PREC_rel;
++    precedence[TOKidentity] = PREC_rel;
++    precedence[TOKnotidentity] = PREC_rel;
++#endif
++
++    precedence[TOKand] = PREC_and;
++
++    precedence[TOKxor] = PREC_xor;
++
++    precedence[TOKor] = PREC_or;
++
++    precedence[TOKandand] = PREC_andand;
++
++    precedence[TOKoror] = PREC_oror;
++
++    precedence[TOKquestion] = PREC_cond;
++
++    precedence[TOKassign] = PREC_assign;
++    precedence[TOKconstruct] = PREC_assign;
++    precedence[TOKblit] = PREC_assign;
++    precedence[TOKaddass] = PREC_assign;
++    precedence[TOKminass] = PREC_assign;
++    precedence[TOKcatass] = PREC_assign;
++    precedence[TOKmulass] = PREC_assign;
++    precedence[TOKdivass] = PREC_assign;
++    precedence[TOKmodass] = PREC_assign;
++    precedence[TOKshlass] = PREC_assign;
++    precedence[TOKshrass] = PREC_assign;
++    precedence[TOKushrass] = PREC_assign;
++    precedence[TOKandass] = PREC_assign;
++    precedence[TOKorass] = PREC_assign;
++    precedence[TOKxorass] = PREC_assign;
++
++    precedence[TOKcomma] = PREC_expr;
++}
+ 
+diff -aruw dmd62/parse.h dmd63/parse.h
+--- dmd62/parse.h	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/parse.h	2010-08-09 14:33:14.000000000 -0400
+@@ -143,4 +143,30 @@
+     void addComment(Dsymbol *s, unsigned char *blockComment);
+ };
+ 
++// Operator precedence - greater values are higher precedence
++
++enum PREC
++{
++    PREC_zero,
++    PREC_expr,
++    PREC_assign,
++    PREC_cond,
++    PREC_oror,
++    PREC_andand,
++    PREC_or,
++    PREC_xor,
++    PREC_and,
++    PREC_equal,
++    PREC_rel,
++    PREC_shift,
++    PREC_add,
++    PREC_mul,
++    PREC_unary,
++    PREC_primary,
++};
++
++extern enum PREC precedence[TOKMAX];
++
++void initPrecedence();
++
+ #endif /* DMD_PARSE_H */
+diff -aruw dmd62/root/async.c dmd63/root/async.c
+--- dmd62/root/async.c	2010-06-09 19:06:32.000000000 -0400
++++ dmd63/root/async.c	2010-08-09 14:33:14.000000000 -0400
+@@ -8,7 +8,6 @@
+ #if _WIN32
+ 
+ #include <windows.h>
+-#include <stdio.h>
+ #include <errno.h>
+ #include <process.h>
+ 
+@@ -113,6 +112,153 @@
+     return EXIT_SUCCESS;                // if skidding
+ }
+ 
++#elif linux  // Posix
++
++#include <errno.h>
++#include <pthread.h>
++#include <time.h>
++
++#include "root.h"
++#include "rmem.h"
++
++void *startthread(void *arg);
++
++void err_abort(int status, const char *msg)
++{
++    fprintf(stderr, "fatal error = %d, %s\n", status, msg);
++    exit(EXIT_FAILURE);
++}
++
++struct FileData
++{
++    File *file;
++    int result;
++
++    pthread_mutex_t mutex;
++    pthread_cond_t cond;
++    int value;
++};
++
++struct AsyncRead
++{
++    static AsyncRead *create(size_t nfiles);
++    void addFile(File *file);
++    void start();
++    int read(size_t i);
++    static void dispose(AsyncRead *);
++
++    size_t filesdim;
++    size_t filesmax;
++    FileData files[1];
++};
++
++
++AsyncRead *AsyncRead::create(size_t nfiles)
++{
++    AsyncRead *aw = (AsyncRead *)mem.calloc(1, sizeof(AsyncRead) +
++                                (nfiles - 1) * sizeof(FileData));
++    aw->filesmax = nfiles;
++    return aw;
++}
++
++void AsyncRead::addFile(File *file)
++{
++    //printf("addFile(file = %p)\n", file);
++    //printf("filesdim = %d, filesmax = %d\n", filesdim, filesmax);
++    assert(filesdim < filesmax);
++    FileData *f = &files[filesdim];
++    f->file = file;
++
++    int status = pthread_mutex_init(&f->mutex, NULL);
++    if (status != 0)
++        err_abort(status, "init mutex");
++    status = pthread_cond_init(&f->cond, NULL);
++    if (status != 0)
++        err_abort(status, "init cond");
++
++    filesdim++;
++}
++
++void AsyncRead::start()
++{
++    //printf("aw->filesdim = %p %d\n", this, filesdim);
++    if (filesdim)
++    {
++        pthread_t thread_id;
++        int status = pthread_create(&thread_id,
++            NULL,
++            &startthread,
++            this);
++        if (status != 0)
++            err_abort(status, "create thread");
++    }
++}
++
++int AsyncRead::read(size_t i)
++{
++    FileData *f = &files[i];
++
++    // Wait for the event
++    int status = pthread_mutex_lock(&f->mutex);
++    if (status != 0)
++        err_abort(status, "lock mutex");
++    while (f->value == 0)
++    {
++        status = pthread_cond_wait(&f->cond, &f->mutex);
++        if (status != 0)
++            err_abort(status, "wait on condition");
++    }
++    status = pthread_mutex_unlock(&f->mutex);
++    if (status != 0)
++        err_abort(status, "unlock mutex");
++
++    return f->result;
++}
++
++void AsyncRead::dispose(AsyncRead *aw)
++{
++    //printf("AsyncRead::dispose()\n");
++    for (int i = 0; i < aw->filesdim; i++)
++    {
++        FileData *f = &aw->files[i];
++        int status = pthread_cond_destroy(&f->cond);
++        if (status != 0)
++            err_abort(status, "cond destroy");
++        status = pthread_mutex_destroy(&f->mutex);
++        if (status != 0)
++            err_abort(status, "mutex destroy");
++    }
++    delete aw;
++}
++
++
++void *startthread(void *p)
++{
++    AsyncRead *aw = (AsyncRead *)p;
++
++    //printf("startthread: aw->filesdim = %p %d\n", aw, aw->filesdim);
++    size_t dim = aw->filesdim;
++    for (size_t i = 0; i < dim; i++)
++    {   FileData *f = &aw->files[i];
++
++        f->result = f->file->read();
++
++        // Set event
++        int status = pthread_mutex_lock(&f->mutex);
++        if (status != 0)
++            err_abort(status, "lock mutex");
++        f->value = 1;
++        status = pthread_cond_signal(&f->cond);
++        if (status != 0)
++            err_abort(status, "signal condition");
++        status = pthread_mutex_unlock(&f->mutex);
++        if (status != 0)
++            err_abort(status, "unlock mutex");
++    }
++
++    return NULL;                        // end thread
++}
++
+ #else
+ 
+ #include <stdio.h>
+diff -aruw dmd62/root/port.c dmd63/root/port.c
+--- dmd62/root/port.c	2010-06-09 19:06:32.000000000 -0400
++++ dmd63/root/port.c	2010-08-09 14:33:14.000000000 -0400
+@@ -322,6 +322,9 @@
+ #include <bits/nan.h>
+ #include <bits/mathdef.h>
+ #endif
++#if __FreeBSD__ && __i386__
++#include <ieeefp.h>
++#endif
+ #include <time.h>
+ #include <sys/time.h>
+ #include <unistd.h>
+@@ -355,11 +358,13 @@
+         foo = -foo;     // turn off sign bit
+     Port::nan = foo;
+ 
+-#if __FreeBSD__
++#if __FreeBSD__ && __i386__
+     // LDBL_MAX comes out as infinity. Fix.
+     static unsigned char x[sizeof(long double)] =
+         { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFE,0x7F };
+     Port::ldbl_max = *(long double *)&x[0];
++    // FreeBSD defaults to double precision. Switch to extended precision.
++    fpsetprec(FP_PE);
+ #endif
+ }
+ 
+diff -aruw dmd62/root/root.c dmd63/root/root.c
+--- dmd62/root/root.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/root/root.c	2010-08-09 14:33:14.000000000 -0400
+@@ -29,6 +29,7 @@
+ #if _WIN32
+ #include <windows.h>
+ #include <direct.h>
++#include <errno.h>
+ #endif
+ 
+ #if POSIX
+@@ -957,11 +958,17 @@
+ #if POSIX
+                 if (mkdir(path, 0777))
+ #endif
++                {
++                    /* Don't error out if another instance of dmd just created
++                     * this directory
++                     */
++                    if (errno != EEXIST)
+                     error("cannot create directory %s", path);
+             }
+         }
+     }
+ }
++}
+ 
+ 
+ /******************************************
+@@ -1749,7 +1756,7 @@
+ void OutBuffer::write4(unsigned w)
+ {
+     reserve(4);
+-    *(unsigned long *)(this->data + offset) = w;
++    *(unsigned *)(this->data + offset) = w;
+     offset += 4;
+ }
+ 
+diff -aruw dmd62/s2ir.c dmd63/s2ir.c
+--- dmd62/s2ir.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/s2ir.c	2010-08-09 14:33:14.000000000 -0400
+@@ -89,20 +89,25 @@
+  * Convert label to block.
+  */
+ 
+-block *labelToBlock(Loc loc, Blockx *blx, LabelDsymbol *label)
++block *labelToBlock(Loc loc, Blockx *blx, LabelDsymbol *label, int flag = 0)
+ {
+-    LabelStatement *s;
+-
+     if (!label->statement)
+     {
+         error(loc, "undefined label %s", label->toChars());
+         return NULL;
+     }
+-    s = label->statement;
++    LabelStatement *s = label->statement;
+     if (!s->lblock)
+     {   s->lblock = block_calloc(blx);
+-        if (s->isReturnLabel)
+-            s->lblock->Btry = NULL;
++        s->lblock->Btry = NULL;         // fill this in later
++
++        if (flag)
++        {
++            // Keep track of the forward reference to this block, so we can check it later
++            if (!s->fwdrefs)
++                s->fwdrefs = new Array();
++            s->fwdrefs->push(s->lblock);
++        }
+     }
+     return s->lblock;
+ }
+@@ -809,7 +814,7 @@
+     if (tf != label->statement->tf)
+         error("cannot goto forward out of or into finally block");
+ 
+-    bdest = labelToBlock(loc, blx, label);
++    bdest = labelToBlock(loc, blx, label, 1);
+     if (!bdest)
+         return;
+     b = blx->curblock;
+@@ -846,11 +851,34 @@
+ 
+     if (lblock)
+     {
+-        // We had made a guess about which tryblock the label is in.
+-        // Error if we guessed wrong.
+-        // BUG: should fix this
+-        if (lblock->Btry != blx->tryblock)
+-            error("cannot goto forward into different try block level");
++        // At last, we know which try block this label is inside
++        lblock->Btry = blx->tryblock;
++
++        /* Go through the forward references and check.
++         */
++        if (fwdrefs)
++        {
++            for (int i = 0; i < fwdrefs->dim; i++)
++            {   block *b = (block *)fwdrefs->data[i];
++
++                if (b->Btry != lblock->Btry)
++                {
++                    // Check that lblock is in an enclosing try block
++                    for (block *bt = b->Btry; bt != lblock->Btry; bt = bt->Btry)
++                    {
++                        if (!bt)
++                        {
++                            //printf("b->Btry = %p, lblock->Btry = %p\n", b->Btry, lblock->Btry);
++                            error("cannot goto into try block");
++                            break;
++                        }
++                    }
++                }
++
++            }
++            delete fwdrefs;
++            fwdrefs = NULL;
++        }
+     }
+     else
+         lblock = block_calloc(blx);
+diff -aruw dmd62/statement.c dmd63/statement.c
+--- dmd62/statement.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/statement.c	2010-08-09 14:33:14.000000000 -0400
+@@ -1829,6 +1829,11 @@
+                  */
+                 Expressions *exps = new Expressions();
+                 exps->push(flde);
++                if (aggr->op == TOKdelegate &&
++                    ((DelegateExp *)aggr)->func->isNested())
++                    // See Bugzilla 3560
++                    e = new CallExp(loc, ((DelegateExp *)aggr)->e1, exps);
++                else
+                 e = new CallExp(loc, aggr, exps);
+                 e = e->semantic(sc);
+                 if (e->type != Type::tint32)
+@@ -3766,9 +3771,11 @@
+     else if (exp->op == TOKtype)
+     {   TypeExp *es = (TypeExp *)exp;
+ 
+-        sym = es->type->toDsymbol(sc)->isScopeDsymbol();
++        Dsymbol *s = es->type->toDsymbol(sc);
++        sym = s ? s->isScopeDsymbol() : NULL;
+         if (!sym)
+-        {   error("%s has no members", es->toChars());
++        {   error("with type %s has no members", es->toChars());
++            if (body)
+             body = body->semantic(sc);
+             return this;
+         }
+@@ -4323,7 +4330,7 @@
+     this->statement = statement;
+     this->tf = NULL;
+     this->lblock = NULL;
+-    this->isReturnLabel = 0;
++    this->fwdrefs = NULL;
+ }
+ 
+ Statement *LabelStatement::syntaxCopy()
+diff -aruw dmd62/statement.h dmd63/statement.h
+--- dmd62/statement.h	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/statement.h	2010-08-09 14:33:14.000000000 -0400
+@@ -791,7 +791,8 @@
+     Statement *statement;
+     TryFinallyStatement *tf;
+     block *lblock;              // back end
+-    int isReturnLabel;
++
++    Array *fwdrefs;             // forward references to this LabelStatement
+ 
+     LabelStatement(Loc loc, Identifier *ident, Statement *statement);
+     Statement *syntaxCopy();
+diff -aruw dmd62/tocsym.c dmd63/tocsym.c
+--- dmd62/tocsym.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/tocsym.c	2010-08-09 14:33:14.000000000 -0400
+@@ -141,7 +141,7 @@
+     id = (char *) alloca(6 + strlen(n) + 1 + sizeof(type_paramsize(sym->Stype))*3 + 1);
+     if (sym->Stype->Tmangle == mTYman_std && tyfunc(sym->Stype->Tty))
+     {
+-        sprintf(id,"_imp__%s@%lu",n,type_paramsize(sym->Stype));
++        sprintf(id,"_imp__%s@%lu",n,(unsigned long)type_paramsize(sym->Stype));
+     }
+     else if (sym->Stype->Tmangle == mTYman_d)
+         sprintf(id,"_imp_%s",n);
+diff -aruw dmd62/todt.c dmd63/todt.c
+--- dmd62/todt.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/todt.c	2010-08-09 14:33:14.000000000 -0400
+@@ -1,6 +1,6 @@
+ 
+ // Compiler implementation of the D programming language
+-// Copyright (c) 1999-2009 by Digital Mars
++// Copyright (c) 1999-2010 by Digital Mars
+ // All Rights Reserved
+ // written by Walter Bright
+ // http://www.digitalmars.com
+@@ -692,7 +692,8 @@
+                 assert(sz <= vsz);
+ 
+                 unsigned dim = 1;
+-                for (Type *vt = v->type->toBasetype();
++                Type *vt;
++                for (vt = v->type->toBasetype();
+                      vt->ty == Tsarray;
+                      vt = vt->next->toBasetype())
+                 {   TypeSArray *tsa = (TypeSArray *)vt;
+@@ -708,7 +709,7 @@
+                         if (v->init)
+                             d = v->init->toDt();
+                         else
+-                            v->type->toDt(&d);
++                            vt->toDt(&d);
+                     }
+                     pdt = dtcat(pdt, d);
+                     d = NULL;
+diff -aruw dmd62/traits.c dmd63/traits.c
+--- dmd62/traits.c	2010-06-09 19:06:30.000000000 -0400
++++ dmd63/traits.c	2010-08-09 14:33:14.000000000 -0400
+@@ -354,7 +354,7 @@
+ 
+             global.gag--;
+             if (errors != global.errors)
+-            {   if (global.gag == 0)
++            {
+                     global.errors = errors;
+                 goto Lfalse;
+             }

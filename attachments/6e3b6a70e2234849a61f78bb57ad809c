@@ -1,0 +1,25 @@
+diff -r dff644cb9636 d/d-glue.cc
+--- a/d/d-glue.cc	Sat Jul 30 23:54:02 2011 -0400
++++ b/d/d-glue.cc	Mon Aug 01 11:29:08 2011 -0400
+@@ -3810,12 +3810,19 @@ TypeDArray::toCtype()
+                     "length", "ptr");
+         }
+ #if V2
++        tree btype;
++        
+         if (basic[next->ty])
+         {   /* Basic array type always the main variant of this record type.
+                Addresses problems with transparency in the const system. */
+-            tree btype = basic[next->ty]->arrayOf()->toCtype();
+-            TYPE_MAIN_VARIANT(ctype) = btype;
++            btype = basic[next->ty]->arrayOf()->toCtype();
++        } 
++        else
++        { /* Make const(T[]) and const(T)[] variants of T[] otherwise when next
++             is const GCC will view const(T)[] and T[] as distinct types. */
++            btype = next->castMod(0)->arrayOf()->toCtype();
+         }
++        TYPE_MAIN_VARIANT(ctype) = btype;
+ #endif
+         dkeep(ctype);
+     }

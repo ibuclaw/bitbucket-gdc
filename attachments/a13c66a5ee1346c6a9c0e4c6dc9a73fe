@@ -1,0 +1,59 @@
+diff -ur gcc-4.5.2/libphobos.old/core/thread.d gcc-4.5.2/libphobos/core/thread.d
+--- gcc-4.5.2/libphobos.old/core/thread.d	2011-02-19 22:30:53.000000000 +0000
++++ gcc-4.5.2/libphobos/core/thread.d	2011-02-25 19:59:02.889051057 +0000
+@@ -141,6 +141,15 @@
+                 extern int _tlsend;
+             }
+         }
++        else version( GNU )
++        {
++            extern (C)
++            {
++                int _tlsstart = 3;
++                int _tlsend;
++                __gshared int _tls_index = 0;
++            }
++        }
+         else
+         {
+             __gshared int   _tlsstart;
+diff -ur gcc-4.5.2/libphobos.old/rt/monitor_.d gcc-4.5.2/libphobos/rt/monitor_.d
+--- gcc-4.5.2/libphobos.old/rt/monitor_.d	2011-02-19 22:30:53.000000000 +0000
++++ gcc-4.5.2/libphobos/rt/monitor_.d	2011-02-25 19:34:52.945861196 +0000
+@@ -88,7 +88,6 @@
+ 
+ version( Windows )
+ {
+-    /+
+     static __gshared CRITICAL_SECTION _monitor_critsec;
+ 
+     extern (C) void _STI_monitor_staticctor()
+@@ -166,7 +165,6 @@
+         LeaveCriticalSection(&getMonitor(h).mon);
+         debug(PRINTF) printf("-_d_monitor_release(%p)\n", h);
+     }
+-    +/
+ }
+ 
+ /* =============================== linux ============================ */
+diff -ur gcc-4.5.2/gcc/d.old/d-spec.c gcc-4.5.2/gcc/d/d-spec.c
+--- gcc-4.5.2/gcc/d.old/d-spec.c	2011-02-24 20:20:51.000000000 +0000
++++ gcc-4.5.2/gcc/d/d-spec.c	2011-02-25 19:34:01.049603831 +0000
+@@ -24,6 +24,8 @@
+ #include "coretypes.h"
+ #include "tm.h"
+ 
++#include "d-confdefs.h"
++
+ #include "gcc.h"
+ 
+ /* This bit is set if we saw a `-xfoo' language specification.  */
+@@ -489,7 +491,7 @@
+ 
+     if (saw_librt)
+         arglist[j++] = saw_librt;
+-#if _POSIX_TIMERS
++#if TARGET_LINUX
+     /* Only link if linking statically and target platform supports. */
+     else if (library > 0 && (static_phobos || static_link))
+     {

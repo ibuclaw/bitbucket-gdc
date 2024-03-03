@@ -1,0 +1,2072 @@
+diff -r f7db5a788077 d/dmd/attrib.c
+--- a/d/dmd/attrib.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/attrib.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -217,12 +217,12 @@
+     //printf("AttribDeclaration::emitComment(sc = %p)\n", sc);
+     
+     /* A general problem with this, illustrated by BUGZILLA 2516,
+-+      * is that attributes are not transmitted through to the underlying
+-+      * member declarations for template bodies, because semantic analysis
+-+      * is not done for template declaration bodies
+-+      * (only template instantiations).
+-+      * Hence, Ddoc omits attributes from template members.
+-+      */
++     * is that attributes are not transmitted through to the underlying
++     * member declarations for template bodies, because semantic analysis
++     * is not done for template declaration bodies
++     * (only template instantiations).
++     * Hence, Ddoc omits attributes from template members.
++     */
+ 
+     Array *d = include(NULL, NULL);
+ 
+@@ -1128,16 +1128,16 @@
+ 	name[se->len] = 0;
+ 	#if OMFOBJ
+  	/* The OMF format allows library names to be inserted
+-+ 	 * into the object file. The linker will then automatically
+-+ 	 * search that library, too.
+-+ 	 */
++	 * into the object file. The linker will then automatically
++	 * search that library, too.
++	 */
+   	obj_includelib(name);
+  	#elif ELFOBJ || MACHOBJ
+  	/* The format does not allow embedded library names,
+- 	/* The ELF format does not allow embedded library names,
+-+ 	 * so instead append the library name to the list to be passed
+-+ 	 * to the linker.
+-+ 	 */
++ 	 * The ELF format does not allow embedded library names,
++	 * so instead append the library name to the list to be passed
++	 * to the linker.
++	 */
+  	global.params.libfiles->push((void *) name);
+  #else
+  	error("pragma lib not supported");
+@@ -1220,8 +1220,8 @@
+     else if (sc->docbuf)
+      {
+  	/* If generating doc comment, be careful because if we're inside
+-+ 	 * a template, then include(NULL, NULL) will fail.
+-+ 	 */
++	 * a template, then include(NULL, NULL) will fail.
++	 */
+  	Array *d = decl ? decl : elsedecl;
+  	for (unsigned i = 0; i < d->dim; i++)
+  	{   Dsymbol *s = (Dsymbol *)d->data[i];
+diff -r f7db5a788077 d/dmd/cast.c
+--- a/d/dmd/cast.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/cast.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -46,11 +46,11 @@
+  	       )
+  	    {
+  		/* This is really only a semi-kludge fix,
+-+ 		 * we really should look at the operands of op
+-+ 		 * and see if they are narrower types.
+-+ 		 * For example, b=b|b and b=b|7 and s=b+b should be allowed,
+-+ 		 * but b=b|i should be an error.
+-+ 		 */
++		 * we really should look at the operands of op
++		 * and see if they are narrower types.
++		 * For example, b=b|b and b=b|7 and s=b+b should be allowed,
++		 * but b=b|i should be an error.
++		 */
+  		;
+  	    }
+  	    else
+@@ -1447,15 +1447,15 @@
+     else if ((t1->ty == Tsarray || t1->ty == Tarray) &&
+ 	     e2->op == TOKnull && t2->ty == Tpointer && t2->nextOf()->ty == Tvoid)
+      {	/*  (T[n] op void*)
+-! 	 *  (T[] op void*)
+-! 	 */
++	 *  (T[] op void*)
++	 */
+ 	goto Lx1;
+     }
+     else if ((t2->ty == Tsarray || t2->ty == Tarray) &&
+ 	     e1->op == TOKnull && t1->ty == Tpointer && t1->nextOf()->ty == Tvoid)
+      {	/*  (void* op T[n])
+-! 	 *  (void* op T[])
+-! 	 */
++	 *  (void* op T[])
++	 */
+ 	goto Lx2;
+     }
+     else if ((t1->ty == Tsarray || t1->ty == Tarray) && t1->implicitConvTo(t2))
+diff -r f7db5a788077 d/dmd/class.c
+--- a/d/dmd/class.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/class.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -576,8 +576,8 @@
+   	sc->linkage = LINKwindows;
+  #else
+  	/* This enables us to use COM objects under Linux and
+-+ 	 * work with things like XPCOM
+-+ 	 */
++	 * work with things like XPCOM
++	 */
+  	sc->linkage = LINKc;
+  #endif
+      }
+diff -r f7db5a788077 d/dmd/constfold.c
+--- a/d/dmd/constfold.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/constfold.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -1398,8 +1398,8 @@
+ 	if (sz != es2->sz)
+  	{
+  	    /* Can happen with:
+-! 	     *   auto s = "foo"d ~ "bar"c;
+-! 	     */
++	     *   auto s = "foo"d ~ "bar"c;
++	     */
+  	    assert(global.errors);
+  	    return e;
+  	}
+diff -r f7db5a788077 d/dmd/declaration.c
+--- a/d/dmd/declaration.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/declaration.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -95,9 +95,9 @@
+ }
+ 
+ /*************************************
+-+  * Check to see if declaration can be modified in this context (sc).
+-+  * Issue error if not.
+-+  */
++ * Check to see if declaration can be modified in this context (sc).
++ * Issue error if not.
++ */
+  
+  #if DMDV2
+  void Declaration::checkModify(Loc loc, Scope *sc, Type *t)
+@@ -1261,9 +1261,9 @@
+ }
+ 
+ /************************************
+-!  * Check to see if this variable is actually in an enclosing function
+-!  * rather than the current one.
+-   */
++ * Check to see if this variable is actually in an enclosing function
++ * rather than the current one.
++ */
+ 
+ void VarDeclaration::checkNestedReference(Scope *sc, Loc loc)
+ {
+diff -r f7db5a788077 d/dmd/doc.c
+--- a/d/dmd/doc.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/doc.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -422,7 +422,7 @@
+ 	if (buf->offset == offset2)
+  	{
+  	    /* Didn't write out any members, so back out last write
+-+ 	     */
++	     */
+  	    buf->offset = offset1;
+  	}
+  	else
+@@ -751,7 +751,7 @@
+ 	    (td = parent->isTemplateDeclaration()) != NULL &&
+ 	    td->onemember == this)
+ 	{   /* It's a function template
+-! 	     */
++	     */
+  	    HdrGenState hgs;
+ 	    unsigned o = buf->offset;
+ 	    TypeFunction *tf = (TypeFunction *)type;
+diff -r f7db5a788077 d/dmd/dsymbol.c
+--- a/d/dmd/dsymbol.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/dsymbol.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -314,14 +314,14 @@
+ }
+ 
+ /*********************************************
+-+  * Search for ident as member of s.
+-+  * Input:
+-+  *	flags:	1	don't find private members
+-+  *		2	don't give error messages
+-+  *		4	return NULL if ambiguous
+-+  * Returns:
+-+  *	NULL if not found
+-+  */
++ * Search for ident as member of s.
++ * Input:
++ *	flags:	1	don't find private members
++ *		2	don't give error messages
++ *		4	return NULL if ambiguous
++ * Returns:
++ *	NULL if not found
++ */
+ 
+ Dsymbol *Dsymbol::search(Loc loc, Identifier *ident, int flags)
+ {
+@@ -726,7 +726,7 @@
+ 
+ 	    //printf("\tscanning import '%s', prots = %d, isModule = %p, isImport = %p\n", ss->toChars(), prots[i], ss->isModule(), ss->isImport());
+ 	    /* Don't find private members if ss is a module
+-+ 	     */
++	     */
+ 	    s2 = ss->search(loc, ident, ss->isModule() ? 1 : 0);
+ 	    if (!s)
+ 		s = s2;
+@@ -734,10 +734,10 @@
+ 	    {
+ 		if (s->toAlias() == s2->toAlias())
+ 		{
+-			/* After following aliases, we found the same symbol,
+-+ 		     * so it's not an ambiguity.
+-+ 		     * But if one alias is deprecated, prefer the other.
+-+ 		     */
++		    /* After following aliases, we found the same symbol,
++		     * so it's not an ambiguity.
++		     * But if one alias is deprecated, prefer the other.
++		     */
+ 		    if (s->isDeprecated())
+ 			s = s2;
+ 		}
+diff -r f7db5a788077 d/dmd/expression.c
+--- a/d/dmd/expression.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/expression.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -199,14 +199,14 @@
+ }
+ 
+ /*************************************************************
+-!  * Given var, we need to get the
+-!  * right 'this' pointer if var is in an outer class, but our
++ * Given var, we need to get the
++ * right 'this' pointer if var is in an outer class, but our
+    * existing 'this' pointer is in an inner class.
+-!  * Input:
+-!  *	e1	existing 'this'
+-!  *	ad	struct or class we need the correct 'this' for
+-!  *	var	the specific member of ad we're accessing
+-   */
++ * Input:
++ *	e1	existing 'this'
++ *	ad	struct or class we need the correct 'this' for
++ *	var	the specific member of ad we're accessing
++ */
+ 
+ Expression *getRightThis(Loc loc, Scope *sc, AggregateDeclaration *ad,
+  	Expression *e1, Declaration *var)
+@@ -236,13 +236,13 @@
+ 	    !(tcd == cd || cd->isBaseOf(tcd, NULL))
+ 	   )
+ 	{
+-		/* Only classes can be inner classes with an 'outer'
+-+ 	     * member pointing to the enclosing class instance
+-+ 	     */
++	    /* Only classes can be inner classes with an 'outer'
++	     * member pointing to the enclosing class instance
++	     */
+ 	    if (tcd && tcd->isNested())
+ 	    {   /* e1 is the 'this' pointer for an inner class: tcd.
+-! 		 * Rewrite it as the 'this' pointer for the outer class.
+-! 		 */
++		 * Rewrite it as the 'this' pointer for the outer class.
++		 */
+ 
+ 		e1 = new DotVarExp(loc, e1, tcd->vthis);
+ 		e1->type = tcd->vthis->type;
+@@ -277,8 +277,8 @@
+ #ifdef DEBUG
+ 	    printf("2: ");
+ #endif
+-/* Can't find a path from e1 to ad
+-! 	     */
++	    /* Can't find a path from e1 to ad
++	     */
+ 	    e1->error("this for %s needs to be type %s not type %s",
+ 		var->toChars(), ad->toChars(), t->toChars());
+ 	}
+@@ -396,8 +396,8 @@
+ }
+ 
+ /******************************
+-+  * Perform canThrow() on an array of Expressions.
+-+  */
++ * Perform canThrow() on an array of Expressions.
++ */
+  
+  #if DMDV2
+  int arrayExpressionCanThrow(Expressions *exps)
+@@ -499,8 +499,8 @@
+ }
+ 
+ /*********************************************
+-+  * Call copy constructor for struct value argument.
+-+  */
++ * Call copy constructor for struct value argument.
++ */
+  #if DMDV2
+  Expression *callCpCtor(Loc loc, Scope *sc, Expression *e)
+  {
+@@ -703,22 +703,22 @@
+ 	    
+ 	    #if DMDV2
+  	    /* Look for arguments that cannot 'escape' from the called
+-+ 	     * function.
+-+ 	     */
++	     * function.
++	     */
+  	    if (!tf->parameterEscapes(p))
+  	    {
+  		/* Function literals can only appear once, so if this
+-+ 		 * appearance was scoped, there cannot be any others.
+-+ 		 */
++		 * appearance was scoped, there cannot be any others.
++		 */
+  		if (arg->op == TOKfunction)
+  		{   FuncExp *fe = (FuncExp *)arg;
+  		    fe->fd->tookAddressOf = 0;
+  		}
+  
+  		/* For passing a delegate to a scoped parameter,
+-+ 		 * this doesn't count as taking the address of it.
+-+ 		 * We only worry about 'escaping' references to the function.
+-+ 		 */
++		 * this doesn't count as taking the address of it.
++		 * We only worry about 'escaping' references to the function.
++		 */
+  		else if (arg->op == TOKdelegate)
+  		{   DelegateExp *de = (DelegateExp *)arg;
+  		    if (de->e1->op == TOKvar)
+@@ -1030,8 +1030,8 @@
+ }
+ 
+ /***************************************
+-+  * Return !=0 if expression is an lvalue.
+-+  */
++ * Return !=0 if expression is an lvalue.
++ */
+  #if DMDV2
+  int Expression::isLvalue()
+  {
+@@ -1239,17 +1239,17 @@
+ }
+ 
+ /********************************
+-+  * Can this expression throw an exception?
+-+  * Valid only after semantic() pass.
+-+  */
++ * Can this expression throw an exception?
++ * Valid only after semantic() pass.
++ */
+  
+ int Expression::canThrow()
+ {
+-    #if DMDV2
+-     return FALSE;
+- #else
+-      return TRUE;
+- #endif
++#if DMDV2
++    return FALSE;
++#else
++    return TRUE;
++#endif
+ }
+ 
+ Expressions *Expression::arraySyntaxCopy(Expressions *exps)
+@@ -1363,8 +1363,8 @@
+ 
+ 	    default:
+ 		/* This can happen if errors, such as
+-! 		 * the type is painted on like in fromConstInitializer().
+-! 		 */
++		 * the type is painted on like in fromConstInitializer().
++		 */
+  		if (!global.errors)
+  		{   type->print();
+ 		assert(0);
+@@ -1527,8 +1527,8 @@
+ 
+ 	    default:
+ 	    /* This can happen if errors, such as
+-+ 		 * the type is painted on like in fromConstInitializer().
+-+ 		 */
++	     * the type is painted on like in fromConstInitializer().
++	     */
+  		if (!global.errors)
+  		{
+ #ifdef DEBUG
+@@ -1970,7 +1970,7 @@
+ 	WithScopeSymbol *withsym;
+ 
+ 	/* See if the symbol was a member of an enclosing 'with'
+-! 	 */
++	 */
+ 	withsym = scopesym->isWithScopeSymbol();
+ 	if (withsym)
+ 	{
+@@ -1997,8 +1997,8 @@
+ 		s->semantic(sc);
+ 	    }
+ 	    /* If f is really a function template,
+-! 	     * then replace f with the function template declaration.
+-! 	     */
++	     * then replace f with the function template declaration.
++	     */
+ 	    FuncDeclaration *f = s->isFuncDeclaration();
+ 	    if (f && f->parent)
+ 	    {   TemplateInstance *ti = f->parent->isTemplateInstance();
+@@ -3969,9 +3969,9 @@
+ #endif
+     }
+     /* Fix for 1161 doesn't work because it causes protection
+-+      * problems when instantiating imported templates passing private
+-+      * variables as alias template parameters.
+-+      */
++     * problems when instantiating imported templates passing private
++     * variables as alias template parameters.
++     */
+      //accessCheck(loc, sc, NULL, var);
+ 
+     VarDeclaration *v = var->isVarDeclaration();
+@@ -4496,8 +4496,8 @@
+ /************************ TraitsExp ************************************/
+  #if DMDV2
+  /*
+-+  *	__traits(identifier, args...)
+-+  */
++  *	__traits(identifier, args...)
++  */
+  
+  TraitsExp::TraitsExp(Loc loc, Identifier *ident, Objects *args)
+      : Expression(loc, TOKtraits, sizeof(TraitsExp))
+@@ -5313,7 +5313,7 @@
+     #if DMDV2
+      if (e1->op == TOKtuple && ident == Id::offsetof)
+      {	/* 'distribute' the .offsetof to each of the tuple elements.
+-+ 	 */
++	 */
+  	TupleExp *te = (TupleExp *)e1;
+  	Expressions *exps = new Expressions();
+  	exps->setDim(te->exps->dim);
+@@ -5359,9 +5359,9 @@
+ 	ScopeExp *ie = (ScopeExp *)eright;
+ 
+ 	/* Disable access to another module's private imports.
+-! 	 * The check for 'is sds our current module' is because
+-! 	 * the current module should have access to its own imports.
+-! 	 */
++	 * The check for 'is sds our current module' is because
++	 * the current module should have access to its own imports.
++	 */
+  	Dsymbol *s = ie->sds->search(loc, ident,
+  	    (ie->sds->isModule() && ie->sds != sc->module) ? 1 : 0);
+ 	if (s)
+@@ -5526,10 +5526,10 @@
+               t1b->ty == Tsarray ||
+  	     t1b->ty == Taarray)
+      {	/* If ident is not a valid property, rewrite:
+-+ 	 *   e1.ident
+-+          * as:
+-+          *   .ident(e1)
+-+          */
++	 *   e1.ident
++         * as:
++         *   .ident(e1)
++         */
+  	unsigned errors = global.errors;
+  	global.gag++;
+  	e = e1->type->dotExp(sc, e1, ident);
+@@ -5784,9 +5784,9 @@
+ 	t1 = t1->toBasetype();
+     //t1->print();
+     /* Extract the following from e1:
+-+      *	s: the symbol which ti should be a member of
+-+      *	eleft: if not NULL, it is the 'this' pointer for ti
+-+      */
++     *	s: the symbol which ti should be a member of
++     *	eleft: if not NULL, it is the 'this' pointer for ti
++     */
+     if (e1->op == TOKdotexp)
+     {	DotExp *de = (DotExp *)e1;
+ 	eleft = de->e1;
+@@ -6293,8 +6293,8 @@
+ 	    ue->e1 = getRightThis(loc, sc, ad, ue->e1, f);
+ 	}
+ 	/* Cannot call public functions from inside invariant
+-+ 	 * (because then the invariant would have infinite recursion)
+-+ 	 */
++	 * (because then the invariant would have infinite recursion)
++	 */
+  	if (sc->func && sc->func->isInvariantDeclaration() &&
+  	    ue->e1->op == TOKthis &&
+  	    f->addPostInvariant()
+@@ -6564,7 +6564,7 @@
+  	return 1;
+  
+      /* If any of the arguments have side effects, this expression does
+-+      */
++      */
+      for (size_t i = 0; i < arguments->dim; i++)
+      {   Expression *e = (Expression *)arguments->data[i];
+  
+@@ -6573,8 +6573,8 @@
+      }
+  
+      /* If calling a function or delegate that is typed as pure,
+-+      * then this expression has no side effects.
+-+      */
++      * then this expression has no side effects.
++      */
+      Type *t = e1->type->toBasetype();
+      if (t->ty == Tfunction && ((TypeFunction *)t)->ispure)
+  	return 0;
+@@ -6592,7 +6592,7 @@
+  	return 1;
+  
+      /* If any of the arguments can throw, then this expression can throw
+-+      */
++      */
+      for (size_t i = 0; i < arguments->dim; i++)
+      {   Expression *e = (Expression *)arguments->data[i];
+  
+@@ -6604,9 +6604,9 @@
+ 	return 0;			// error recovery
+ 
+      /* If calling a function or delegate that is typed as nothrow,
+-+      * then this expression cannot throw.
+-+      * Note that pure functions can throw.
+-+      */
++      * then this expression cannot throw.
++      * Note that pure functions can throw.
++      */
+      Type *t = e1->type->toBasetype();
+      if (t->ty == Tfunction && ((TypeFunction *)t)->isnothrow)
+  	return 0;
+@@ -7050,7 +7050,7 @@
+ 
+ #if DMDV2
+  /* For cast(const) and cast(immutable)
+-+  */
++  */
+  CastExp::CastExp(Loc loc, Expression *e, unsigned mod)
+  	: UnaExp(loc, TOKcast, sizeof(CastExp), e)
+  {
+@@ -7673,7 +7673,7 @@
+ 	    if (e2->op == TOKint64)
+ 	    {
+ 		dinteger_t index = e2->toInteger();
+-! 		dinteger_t length = tsa->dim->toInteger();
++		dinteger_t length = tsa->dim->toInteger();
+ 		if (index < 0 || index >= length)
+ 		    error("array index [%lld] is outside array bounds [0 .. %lld]",
+ 			    index, length);
+@@ -8036,7 +8036,7 @@
+     }
+     
+     /* Look for array operations
+-+      */
++     */
+      if (e1->op == TOKslice && !ismemset &&
+  	(e2->op == TOKadd || e2->op == TOKmin ||
+  	 e2->op == TOKmul || e2->op == TOKdiv ||
+diff -r f7db5a788077 d/dmd/func.c
+--- a/d/dmd/func.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/func.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -78,8 +78,8 @@
+     introducing = 0;
+     tintro = NULL;
+     /* The type given for "infer the return type" is a TypeFunction with
+-+      * NULL for the return type.
+-+      */
++     * NULL for the return type.
++     */
+     inferRetType = (type && type->nextOf() == NULL);
+     hasReturnExp = 0;
+     nrvo_can = 1;
+@@ -246,9 +246,9 @@
+ 	    error("function body is not abstract in interface %s", id->toChars());
+     }
+     /* Template member functions aren't virtual:
+-+      *   interface TestInterface { void tpl(T)(); }
+-+      * and so won't work in interfaces
+-+      */
++     *   interface TestInterface { void tpl(T)(); }
++     * and so won't work in interfaces
++     */
+      if ((pd = toParent()) != NULL &&
+  	pd->isTemplateInstance() &&
+  	(pd = toParent2()) != NULL &&
+@@ -317,9 +317,9 @@
+ 	{
+ 	    case -1:
+  		/* Didn't find one, so
+-! 		 * This is an 'introducing' function which gets a new
+-! 		 * slot in the vtbl[].
+-! 		 */
++		 * This is an 'introducing' function which gets a new
++		 * slot in the vtbl[].
++		 */
+ 
+ 		// Verify this doesn't override previous final function
+ 		if (cd->baseClass)
+@@ -735,9 +735,9 @@
+ 	else if (isNested())
+ 	{
+ 	    /* The 'this' for a nested function is the link to the
+-! 	     * enclosing function's stack frame.
+-! 	     * Note that nested functions and member functions are disjoint.
+-! 	     */
++	     * enclosing function's stack frame.
++	     * Note that nested functions and member functions are disjoint.
++	     */
+  	    VarDeclaration *v = new ThisDeclaration(loc, Type::tvoid->pointerTo());
+ 	    v->storage_class |= STCparameter | STCin;
+ 	    v->semantic(sc2);
+@@ -2661,17 +2661,17 @@
+     type = new TypeFunction(NULL, Type::tvoid, FALSE, LINKd);
+     
+     /* If the static ctor appears within a template instantiation,
+-+      * it could get called multiple times by the module constructors
+-+      * for different modules. Thus, protect it with a gate.
+-+      */
++     * it could get called multiple times by the module constructors
++     * for different modules. Thus, protect it with a gate.
++     */
+      if (inTemplateInstance())
+      {
+  	/* Add this prefix to the function:
+-+ 	 *	static int gate;
+-+ 	 *	if (++gate != 1) return;
+-+ 	 * Note that this is not thread safe; should not have threads
+-+ 	 * during static construction.
+-+ 	 */
++	 *	static int gate;
++	 *	if (++gate != 1) return;
++	 * Note that this is not thread safe; should not have threads
++	 * during static construction.
++	 */
+  	Identifier *id = Lexer::idPool("__gate");
+  	VarDeclaration *v = new VarDeclaration(0, Type::tint32, id, NULL);
+  	v->storage_class = STCstatic;
+@@ -2768,18 +2768,18 @@
+     type = new TypeFunction(NULL, Type::tvoid, FALSE, LINKd);
+     
+     /* If the static ctor appears within a template instantiation,
+-+      * it could get called multiple times by the module constructors
+-+      * for different modules. Thus, protect it with a gate.
+-+      */
++     * it could get called multiple times by the module constructors
++     * for different modules. Thus, protect it with a gate.
++     */
+      if (inTemplateInstance())
+      {
+  	/* Add this prefix to the function:
+-+ 	 *	static int gate;
+-+ 	 *	if (--gate != 0) return;
+-+ 	 * Increment gate during constructor execution.
+-+ 	 * Note that this is not thread safe; should not have threads
+-+ 	 * during static destruction.
+-+ 	 */
++	 *	static int gate;
++	 *	if (--gate != 0) return;
++	 * Increment gate during constructor execution.
++	 * Note that this is not thread safe; should not have threads
++	 * during static destruction.
++	 */
+  	Identifier *id = Lexer::idPool("__gate");
+  	VarDeclaration *v = new VarDeclaration(0, Type::tint32, id, NULL);
+  	v->storage_class = STCstatic;
+diff -r f7db5a788077 d/dmd/import.c
+--- a/d/dmd/import.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/import.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -275,8 +275,8 @@
+ }
+ 
+ /*****************************
+-+  * Add import to sd's symbol table.
+-+  */
++ * Add import to sd's symbol table.
++ */
+ 
+ int Import::addMember(Scope *sc, ScopeDsymbol *sd, int memnum)
+ {
+@@ -288,9 +288,9 @@
+     if (aliasId)
+ 	result = Dsymbol::addMember(sc, sd, memnum);
+ 
+-	/* Instead of adding the import to sd's symbol table,
+-+      * add each of the alias=name pairs
+-+      */
++    /* Instead of adding the import to sd's symbol table,
++     * add each of the alias=name pairs
++     */
+     for (size_t i = 0; i < names.dim; i++)
+     {
+ 	Identifier *name = (Identifier *)names.data[i];
+diff -r f7db5a788077 d/dmd/lexer.c
+--- a/d/dmd/lexer.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/lexer.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -2445,10 +2445,10 @@
+ #ifdef IN_GCC
+ 	    real_t::parse((char *)stringbuffer.data, real_t::Double);
+ #else	    
+-		/* Should do our own strtod(), since dmc and linux gcc
+-+ 	     * accept 2.22507e-308, while apple gcc will only take
+-+ 	     * 2.22508e-308. Not sure who is right.
+-+ 	     */
++	    /* Should do our own strtod(), since dmc and linux gcc
++	     * accept 2.22507e-308, while apple gcc will only take
++	     * 2.22508e-308. Not sure who is right.
++	     */
+ 	    strtod((char *)stringbuffer.data, NULL);
+ #endif
+ 	    result = TOKfloat64v;
+@@ -2644,10 +2644,10 @@
+ void Lexer::getDocComment(Token *t, unsigned lineComment)
+ {
+     /* ct tells us which kind of comment it is: '/', '*', or '+'
+-!      */
++     */
+     unsigned char ct = t->ptr[2];
+     /* Start of comment text skips over / * *, / + +, or / / /
+-+      */
++     */
+     unsigned char *q = t->ptr + 3;	// start of comment text
+ 
+     unsigned char *qend = p;
+@@ -2674,8 +2674,8 @@
+     }
+     
+     /* Comment is now [q .. qend].
+-+      * Canonicalize it into buf[].
+-+      */
++     * Canonicalize it into buf[].
++     */
+      OutBuffer buf;
+      int linestart = 0;
+ 
+diff -r f7db5a788077 d/dmd/libelf.c
+--- a/d/dmd/libelf.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/libelf.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -261,8 +261,8 @@
+  
+  	    if (section->sh_type == SHT_SYMTAB)
+  	    {   /* sh_link gives the particular string table section
+-! 		 * used for the symbol names.
+-! 		 */
++		 * used for the symbol names.
++		 */
+  		Elf32_Shdr *string_section = (Elf32_Shdr *)(buf + eh->e_shoff +
+  		    eh->e_shentsize * section->sh_link);
+  		if (string_section->sh_type != SHT_STRTAB)
+diff -r f7db5a788077 d/dmd/link.c
+--- a/d/dmd/link.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/link.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -35,13 +35,13 @@
+ int executearg0(char *cmd, char *args);
+ 
+ /****************************************
+-+  * Write filename to cmdbuf, quoting if necessary.
+-+  */
++ * Write filename to cmdbuf, quoting if necessary.
++ */
+  
+  void writeFilename(OutBuffer *buf, char *filename, size_t len)
+  {
+      /* Loop and see if we need to quote
+-+      */
++      */
+      for (size_t i = 0; i < len; i++)
+      {	char c = filename[i];
+  
+@@ -49,7 +49,7 @@
+  	    continue;
+  
+  	/* Need to quote
+-+ 	 */
++	 */
+  	buf->writeByte('"');
+  	buf->write(filename, len);
+  	buf->writeByte('"');
+@@ -57,7 +57,7 @@
+      }
+  
+      /* No quoting necessary
+-+      */
++      */
+      buf->write(filename, len);
+  }
+  
+@@ -98,8 +98,8 @@
+ 	writeFilename(&cmdbuf, global.params.exefile);
+     else
+     {	/* Generate exe file name from first obj name.
+-! 	 * No need to add it to cmdbuf because the linker will default to it.
+-! 	 */
++	 * No need to add it to cmdbuf because the linker will default to it.
++	 */
+ 	char *n = (char *)global.params.objfiles->data[0];
+ 	n = FileName::name(n);
+ 	FileName *fn = FileName::forceExt(n, "exe");
+@@ -275,13 +275,13 @@
+ 	argv.push((void *) p);
+     }
+     /* Add each library, prefixing it with "-l".
+-+      * The order of libraries passed is:
+-+      *  1. any libraries passed with -L command line switch
+-+      *  2. libraries specified on the command line
+-+      *  3. libraries specified by pragma(lib), which were appended
+-+      *     to global.params.libfiles.
+-+      *  4. standard libraries.
+-+      */
++     * The order of libraries passed is:
++     *  1. any libraries passed with -L command line switch
++     *  2. libraries specified on the command line
++     *  3. libraries specified by pragma(lib), which were appended
++     *     to global.params.libfiles.
++     *  4. standard libraries.
++     */
+      for (i = 0; i < global.params.libfiles->dim; i++)
+      {	char *p = (char *)global.params.libfiles->data[i];
+  	size_t plen = strlen(p);
+diff -r f7db5a788077 d/dmd/mars.h
+--- a/d/dmd/mars.h	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/mars.h	Sun Jun 06 18:39:13 2010 +0100
+@@ -241,8 +241,8 @@
+ extern Global global;
+ 
+ /* Set if Windows Structured Exception Handling C extensions are supported.
+-+  * Apparently, VC has dropped support for these?
+-+  */
++ * Apparently, VC has dropped support for these?
++ */
+  #define WINDOWS_SEH	(_WIN32 && __DMC__)
+ 
+ #ifdef __DMC__
+diff -r f7db5a788077 d/dmd/module.c
+--- a/d/dmd/module.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/module.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -919,10 +919,10 @@
+ }
+ 
+ /************************************
+-+  * Recursively look at every module this module imports,
+-+  * return TRUE if it imports m.
+-+  * Can be used to detect circular imports.
+-+  */
++ * Recursively look at every module this module imports,
++ * return TRUE if it imports m.
++ * Can be used to detect circular imports.
++ */
+  
+  int Module::imports(Module *m)
+  {
+diff -r f7db5a788077 d/dmd/mtype.c
+--- a/d/dmd/mtype.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/mtype.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -4369,12 +4369,12 @@
+ 	return new IntegerExp(e->loc, 0, Type::tint32);
+     }
+ 	
+-	/* If e.tupleof
+-+      */
++    /* If e.tupleof
++     */
+     if (ident == Id::tupleof)
+     {
+ 	/* Create a TupleExp out of the fields of the struct e:
+-! 	 * (e.field0, e.field1, e.field2, ...)
++	 * (e.field0, e.field1, e.field2, ...)
+   	 */
+ 	e = e->semantic(sc);	// do this before turning on noaccesscheck
+ 	Expressions *exps = new Expressions;
+@@ -4751,8 +4751,8 @@
+ 	
+ 	if (ident == Id::__vptr)
+  	{   /* The pointer to the vtbl[]
+-+ 	     * *cast(void***)e
+-+ 	     */
++	     * *cast(void***)e
++	     */
+  	    e = e->castTo(sc, tvoidptr->pointerTo()->pointerTo());
+  	    e = new PtrExp(e->loc, e);
+  	    e = e->semantic(sc);
+@@ -4761,8 +4761,8 @@
+  
+  	if (ident == Id::__monitor)
+  	{   /* The handle to the monitor (call it a void*)
+-+ 	     * *(cast(void**)e + 1)
+-+ 	     */
++	     * *(cast(void**)e + 1)
++	     */
+  	    e = e->castTo(sc, tvoidptr->pointerTo());
+  	    e = new AddExp(e->loc, e, new IntegerExp(1));
+  	    e = new PtrExp(e->loc, e);
+diff -r f7db5a788077 d/dmd/mtype.h
+--- a/d/dmd/mtype.h	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/mtype.h	Sun Jun 06 18:39:13 2010 +0100
+@@ -123,7 +123,7 @@
+     TY ty;
+     unsigned char mod;	// modifiers MODxxxx
+  	/* pick this order of numbers so switch statements work better
+-! 	 */
++	 */
+ 	#define MODconst     1	// type is const
+ 	#define MODinvariant 4	// type is invariant
+  	#define MODshared    2	// type is shared
+diff -r f7db5a788077 d/dmd/parse.c
+--- a/d/dmd/parse.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/parse.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -1259,10 +1259,10 @@
+ }
+ 
+ /**************************************
+-+  * Parse constraint.
+-+  * Constraint is of the form:
+-+  *	if ( ConstraintExpression )
+-+  */
++ * Parse constraint.
++ * Constraint is of the form:
++ *	if ( ConstraintExpression )
++ */
+  
+  #if DMDV2
+  Expression *Parser::parseConstraint()
+@@ -1830,15 +1830,15 @@
+ }
+ 
+ /******************************************
+-+  * Parse things that follow the initial type t.
+-+  *	t *
+-+  *	t []
+-+  *	t [type]
+-+  *	t [expression]
+-+  *	t [expression .. expression]
+-+  *	t function
+-+  *	t delegate
+-+  */
++ * Parse things that follow the initial type t.
++ *	t *
++ *	t []
++ *	t [type]
++ *	t [expression]
++ *	t [expression .. expression]
++ *	t function
++ *	t delegate
++ */
+ 
+ Type *Parser::parseBasicType2(Type *t)
+ {
+@@ -1981,11 +1981,11 @@
+ 	    break;
+ 
+ 	case TOKlparen:
+-	/* Parse things with parentheses around the identifier, like:
+-+ 	     *	int (*ident[3])[]
+-+ 	     * although the D style would be:
+-+ 	     *	int[]*[3] ident
+-+ 	     */
++	    /* Parse things with parentheses around the identifier, like:
++	     *	int (*ident[3])[]
++	     * although the D style would be:
++	     *	int[]*[3] ident
++	     */
+ 	    nextToken();
+ 	    ts = parseDeclarator(t, pident);
+ 	    check(TOKrparen);
+@@ -2002,11 +2002,11 @@
+ 	switch (token.value)
+ 	{
+ #if CARRAYDECL
+-/* Support C style array syntax:
+-+ 	     *   int ident[]
+-+ 	     * as opposed to D-style:
+-+ 	     *   int[] ident
+-+ 	     */
++	    /* Support C style array syntax:
++	     *   int ident[]
++	     * as opposed to D-style:
++	     *   int[] ident
++	     */
+ 	    case TOKlbracket:
+ 	    {	// This is the old C-style post [] syntax.
+ 		nextToken();
+@@ -2033,10 +2033,10 @@
+ 		    check(TOKrbracket);
+ 		}
+ 		/* Insert ta into
+-+ 		 *   ts -> ... -> t
+-+ 		 * so that
+-+ 		 *   ts -> ... -> ta -> t
+-+ 		 */
++		 *   ts -> ... -> t
++		 * so that
++		 *   ts -> ... -> ta -> t
++		 */
+ 		Type **pt;
+ 		for (pt = &ts; *pt != t; pt = &(*pt)->next)
+ 		    ;
+@@ -2078,12 +2078,12 @@
+ }
+ 
+ /**********************************
+-+  * Parse Declarations.
+-+  * These can be:
+-+  *	1. declarations at global/class level
+-+  *	2. declarations at statement level
+-   * Return array of Declaration *'s.
+-   */
++ * Parse Declarations.
++ * These can be:
++ *	1. declarations at global/class level
++ *	2. declarations at statement level
++ * Return array of Declaration *'s.
++ */
+ 
+ Array *Parser::parseDeclarations()
+ {
+@@ -2331,57 +2331,57 @@
+     return a;
+ }
+ 
+-  /*****************************************
+-+  * Parse auto declarations of the form:
+-+  *   storageClass ident = init, ident = init, ... ;
+-+  * and return the array of them.
+-+  * Starts with token on the first ident.
+-+  * Ends with scanner past closing ';'
+-+  */
++/*****************************************
++ * Parse auto declarations of the form:
++ *   storageClass ident = init, ident = init, ... ;
++ * and return the array of them.
++ * Starts with token on the first ident.
++ * Ends with scanner past closing ';'
++ */
+  
+- #if DMDV2
+- Array *Parser::parseAutoDeclarations(unsigned storageClass, unsigned char *comment)
+- {
+-     Array *a = new Array;
++#if DMDV2
++Array *Parser::parseAutoDeclarations(unsigned storageClass, unsigned char *comment)
++{
++    Array *a = new Array;
++
++    while (1)
++    {
++	Identifier *ident = token.ident;
++	nextToken();		// skip over ident
++	assert(token.value == TOKassign);
++	nextToken();		// skip over '='
++	Initializer *init = parseInitializer();
++	VarDeclaration *v = new VarDeclaration(loc, NULL, ident, init);
++	v->storage_class = storageClass;
++	a->push(v);
++	if (token.value == TOKsemicolon)
++	{
++	    nextToken();
++	    addComment(v, comment);
++	}
++	else if (token.value == TOKcomma)
++	{
++	    nextToken();
++	    if (token.value == TOKidentifier &&
++		peek(&token)->value == TOKassign)
++	    {
++		addComment(v, comment);
++		continue;
++	    }
++	    else
++		error("Identifier expected following comma");
++	}
++	else
++	    error("semicolon expected following auto declaration, not '%s'", token.toChars());
++	break;
++    }
++    return a;
++}
++#endif
+  
+-     while (1)
+-     {
+- 	Identifier *ident = token.ident;
+- 	nextToken();		// skip over ident
+- 	assert(token.value == TOKassign);
+- 	nextToken();		// skip over '='
+- 	Initializer *init = parseInitializer();
+- 	VarDeclaration *v = new VarDeclaration(loc, NULL, ident, init);
+- 	v->storage_class = storageClass;
+- 	a->push(v);
+- 	if (token.value == TOKsemicolon)
+- 	{
+- 	    nextToken();
+- 	    addComment(v, comment);
+- 	}
+- 	else if (token.value == TOKcomma)
+- 	{
+- 	    nextToken();
+- 	    if (token.value == TOKidentifier &&
+- 		peek(&token)->value == TOKassign)
+- 	    {
+- 		addComment(v, comment);
+- 		continue;
+- 	    }
+- 	    else
+- 		error("Identifier expected following comma");
+- 	}
+- 	else
+- 	    error("semicolon expected following auto declaration, not '%s'", token.toChars());
+- 	break;
+-     }
+-     return a;
+- }
+- #endif
+- 
+- /*****************************************
+-   * Parse contracts following function declaration.
+-   */
++/*****************************************
++ * Parse contracts following function declaration.
++ */
+ 
+ void Parser::parseContracts(FuncDeclaration *f)
+ {
+@@ -2575,10 +2575,10 @@
+ 	    return is;
+ 
+ 	case TOKlbracket:
+-	/* Scan ahead to see if it is an array initializer or
+-+ 	     * an expression.
+-+ 	     * If it ends with a ';', it is an array initializer.
+-+ 	     */
++	    /* Scan ahead to see if it is an array initializer or
++	     * an expression.
++	     * If it ends with a ';', it is an array initializer.
++	     */
+  	    brackets = 1;
+  	    for (t = peek(&token); 1; t = peek(t))
+  	    {
+@@ -2680,33 +2680,33 @@
+ }
+ 
+ /*****************************************
+-+  * Parses default argument initializer expression that is an assign expression,
+-+  * with special handling for __FILE__ and __LINE__.
+-+  */
++ * Parses default argument initializer expression that is an assign expression,
++ * with special handling for __FILE__ and __LINE__.
++ */
+  
+- #if DMDV2
+- Expression *Parser::parseDefaultInitExp()
+- {
+-     if (token.value == TOKfile ||
+- 	token.value == TOKline)
+-     {
++#if DMDV2
++Expression *Parser::parseDefaultInitExp()
++{
++    if (token.value == TOKfile ||
++	token.value == TOKline)
++    {
+ 	Token *t = peek(&token);
+- 	if (t->value == TOKcomma || t->value == TOKrparen)
+- 	{   Expression *e;
+- 
+- 	    if (token.value == TOKfile)
+- 		e = new FileInitExp(loc);
+- 	    else
+- 		e = new LineInitExp(loc);
+- 	    nextToken();
+- 	    return e;
+- 	}
+-     }
+- 
+-     Expression *e = parseAssignExp();
+-     return e;
+- }
+- #endif
++	if (t->value == TOKcomma || t->value == TOKrparen)
++	{   Expression *e;
++
++	    if (token.value == TOKfile)
++		e = new FileInitExp(loc);
++	    else
++		e = new LineInitExp(loc);
++	    nextToken();
++	    return e;
++	}
++    }
++
++    Expression *e = parseAssignExp();
++    return e;
++}
++#endif
+ 
+ /*****************************************
+  * Input:
+@@ -3709,8 +3709,8 @@
+      if ((t->value == TOKconst || t->value == TOKinvariant) &&
+  	peek(t)->value != TOKlparen)
+      {	/* const type
+-+ 	 * invariant type
+-+ 	 */
++	 * invariant type
++	 */
+  	t = peek(t);
+      }
+  	#endif
+@@ -4419,7 +4419,7 @@
+ 	#if DMDV2
+  	case TOKtraits:
+  	{   /* __traits(identifier, args...)
+-+ 	     */
++	     */
+  	    Identifier *ident;
+  	    Objects *args = NULL;
+  
+diff -r f7db5a788077 d/dmd/root.c
+--- a/d/dmd/root.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/root.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -1706,14 +1706,14 @@
+ 	va_list va;
+          va_copy(va, args);
+  /*
+-!   The functions vprintf(), vfprintf(), vsprintf(), vsnprintf()
+-!   are equivalent to the functions printf(), fprintf(), sprintf(),
+-!   snprintf(), respectively, except that they are called with a
+-!   va_list instead of a variable number of arguments. These
+-!   functions do not call the va_end macro. Consequently, the value
+-!   of ap is undefined after the call. The application should call
+-!   va_end(ap) itself afterwards.
+-!  */
++  The functions vprintf(), vfprintf(), vsprintf(), vsnprintf()
++  are equivalent to the functions printf(), fprintf(), sprintf(),
++  snprintf(), respectively, except that they are called with a
++  va_list instead of a variable number of arguments. These
++  functions do not call the va_end macro. Consequently, the value
++  of ap is undefined after the call. The application should call
++  va_end(ap) itself afterwards.
++ */
+  	count = vsnprintf(p,psize,format,va);
+          va_end(va);
+ 	if (count == -1)
+diff -r f7db5a788077 d/dmd/statement.c
+--- a/d/dmd/statement.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/statement.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -149,7 +149,7 @@
+ }
+ 
+ /* Only valid after semantic analysis
+-+  */
++ */
+  int Statement::blockExit()
+  {
+      printf("Statement::blockExit(%p)\n", this);
+@@ -1604,7 +1604,7 @@
+  		goto Lapply;
+  
+  	    /* Generate a temporary __r and initialize it with the aggregate.
+-+ 	     */
++	     */
+  	    Identifier *id = Identifier::generateId("__r");
+ 	    Expression *rinit = new SliceExp(loc, aggr, NULL, NULL);
+ 	    rinit = rinit->trySemantic(sc);
+@@ -1626,8 +1626,8 @@
+  	    Expression *increment = new DotIdExp(loc, e, idnext);
+  
+  	    /* Declaration statement for e:
+-+ 	     *    auto e = __r.idhead;
+-+ 	     */
++	     *    auto e = __r.idhead;
++	     */
+  	    e = new VarExp(loc, r);
+  	    Expression *einit = new DotIdExp(loc, e, idhead);
+ //	    einit = einit->semantic(sc);
+@@ -2428,7 +2428,7 @@
+     {
+     	#if 1
+ 	/* Should this be allowed?
+-+ 	 */
++	 */
+  	error("pragma(lib) not allowed as statement");
+  #else
+ 	if (!args || args->dim != 1)
+@@ -3126,8 +3126,8 @@
+ 
+     Type *tret = fd->type->nextOf();
+     if (fd->tintro)
+-/* We'll be implicitly casting the return expression to tintro
+-+ 	 */
++	/* We'll be implicitly casting the return expression to tintro
++	 */
+ 	tret = fd->tintro->nextOf();
+     Type *tbret = NULL;
+ 
+@@ -3326,8 +3326,8 @@
+ 	gs->label = fd->returnLabel;
+ 	if (exp)
+ 	{   /* Replace: return exp;
+-! 	     * with:    exp; goto returnLabel;
+-! 	     */
++	     * with:    exp; goto returnLabel;
++	     */
+  	    Statement *s = new ExpStatement(0, exp);
+ 	    return new CompoundStatement(loc, s, gs);
+ 	}
+@@ -3337,10 +3337,10 @@
+     if (exp && tbret->ty == Tvoid && !fd->isMain())
+     {
+  	/* Replace:
+-! 	 *	return exp;
+-! 	 * with:
+-! 	 *	exp; return;
+-! 	 */
++	 *	return exp;
++	 * with:
++	 *	exp; return;
++	 */
+  	Statement *s = new ExpStatement(loc, exp);
+ 	loc = 0;
+ 	exp = NULL;
+@@ -3843,7 +3843,7 @@
+     body = body->semanticScope(sc, NULL /*this*/, NULL);
+ 
+     /* Even if body is NULL, still do semantic analysis on catches
+-!      */
++     */
+      for (size_t i = 0; i < catches->dim; i++)
+      {   Catch *c = (Catch *)catches->data[i];
+ 	c->semantic(sc);
+diff -r f7db5a788077 d/dmd/statement.h
+--- a/d/dmd/statement.h	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/statement.h	Sun Jun 06 18:39:13 2010 +0100
+@@ -63,7 +63,7 @@
+ struct code;
+ 
+ /* How a statement exits; this is returned by blockExit()
+-+  */
++ */
+  enum BE
+  {
+      BEnone =	 0,
+diff -r f7db5a788077 d/dmd/template.c
+--- a/d/dmd/template.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/template.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -591,8 +591,8 @@
+     if (!flag)
+     {
+ 	/* Any parameter left without a type gets the type of
+-! 	 * its corresponding arg
+-! 	 */
++	 * its corresponding arg
++	 */
+ 	for (int i = 0; i < dedtypes_dim; i++)
+ 	{
+ 	    if (!dedtypes->data[i])
+@@ -605,7 +605,7 @@
+     #if DMDV2
+      if (m && constraint && !(flag & 1))
+      {	/* Check to see if constraint is satisfied.
+-+ 	 */
++	 */
+  	Expression *e = constraint->syntaxCopy();
+  	paramscope->flags |= SCOPEstaticif;
+  	e = e->semantic(paramscope);
+@@ -1006,8 +1006,8 @@
+ 	}
+ 	
+ 	/* The following code for variadic arguments closely
+-+ 	 * matches TypeFunction::callMatch()
+-+ 	 */
++	 * matches TypeFunction::callMatch()
++	 */
+ 	if (!(fdtype->varargs == 2 && i + 1 == nfparams))
+ 	    goto Lnomatch;
+ 
+@@ -1031,8 +1031,8 @@
+  		    assert(arg);
+  		    MATCH m;
+  		    /* If lazy array of delegates,
+-+ 		     * convert arg(s) to delegate(s)
+-+ 		     */
++		     * convert arg(s) to delegate(s)
++		     */
+  		    Type *tret = fparam->isLazyArray();
+  		    if (tret)
+  		    {
+@@ -1119,7 +1119,7 @@
+     #if DMDV2
+      if (constraint)
+      {	/* Check to see if constraint is satisfied.
+-+ 	 */
++	 */
+  	Expression *e = constraint->syntaxCopy();
+  	paramscope->flags |= SCOPEstaticif;
+  	e = e->semantic(paramscope);
+@@ -1537,7 +1537,7 @@
+ 		goto Lnomatch;
+ 		
+ 		/* Need a loc to go with the semantic routine.
+-+ 	     */
++	     */
+  	    Loc loc;
+  	    if (parameters->dim)
+  	    {
+@@ -3082,9 +3082,9 @@
+ }
+ 
+ /*****************
+-+  * This constructor is only called when we figured out which function
+-+  * template to instantiate.
+-+  */
++ * This constructor is only called when we figured out which function
++ * template to instantiate.
++ */
+ 
+ 
+ TemplateInstance::TemplateInstance(Loc loc, TemplateDeclaration *td, Objects *tiargs)
+@@ -3222,8 +3222,8 @@
+     else
+     {
+ 	/* Run semantic on each argument, place results in tiargs[]
+-! 	 * (if we havetempdecl, then tiargs is already evaluated)
+-! 	 */
++	 * (if we havetempdecl, then tiargs is already evaluated)
++	 */
+ 	semanticTiargs(sc);
+ 
+ 	tempdecl = findTemplateDeclaration(sc);
+@@ -3554,9 +3554,9 @@
+ }
+ 
+ /**********************************
+-!  * Input:
+-!  *	flags	1: replace const variables with their initializers
+-!  */
++ * Input:
++ *	flags	1: replace const variables with their initializers
++ */
+ 
+ void TemplateInstance::semanticTiargs(Loc loc, Scope *sc, Objects *tiargs, int flags)
+ {
+@@ -4455,7 +4455,7 @@
+ 	    continue;
+ 	    
+ 	 /* Different argument list lengths happen with variadic args
+-+ 	 */
++	 */
+  	if (tiargs->dim != tm->tiargs->dim)
+  	    continue;
+ 
+diff -r f7db5a788077 d/dmd/tocsym.c
+--- a/d/dmd/tocsym.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/tocsym.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -205,7 +205,7 @@
+ 	{
+ 		if (storage_class & STCtls)
+  	    {	/* Thread local storage
+-+ 		 */
++		 */
+  		type_setty(&t, t->Tty | mTYthread);
+  	    }
+ 	    s->Sclass = SCextern;
+diff -r f7db5a788077 d/dmd/toir.c
+--- a/d/dmd/toir.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/toir.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -245,11 +245,11 @@
+ }
+ 
+ /*************************
+-+  * Initialize the hidden aggregate member, vthis, with
+-+  * the context pointer.
+-+  * Returns:
+-+  *	*(ey + ad.vthis.offset) = this;
+-+  */
++ * Initialize the hidden aggregate member, vthis, with
++ * the context pointer.
++ * Returns:
++ *	*(ey + ad.vthis.offset) = this;
++ */
+ #if DMDV2
+ elem *setEthis(Loc loc, IRState *irs, elem *ey, AggregateDeclaration *ad)
+ {
+@@ -300,7 +300,7 @@
+  	  )
+  	)
+     {   /* Class we're new'ing is at the same level as thisfd
+-+ 	 */
++	 */
+  	assert(offset == 0);	// BUG: should handle this case
+  	ethis = el_var(irs->sthis);
+     }
+@@ -356,8 +356,8 @@
+ 	"9intrinsic5outpwFktZt",
+ 	#elif V2
+  	/* The names are mangled differently because of the pure and
+-+ 	 * nothrow attributes.
+-+ 	 */
++	 * nothrow attributes.
++	 */
+  	"4math3cosFNaNbeZe",
+  	"4math3sinFNaNbeZe",
+  	"4math4fabsFNaNbeZe",
+@@ -515,17 +515,17 @@
+ 	
+ 	#if DMDV2
+  	/* BUG: doesn't handle destructors for the local variables.
+-+ 	 * The way to do it is to make the closure variables the fields
+-+ 	 * of a class object:
+-+ 	 *    class Closure
+-+ 	 *    {   vtbl[]
+-+ 	 *	  monitor
+-+ 	 *	  ptr to destructor
+-+ 	 *	  sthis
+-+ 	 *	  ... closure variables ...
+-+ 	 *	  ~this() { call destructor }
+-+ 	 *    }
+-+ 	 */
++	 * The way to do it is to make the closure variables the fields
++	 * of a class object:
++	 *    class Closure
++	 *    {   vtbl[]
++	 *	  monitor
++	 *	  ptr to destructor
++	 *	  sthis
++	 *	  ... closure variables ...
++	 *	  ~this() { call destructor }
++	 *    }
++	 */
+  #endif
+  	//printf("FuncDeclaration::buildClosure()\n");
+ 
+@@ -554,8 +554,8 @@
+  	    if (v->storage_class & STClazy)
+  	    {
+  		/* Lazy variables are really delegates,
+-! 		 * so give same answers that TypeDelegate would
+-! 		 */
++		 * so give same answers that TypeDelegate would
++		 */
+  		memsize = PTRSIZE * 2;
+  		memalignsize = memsize;
+  		xalign = global.structalign;
+@@ -634,9 +634,9 @@
+ #endif
+ 
+ /***************************
+-+  * Determine return style of function - whether in registers or
+-+  * through a hidden pointer to the caller's stack.
+-+  */
++ * Determine return style of function - whether in registers or
++ * through a hidden pointer to the caller's stack.
++ */
+  
+  enum RET TypeFunction::retStyle()
+  {
+diff -r f7db5a788077 d/dmd/toobj.c
+--- a/d/dmd/toobj.c	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/dmd/toobj.c	Sun Jun 06 18:39:13 2010 +0100
+@@ -252,9 +252,9 @@
+ 	if (m->needModuleInfo())
+ 	{   Symbol *s = m->toSymbol();
+ 	    /* Weak references don't pull objects in from the library,
+-+ 	     * they resolve to 0 if not pulled in by something else.
+-+ 	     * Don't pull in a module just because it was imported.
+-+ 	     */
++	     * they resolve to 0 if not pulled in by something else.
++	     * Don't pull in a module just because it was imported.
++	     */
+ #if !OMFOBJ // Optlink crashes with weak symbols at EIP 41AFE7, 402000
+      s->Sflags |= SFLweak;
+ #endif
+diff -r f7db5a788077 d/phobos/internal/aaA.d
+--- a/d/phobos/internal/aaA.d	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/phobos/internal/aaA.d	Sun Jun 06 18:39:13 2010 +0100
+@@ -590,8 +590,8 @@
+     }
+     
+ /********************************************
+-+  * Balance an array.
+-+  */
++ * Balance an array.
++ */
+  
+  /+void _aaBalance(AA* paa)
+  {
+@@ -605,7 +605,7 @@
+  	foreach (j, e; aa.b)
+  	{
+  	    /* Temporarily store contents of bucket in array[]
+-+ 	     */
++	     */
+  	    size_t k = 0;
+  
+  	    void addToArray(aaA* e)
+@@ -622,8 +622,8 @@
+  	    addToArray(e);
+  
+ 	    /* The contents of the bucket are now sorted into array[].
+-+ 	     * Rebuild the tree.
+-+ 	     */
++	     * Rebuild the tree.
++	     */
+  
+  	    void buildTree(aaA** p, size_t x1, size_t x2)
+  	    {
+diff -r f7db5a788077 d/phobos/internal/dmain2.d
+--- a/d/phobos/internal/dmain2.d	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/phobos/internal/dmain2.d	Sun Jun 06 18:39:13 2010 +0100
+@@ -62,10 +62,10 @@
+ 
+     version (OSX)
+      {	/* OSX does not provide a way to get at the top of the
+-! 	 * stack, except for the magic value 0xC0000000.
+-! 	 * But as far as the gc is concerned, argv is at the top
+-! 	 * of the main thread's stack, so save the address of that.
+-! 	 */
++	 * stack, except for the magic value 0xC0000000.
++	 * But as far as the gc is concerned, argv is at the top
++	 * of the main thread's stack, so save the address of that.
++	 */
+  	__osx_stack_end = cast(void*)&argv;
+      }
+      
+diff -r f7db5a788077 d/phobos/internal/gc/gclinux.d
+--- a/d/phobos/internal/gc/gclinux.d	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/phobos/internal/gc/gclinux.d	Sun Jun 06 18:39:13 2010 +0100
+@@ -126,8 +126,8 @@
+     else version (OSX)
+     {
+  	/* A better method would be to set this value as the address
+-+ 	 * of a local variable defined in extern(C) main().
+-+ 	 */
++	 * of a local variable defined in extern(C) main().
++	 */
+  	//return cast(void*)0xC0000000;
+  	return __osx_stack_end;
+     }
+@@ -146,11 +146,11 @@
+ {
+ 	version (OSX)
+      {	/* These are probably wrong.
+-+ 	 * See http://www.manpagez.com/man/3/get_etext/
+-+ 	 * Should use dylib(3) instead.
+-+ 	 *
+-+ 	 * EDIT: should be handled by _d_osx_image_init() now. - SK
+-+ 	 */
++	 * See http://www.manpagez.com/man/3/get_etext/
++	 * Should use dylib(3) instead.
++	 *
++	 * EDIT: should be handled by _d_osx_image_init() now. - SK
++	 */
+  	//*base = cast(void *)get_etext();
+  	//*nbytes = cast(byte *)get_end() - cast(byte *)get_etext();
+  	*base = null;
+diff -r f7db5a788077 d/phobos/internal/llmath.d
+--- a/d/phobos/internal/llmath.d	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/phobos/internal/llmath.d	Sun Jun 06 18:39:13 2010 +0100
+@@ -33,32 +33,32 @@
+  	js	Lleft		;
+  
+  	/* We have n>d, and know that n/d will fit in 32 bits.
+-+          * d will be left justified if we shift it left s bits.
+-+ 	 * [d1,d0] <<= s
+-+ 	 * [n2,n1,n0] = [n1,n0] << s
+-+ 	 *
+-+ 	 * Use one divide, by this reasoning:
+-+ 	 * ([n2,n1]<<32 + n0)/(d1<<32 + d0)
+-+ 	 * becomes:
+-+ 	 * ([n2,n1]<<32)/(d1<<32 + d0) + n0/(d1<<32 + d0)
+-+ 	 * The second divide is always 0.
+-+ 	 * Ignore the d0 in the first divide, which will yield a quotient
+-+ 	 * that might be too high by 1 (because d1 is left justified).
+-+ 	 * We can tell if it's too big if:
+-+ 	 *  q*[d1,d0] > [n2,n1,n0]
+-+ 	 * which is:
+-+ 	 *  q*[d1,d0] > [[q*[d1,0]+q%[d1,0],n1,n0]
+-+ 	 * If we subtract q*[d1,0] from both sides, we get:
+-+ 	 *  q*d0 > [[n2,n1]%d1,n0]
+-+ 	 * So if it is too big by one, reduce q by one to q'=q-one.
+-+ 	 * Compute remainder as:
+-+ 	 *  r = ([n1,n0] - q'*[d1,d0]) >> s
+-+ 	 * Again, we can subtract q*[d1,0]:
+-+ 	 *  r = ([n1,n0] - q*[d1,0] - (q'*[d1,d0] - q*[d1,0])) >> s
+-+ 	 *  r = ([[n2,n1]%d1,n0] + (q*[d1,0] - (q - one)*[d1,d0])) >> s
+-+ 	 *  r = ([[n2,n1]%d1,n0] + (q*[d1,0] - [d1 *(q-one),d0*(1-q)])) >> s
+-+ 	 *  r = ([[n2,n1]%d1,n0] + [d1 *one,d0*(one-q)])) >> s
+-+ 	 */
++         * d will be left justified if we shift it left s bits.
++	 * [d1,d0] <<= s
++	 * [n2,n1,n0] = [n1,n0] << s
++	 *
++	 * Use one divide, by this reasoning:
++	 * ([n2,n1]<<32 + n0)/(d1<<32 + d0)
++	 * becomes:
++	 * ([n2,n1]<<32)/(d1<<32 + d0) + n0/(d1<<32 + d0)
++	 * The second divide is always 0.
++	 * Ignore the d0 in the first divide, which will yield a quotient
++	 * that might be too high by 1 (because d1 is left justified).
++	 * We can tell if it's too big if:
++	 *  q*[d1,d0] > [n2,n1,n0]
++	 * which is:
++	 *  q*[d1,d0] > [[q*[d1,0]+q%[d1,0],n1,n0]
++	 * If we subtract q*[d1,0] from both sides, we get:
++	 *  q*d0 > [[n2,n1]%d1,n0]
++	 * So if it is too big by one, reduce q by one to q'=q-one.
++	 * Compute remainder as:
++	 *  r = ([n1,n0] - q'*[d1,d0]) >> s
++	 * Again, we can subtract q*[d1,0]:
++	 *  r = ([n1,n0] - q*[d1,0] - (q'*[d1,d0] - q*[d1,0])) >> s
++	 *  r = ([[n2,n1]%d1,n0] + (q*[d1,0] - (q - one)*[d1,d0])) >> s
++	 *  r = ([[n2,n1]%d1,n0] + (q*[d1,0] - [d1 *(q-one),d0*(1-q)])) >> s
++	 *  r = ([[n2,n1]%d1,n0] + [d1 *one,d0*(one-q)])) >> s
++	 */
+  
+   	push	EBP		;
+  	push	ESI		;
+diff -r f7db5a788077 d/phobos/internal/object.d
+--- a/d/phobos/internal/object.d	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/phobos/internal/object.d	Sun Jun 06 18:39:13 2010 +0100
+@@ -97,9 +97,9 @@
+  */
+ class Object
+ {
+-/**
+-+      * Converts Object to human readable text and writes it to stdout.
+-+      */
++    /**
++     * Converts Object to human readable text and writes it to stdout.
++     */
+     void print()
+     {
+ 	char[] s = toString();
+diff -r f7db5a788077 d/phobos/std/date.d
+--- a/d/phobos/std/date.d	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/phobos/std/date.d	Sun Jun 06 18:39:13 2010 +0100
+@@ -414,8 +414,8 @@
+     return (t == d_time_nan)
+ 	? d_time_nan
+ 	/* BUGZILLA 1752 says this line should be:
+-+  *	: t - LocalTZA - DaylightSavingTA(t);
+-+  */
++ *	: t - LocalTZA - DaylightSavingTA(t);
++ */
+ 	: t - LocalTZA - DaylightSavingTA(t - LocalTZA);
+ }
+ 
+@@ -476,94 +476,94 @@
+ }
+ 
+ /***************************************
+-+  * Determine the date in the month, 1..31, of the nth
+-+  * weekday.
+-+  * Params:
+-+  *	year = year
+-+  *	month = month, 1..12
+-+  *	weekday = day of week 0..6 representing Sunday..Saturday
+-+  *	n = nth occurrence of that weekday in the month, 1..5, where
+-+  *	    5 also means "the last occurrence in the month"
+-+  * Returns:
+-+  *	the date in the month, 1..31, of the nth weekday
+-+  */
++ * Determine the date in the month, 1..31, of the nth
++ * weekday.
++ * Params:
++ *	year = year
++ *	month = month, 1..12
++ *	weekday = day of week 0..6 representing Sunday..Saturday
++ *	n = nth occurrence of that weekday in the month, 1..5, where
++ *	    5 also means "the last occurrence in the month"
++ * Returns:
++ *	the date in the month, 1..31, of the nth weekday
++ */
+  
+- int DateFromNthWeekdayOfMonth(int year, int month, int weekday, int n)
+- in
+- {
+-     assert(1 <= month && month <= 12);
+-     assert(0 <= weekday && weekday <= 6);
+-     assert(1 <= n && n <= 5);
+- }
+- body
+- {
+-     // Get day of the first of the month
+-     auto x = MakeDay(year, month - 1, 1);
+- 
+-     // Get the week day 0..6 of the first of this month
+-     auto wd = WeekDay(MakeDate(x, 0));
+- 
+-     // Get monthday of first occurrence of weekday in this month
+-     auto mday = weekday - wd + 1;
+-     if (mday < 1)
+- 	mday += 7;
+- 
+-     // Add in number of weeks
+-     mday += (n - 1) * 7;
+- 
+-     // If monthday is more than the number of days in the month,
+-     // back up to 'last' occurrence
+-     if (mday > 28 && mday > DaysInMonth(year, month))
+-     {	assert(n == 5);
+- 	mday -= 7;
++int DateFromNthWeekdayOfMonth(int year, int month, int weekday, int n)
++in
++{
++    assert(1 <= month && month <= 12);
++    assert(0 <= weekday && weekday <= 6);
++    assert(1 <= n && n <= 5);
++}
++body
++{
++    // Get day of the first of the month
++    auto x = MakeDay(year, month - 1, 1);
++
++    // Get the week day 0..6 of the first of this month
++    auto wd = WeekDay(MakeDate(x, 0));
++
++    // Get monthday of first occurrence of weekday in this month
++    auto mday = weekday - wd + 1;
++    if (mday < 1)
++	mday += 7;
++
++    // Add in number of weeks
++    mday += (n - 1) * 7;
++
++    // If monthday is more than the number of days in the month,
++    // back up to 'last' occurrence
++    if (mday > 28 && mday > DaysInMonth(year, month))
++    {	assert(n == 5);
++	mday -= 7;
+     }
+  
+-     return mday;
+- }
++    return mday;
++}
+  
+- unittest
+- {
+-     assert(DateFromNthWeekdayOfMonth(2003,  3, 0, 5) == 30);
+-     assert(DateFromNthWeekdayOfMonth(2003, 10, 0, 5) == 26);
+-     assert(DateFromNthWeekdayOfMonth(2004,  3, 0, 5) == 28);
+-     assert(DateFromNthWeekdayOfMonth(2004, 10, 0, 5) == 31);
+- }
++unittest
++{
++    assert(DateFromNthWeekdayOfMonth(2003,  3, 0, 5) == 30);
++    assert(DateFromNthWeekdayOfMonth(2003, 10, 0, 5) == 26);
++    assert(DateFromNthWeekdayOfMonth(2004,  3, 0, 5) == 28);
++    assert(DateFromNthWeekdayOfMonth(2004, 10, 0, 5) == 31);
++}
+  
+- /**************************************
+-+  * Determine the number of days in a month, 1..31.
+-+  * Params:
+-+  *	month = 1..12
+-+  */
++/**************************************
++ * Determine the number of days in a month, 1..31.
++ * Params:
++ *	month = 1..12
++ */
+  
+- int DaysInMonth(int year, int month)
+- {
+-     switch (month)
+-     {
+- 	case 1:
+- 	case 3:
+- 	case 5:
+- 	case 7:
+- 	case 8:
+- 	case 10:
+- 	case 12:
+- 	    return 31;
+- 	case 2:
+- 	    return 28 + LeapYear(year);
+- 	case 4:
+- 	case 6:
+- 	case 9:
+- 	case 11:
+- 	    return 30;
+- 	default:
+- 	    assert(0);
+-     }
+- }
++int DaysInMonth(int year, int month)
++{
++    switch (month)
++    {
++	case 1:
++	case 3:
++	case 5:
++	case 7:
++	case 8:
++	case 10:
++	case 12:
++	    return 31;
++	case 2:
++	    return 28 + LeapYear(year);
++	case 4:
++	case 6:
++	case 9:
++	case 11:
++	    return 30;
++	default:
++	    assert(0);
++    }
++}
+   
+- unittest
+- {
+-     assert(DaysInMonth(2003, 2) == 28);
+-     assert(DaysInMonth(2004, 2) == 29);
+- }
++unittest
++{
++    assert(DaysInMonth(2003, 2) == 28);
++    assert(DaysInMonth(2004, 2) == 29);
++}
+ 
+ /*************************************
+  * Converts UTC time into a text string of the form:
+@@ -821,8 +821,8 @@
+ 
+     static d_time SYSTEMTIME2d_time(SYSTEMTIME *st, d_time t)
+     {
+-    /* More info: http://delphicikk.atw.hu/listaz.php?id=2667&oldal=52
+-+ 	 */
++	/* More info: http://delphicikk.atw.hu/listaz.php?id=2667&oldal=52
++	 */
+ 	d_time n;
+ 	d_time day;
+ 	d_time time;
+@@ -834,10 +834,10 @@
+ 	}
+ 	else
+ 	{   /* wYear being 0 is a flag to indicate relative time:
+-! 	     * wMonth is the month 1..12
+-! 	     * wDayOfWeek is weekday 0..6 corresponding to Sunday..Saturday
+-! 	     * wDay is the nth time, 1..5, that wDayOfWeek occurs
+-! 	     */
++	     * wMonth is the month 1..12
++	     * wDayOfWeek is weekday 0..6 corresponding to Sunday..Saturday
++	     * wDay is the nth time, 1..5, that wDayOfWeek occurs
++	     */
+   
+  	    auto year = YearFromTime(t);
+  	    auto mday = DateFromNthWeekdayOfMonth(year, st.wMonth, st.wDay, st.wDayOfWeek);
+@@ -978,15 +978,15 @@
+ 	    else	// out of range for system time, use our own calculation
+ 	    {
+  		/* BUG: this works for the US, but not other timezones.
+-! 		 */
++		 */
+ 
+ 		dt -= LocalTZA;
+ 
+ 		int year = YearFromTime(dt);
+ 
+ 		/* Compute time given year, month 1..12,
+-! 		 * week in month, weekday, hour
+-! 		 */
++		 * week in month, weekday, hour
++		 */
+  		d_time dstt(int year, int month, int week, int weekday, int hour)
+  		{
+  		    auto mday = DateFromNthWeekdayOfMonth(year,  month, weekday, week);
+diff -r f7db5a788077 d/phobos/std/file.d
+--- a/d/phobos/std/file.d	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/phobos/std/file.d	Sun Jun 06 18:39:13 2010 +0100
+@@ -919,8 +919,8 @@
+     void[] buf;
+     if (size == 0)
+     {	/* The size could be 0 if the file is a device or a procFS file,
+-! 	 * so we just have to try reading it.
+-! 	 */
++	 * so we just have to try reading it.
++	 */
+  	int readsize = 1024;
+  	while (1)
+  	{
+diff -r f7db5a788077 d/phobos/std/math.d
+--- a/d/phobos/std/math.d	Sun Jun 06 11:04:16 2010 +0100
++++ b/d/phobos/std/math.d	Sun Jun 06 18:39:13 2010 +0100
+@@ -846,14 +846,14 @@
+       enum { PARAMSIZE = (real.sizeof+3)&(0xFFFF_FFFC) } // always a multiple of 4
+       asm {
+         /*  expm1() for x87 80-bit reals, IEEE754-2008 conformant.
+-+          * Author: Don Clugston.
+-+          * 
+-+          *    expm1(x) = 2^(rndint(y))* 2^(y-rndint(y)) - 1 where y = LN2*x.
+-+          *    = 2rndy * 2ym1 + 2rndy - 1, where 2rndy = 2^(rndint(y))
+-+          *     and 2ym1 = (2^(y-rndint(y))-1).
+-+          *    If 2rndy  < 0.5*real.epsilon, result is -1.
+-+          *    Implementation is otherwise the same as for exp2()
+-+          */
++         * Author: Don Clugston.
++         * 
++         *    expm1(x) = 2^(rndint(y))* 2^(y-rndint(y)) - 1 where y = LN2*x.
++         *    = 2rndy * 2ym1 + 2rndy - 1, where 2rndy = 2^(rndint(y))
++         *     and 2ym1 = (2^(y-rndint(y))-1).
++         *    If 2rndy  < 0.5*real.epsilon, result is -1.
++         *    Implementation is otherwise the same as for exp2()
++         */
+         naked;        
+         fld real ptr [ESP+4] ; // x
+         mov AX, [ESP+4+8]; // AX = exponent and sign
+@@ -917,35 +917,35 @@
+ }
+ version (GNU_msvcrt_math) { /* nothing */ } else
+ /**
+-!  * Calculates 2$(SUP x).
+-!  *
+-!  *  $(TABLE_SV
+-!  *    $(TR $(TH x)             $(TH exp2(x)    )
+-!  *    $(TD +$(INFIN))          $(TD +$(INFIN)) )
+-!  *    $(TD -$(INFIN))          $(TD +0.0)      )
+-!  *    $(TR $(TD $(NAN))        $(TD $(NAN))    )
+-!  *  )
+-!  */
++ * Calculates 2$(SUP x).
++ *
++ *  $(TABLE_SV
++ *    $(TR $(TH x)             $(TH exp2(x)    )
++ *    $(TD +$(INFIN))          $(TD +$(INFIN)) )
++ *    $(TD -$(INFIN))          $(TD +0.0)      )
++ *    $(TR $(TD $(NAN))        $(TD $(NAN))    )
++ *  )
++ */
+ real exp2(real x) 
+ {
+     version(Naked_D_InlineAsm_X86) {
+       enum { PARAMSIZE = (real.sizeof+3)&(0xFFFF_FFFC) } // always a multiple of 4
+       asm {
+         /*  exp2() for x87 80-bit reals, IEEE754-2008 conformant.
+-!          * Author: Don Clugston.
+-!          * 
+-!          * exp2(x) = 2^(rndint(x))* 2^(y-rndint(x))
+-!          * The trick for high performance is to avoid the fscale(28cycles on core2),
+-!          * frndint(19 cycles), leaving f2xm1(19 cycles) as the only slow instruction.
+-!          * 
+-!          * We can do frndint by using fist. BUT we can't use it for huge numbers,
+-!          * because it will set the Invalid Operation flag is overflow or NaN occurs.
+-!          * Fortunately, whenever this happens the result would be zero or infinity.
+-!          * 
+-!          * We can perform fscale by directly poking into the exponent. BUT this doesn't
+-!          * work for the (very rare) cases where the result is subnormal. So we fall back
+-!          * to the slow method in that case.
+-!          */
++         * Author: Don Clugston.
++         * 
++         * exp2(x) = 2^(rndint(x))* 2^(y-rndint(x))
++         * The trick for high performance is to avoid the fscale(28cycles on core2),
++         * frndint(19 cycles), leaving f2xm1(19 cycles) as the only slow instruction.
++         * 
++         * We can do frndint by using fist. BUT we can't use it for huge numbers,
++         * because it will set the Invalid Operation flag is overflow or NaN occurs.
++         * Fortunately, whenever this happens the result would be zero or infinity.
++         * 
++         * We can perform fscale by directly poking into the exponent. BUT this doesn't
++         * work for the (very rare) cases where the result is subnormal. So we fall back
++         * to the slow method in that case.
++         */
+         naked;        
+         fld real ptr [ESP+4] ; // x
+         mov AX, [ESP+4+8]; // AX = exponent and sign

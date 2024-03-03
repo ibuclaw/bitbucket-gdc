@@ -1,0 +1,257 @@
+diff -r 0066ecfe85f1 d/d-irstate.cc
+--- a/d/d-irstate.cc	Tue Apr 12 11:27:30 2011 +0100
++++ b/d/d-irstate.cc	Fri Apr 15 21:54:32 2011 -0400
+@@ -79,7 +79,7 @@
+         mi.unitTests.push(decl);
+ 
+     // Write out _tlsstart/_tlsend.
+-    if (decl->isMain())
++    if (decl->isMain() || decl->isWinMain() || decl->isDllMain())
+         obj_tlssections();
+ 
+     return new_irs;
+diff -r 0066ecfe85f1 d/d-spec.c
+--- a/d/d-spec.c	Tue Apr 12 11:27:30 2011 +0100
++++ b/d/d-spec.c	Fri Apr 15 21:54:32 2011 -0400
+@@ -56,6 +56,9 @@
+ #ifndef LIBPHOBOS
+ #define LIBPHOBOS "-lgphobos"
+ #endif
++#ifndef LIBPHOBOS2
++#define LIBPHOBOS2 "-lgphobos2"
++#endif
+ #ifndef LIBPHOBOS_PROFILE
+ #define LIBPHOBOS_PROFILE LIBPHOBOS
+ #endif
+@@ -94,6 +97,9 @@
+     /* Used by -debuglib */
+     int saw_debug_flag = 0;
+ 
++    /* If nonzero, the user gave "-v2" flag. */
++    int saw_d2_flag = 0;
++
+     /* This is a tristate:
+        -1 means we should not link in libphobos
+        0  means we should link in libphobos if it is needed
+@@ -103,6 +109,7 @@
+     /* If nonzero, use the standard D runtime library when linking with
+        standard libraries. */
+     int phobos = 1;
++    
+ 
+     /* The number of arguments being added to what's in argv, other than
+        libraries.  We use this to track the number of times we've inserted
+@@ -271,6 +278,8 @@
+                 saw_verbose_flag = 1;
+             else if (strcmp (argv[i], "-g") == 0)
+                 saw_debug_flag = 1;
++            else if (strcmp (argv[i], "-v2") == 0)
++                saw_d2_flag = 1;
+             else if (strncmp (argv[i], "-x", 2) == 0)
+             {
+                 const char * arg;
+@@ -459,7 +468,7 @@
+     /* Add `-lgphobos' if we haven't already done so.  */
+     if (library > 0 && phobos)
+     {
+-        arglist[j++] = saw_profile_flag ? LIBPHOBOS_PROFILE : LIBPHOBOS;
++        arglist[j++] = saw_profile_flag ? LIBPHOBOS_PROFILE : saw_d2_flag ? LIBPHOBOS2 : LIBPHOBOS;
+         added_libraries++;
+     }
+     else if (saw_debug_flag && debuglib)
+diff -r 0066ecfe85f1 d/druntime/rt/monitor_.d
+--- a/d/druntime/rt/monitor_.d	Tue Apr 12 11:27:30 2011 +0100
++++ b/d/druntime/rt/monitor_.d	Fri Apr 15 21:54:32 2011 -0400
+@@ -88,7 +88,6 @@
+ 
+ version( Windows )
+ {
+-    /+
+     static __gshared CRITICAL_SECTION _monitor_critsec;
+ 
+     extern (C) void _STI_monitor_staticctor()
+@@ -166,7 +165,6 @@
+         LeaveCriticalSection(&getMonitor(h).mon);
+         debug(PRINTF) printf("-_d_monitor_release(%p)\n", h);
+     }
+-    +/
+ }
+ 
+ /* =============================== linux ============================ */
+diff -r 0066ecfe85f1 d/lang-specs.h
+--- a/d/lang-specs.h	Tue Apr 12 11:27:30 2011 +0100
++++ b/d/lang-specs.h	Fri Apr 15 21:54:32 2011 -0400
+@@ -39,7 +39,7 @@
+ {".di", "@d", 0, 1, 0 },
+ {".DI", "@d", 0, 1, 0 },
+ {"@d",
+-     "%{!E:cc1d %i %(cc1_options) %(cc1d) %I %N %{nostdinc*} %{+e*} %{I*} %{J*}\
++     "%{!E:%{v2:cc1d2; v1:cc1d; :cc1d} %i %(cc1_options) %(cc1d) %I %N %{nostdinc*} %{+e*} %{I*} %{J*}\
+       %{M} %{MM} %{!fsyntax-only:%(invoke_as)}}", D_D_SPEC, 1, 0 },
+ #else
+ {".d", "@d", 0, 1, 0 },
+@@ -47,7 +47,7 @@
+ {".di", "@d", 0, 1, 0 },
+ {".DI", "@d", 0, 1, 0 },
+ {"@d",
+-     "%{!E:cc1d %i %(cc1_options) %(cc1d) %I %N %{nostdinc*} %{+e*} %{I*} %{J*}\
++     "%{!E:%{v2:cc1d2; v1:cc1d; :cc1d} %i %(cc1_options) %(cc1d) %I %N %{nostdinc*} %{+e*} %{I*} %{J*}\
+       %{M} %{MM} %{!fsyntax-only:%(invoke_as)}}", D_D_SPEC, 1, 0 },
+ #endif
+ 
+diff -r 0066ecfe85f1 d/phobos2/std/stdio.d
+--- a/d/phobos2/std/stdio.d	Tue Apr 12 11:27:30 2011 +0100
++++ b/d/phobos2/std/stdio.d	Fri Apr 15 21:54:32 2011 -0400
+@@ -64,8 +64,8 @@
+ 
+ version (MinGW)
+ {
+-    version = DIGITAL_MARS_STDIO;
+-    import std.c.stdio : __fhnd_info, FHND_WCHAR, FHND_TEXT;
++    version = MINGW_IO;
++    //import std.c.stdio : __fhnd_info, FHND_WCHAR, FHND_TEXT;
+ }
+ 
+ version(Windows)
+@@ -104,6 +104,60 @@
+     int _fileno(FILE* f) { return f._file; }
+     alias _fileno fileno;
+ }
++else version (MINGW_IO)
++{
++    extern (C)
++    {
++        int setmode(int, int);
++    }
++    
++    void flockfile(FILE* fp)
++    {
++        int handle = _get_osfhandle(fp);
++
++        assert(handle != -1, "invalid handle");
++
++        // Test handle
++
++        if (LockFile(handle, 0,0, uint.max, uint.max))
++            return; // Successful
++
++        assert(false, "MINGW_IO flockfile couldn't lock file");
++    }
++
++    void funlockfile(FILE* fp)
++    {
++        uint handle = _get_osfhandle(fp);
++
++        assert(handle != -1, "invalid handle");
++
++        if (UnlockFile(handle, 0,0, uint.max, uint.max))
++            return; // Successful
++
++        assert(false, "MINGW_IO funlockfile couldn't unlock file.");
++    }
++
++    int fputc_unlocked(int c, _iobuf* fp) { return fputc(c, cast(shared) fp); }
++    int fputwc_unlocked(int c, _iobuf* fp)
++    {
++        return fputwc(cast(wchar_t)c, cast(shared) fp);
++    }
++    int fgetc_unlocked(_iobuf* fp) { return fgetc(cast(shared) fp); }
++    int fgetwc_unlocked(_iobuf* fp) { return fgetwc(cast(shared) fp); }
++    
++    alias fputc_unlocked FPUTC;
++    alias fputwc_unlocked FPUTWC;
++    alias fgetc_unlocked FGETC;
++    alias fgetwc_unlocked FGETWC;
++
++    alias flockfile FLOCK;
++    alias funlockfile FUNLOCK;
++
++    alias setmode _setmode;
++    enum _O_BINARY = 0x8000;
++    int _fileno(FILE* f) { return f._file; }
++    alias _fileno fileno;
++}
+ else version (GCC_IO)
+ {
+     /* **
+@@ -2349,6 +2403,80 @@
+     }
+ }
+ 
++version (MINGW_IO)
++private size_t readlnImpl(FILE* fps, ref char[] buf, dchar terminator = '\n')
++{
++    FLOCK(fps);
++    scope(exit) FUNLOCK(fps);
++    auto fp = cast(_iobuf*)fps;
++    if (fwide(fps, 0) > 0)
++    {   /* Stream is in wide characters.
++         * Read them and convert to chars.
++         */
++        version (Windows)
++        {
++            buf.length = 0;
++            for (int c; (c = FGETWC(fp)) != -1; )
++            {
++                if ((c & ~0x7F) == 0)
++                {   buf ~= c;
++                    if (c == terminator)
++                        break;
++                }
++                else
++                {
++                    if (c >= 0xD800 && c <= 0xDBFF)
++                    {
++                        int c2 = void;
++                        if ((c2 = FGETWC(fp)) != -1 ||
++                                c2 < 0xDC00 && c2 > 0xDFFF)
++                        {
++                            StdioException("unpaired UTF-16 surrogate");
++                        }
++                        c = ((c - 0xD7C0) << 10) + (c2 - 0xDC00);
++                    }
++                    std.utf.encode(buf, c);
++                }
++            }
++            if (ferror(cast(shared)fp))
++                StdioException();
++            return buf.length;
++        }
++        else version (Posix)
++        {
++            buf.length = 0;
++            for (int c; (c = FGETWC(fp)) != -1; )
++            {
++                if ((c & ~0x7F) == 0)
++                    buf ~= cast(char)c;
++                else
++                    std.utf.encode(buf, cast(dchar)c);
++                if (c == terminator)
++                    break;
++            }
++            if (ferror(fps))
++                StdioException();
++            return buf.length;
++        }
++        else
++        {
++            static assert(0);
++        }
++    }
++
++    // Narrow stream
++    buf.length = 0;
++    for (int c; (c = FGETC(fp)) != -1; )
++    {
++        buf ~= cast(char)c;
++        if (c == terminator)
++            break;
++    }
++    if (ferror(fps))
++        StdioException();
++    return buf.length;
++}
++
+ version (GCC_IO)
+ private size_t readlnImpl(FILE* fps, ref char[] buf, dchar terminator = '\n')
+ {

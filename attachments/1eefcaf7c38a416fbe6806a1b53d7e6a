@@ -1,0 +1,529 @@
+/code/d/gdc/dev/gcc-4.3.1/objdir/./gcc/gdc -B/code/d/gdc/dev/gcc-4.3.1/objdir/./gcc/ -B/usr/local/powerpc-apple-darwin9.8.0/bin/ -B/usr/local/powerpc-apple-darwin9.8.0/lib/ -isystem /usr/local/powerpc-apple-darwin9.8.0/include -isystem /usr/local/powerpc-apple-darwin9.8.0/sys-include -o std/c/linux/linux.o -g -frelease -O2 -fversion=GC_Use_Alloc_MMap -fversion=GC_Use_Stack_Fixed -fversion=GC_Use_Data_Dyld -nostdinc -pipe   \
+	-I ../../../libphobos -I ../../../libphobos/internal/gc -I ./powerpc-apple-darwin9.8.0 -c ../../../libphobos/std/c/linux/linux.d
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_acos __builtin_acos must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_acosf __builtin_acosf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_acosh __builtin_acosh must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_acoshf __builtin_acoshf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_acoshl __builtin_acoshl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_acosl __builtin_acosl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_asin __builtin_asin must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_asinf __builtin_asinf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_asinh __builtin_asinh must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_asinhf __builtin_asinhf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_asinhl __builtin_asinhl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_asinl __builtin_asinl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_atan2 __builtin_atan2 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_atan2f __builtin_atan2f must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_atan2l __builtin_atan2l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_atanf __builtin_atanf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_atanhf __builtin_atanhf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_atanhl __builtin_atanhl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_atanl __builtin_atanl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cbrt __builtin_cbrt must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cbrtf __builtin_cbrtf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cbrtl __builtin_cbrtl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ceil __builtin_ceil must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ceilf __builtin_ceilf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ceill __builtin_ceill must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cosf __builtin_cosf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cosh __builtin_cosh must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_coshf __builtin_coshf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cosl __builtin_cosl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_drem __builtin_drem must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_dreml __builtin_dreml must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_erfc __builtin_erfc must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_erfcf __builtin_erfcf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_erff __builtin_erff must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_erfl __builtin_erfl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_exp __builtin_exp must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_exp10 __builtin_exp10 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_exp10l __builtin_exp10l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_exp2 __builtin_exp2 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_exp2f __builtin_exp2f must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_exp2l __builtin_exp2l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_expl __builtin_expl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_expm1 __builtin_expm1 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_expm1f __builtin_expm1f must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_expm1l __builtin_expm1l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fabs __builtin_fabs must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fabsf __builtin_fabsf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fabsl __builtin_fabsl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fdiml __builtin_fdiml must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_floor __builtin_floor must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_floorl __builtin_floorl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fma __builtin_fma must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fmaf __builtin_fmaf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fmal __builtin_fmal must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fmax __builtin_fmax must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fmaxf __builtin_fmaxf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fmin __builtin_fmin must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fminf __builtin_fminf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fmod __builtin_fmod must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fmodl __builtin_fmodl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_frexp __builtin_frexp must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_frexpf __builtin_frexpf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_frexpl __builtin_frexpl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_gamma __builtin_gamma must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_gammaf __builtin_gammaf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_gammal __builtin_gammal must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_gammaf_r __builtin_gammaf_r must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_huge_val __builtin_huge_val must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_huge_vall __builtin_huge_vall must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_hypot __builtin_hypot must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_hypotf __builtin_hypotf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_hypotl __builtin_hypotl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ilogb __builtin_ilogb must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ilogbf __builtin_ilogbf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ilogbl __builtin_ilogbl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_inf __builtin_inf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_infl __builtin_infl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_infd32 __builtin_infd32 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_infd64 __builtin_infd64 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_infd128 __builtin_infd128 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_j0 __builtin_j0 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_j0f __builtin_j0f must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_j0l __builtin_j0l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_j1f __builtin_j1f must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_j1l __builtin_j1l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_jnf __builtin_jnf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_jnl __builtin_jnl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_lceilf __builtin_lceilf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ldexp __builtin_ldexp must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ldexpf __builtin_ldexpf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ldexpl __builtin_ldexpl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_lfloorl __builtin_lfloorl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_lgamma __builtin_lgamma must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_lgammaf __builtin_lgammaf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_lgammal __builtin_lgammal must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_llceil __builtin_llceil must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_llceilf __builtin_llceilf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_llceill __builtin_llceill must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_llfloor __builtin_llfloor must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_llrintf __builtin_llrintf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_llrintl __builtin_llrintl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_llroundf __builtin_llroundf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_log10l __builtin_log10l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_log1p __builtin_log1p must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_log1pf __builtin_log1pf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_log1pl __builtin_log1pl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_log2 __builtin_log2 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_log2f __builtin_log2f must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_log2l __builtin_log2l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_logbl __builtin_logbl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_logf __builtin_logf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_logl __builtin_logl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_lrint __builtin_lrint must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_lrintf __builtin_lrintf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_nan __builtin_nan must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_nanf __builtin_nanf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_nanl __builtin_nanl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_nand128 __builtin_nand128 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_nans __builtin_nans must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_nansf __builtin_nansf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_nansl __builtin_nansl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_nextafter __builtin_nextafter must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_nexttoward __builtin_nexttoward must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_pow __builtin_pow must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_pow10 __builtin_pow10 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_powi __builtin_powi must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_powif __builtin_powif must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_powl __builtin_powl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_rint __builtin_rint must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_round __builtin_round must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_roundf __builtin_roundf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_roundl __builtin_roundl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_scalblnf __builtin_scalblnf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_signbitf __builtin_signbitf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_signbitl __builtin_signbitl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_significand __builtin_significand must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sin __builtin_sin must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sincosf __builtin_sincosf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sincosl __builtin_sincosl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sinf __builtin_sinf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sinh __builtin_sinh must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sinhf __builtin_sinhf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sinhl __builtin_sinhl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sinl __builtin_sinl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sqrt __builtin_sqrt must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_tanf __builtin_tanf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_tanh __builtin_tanh must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_trunc __builtin_trunc must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_y0f __builtin_y0f must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_y0l __builtin_y0l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_y1f __builtin_y1f must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_y1l __builtin_y1l must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_yn __builtin_yn must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ynf __builtin_ynf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cacos __builtin_cacos must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cacosh __builtin_cacosh must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cacosl __builtin_cacosl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_carg __builtin_carg must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_cargf __builtin_cargf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_casinh __builtin_casinh must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_catan __builtin_catan must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ccos __builtin_ccos must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ccosh __builtin_ccosh must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ccoshf __builtin_ccoshf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ccoshl __builtin_ccoshl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_ccosl __builtin_ccosl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_csinhl __builtin_csinhl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_csqrtf __builtin_csqrtf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_memchr __builtin_memchr must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_memcmp __builtin_memcmp must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_memcpy __builtin_memcpy must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_stpcpy __builtin_stpcpy must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_stpncpy __builtin_stpncpy must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_strcasecmp __builtin_strcasecmp must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_strcmp __builtin_strcmp must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_strcspn __builtin_strcspn must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_strdup __builtin_strdup must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fputc __builtin_fputc must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fputc_unlocked __builtin_fputc_unlocked must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fputs __builtin_fputs must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_fscanf __builtin_fscanf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_snprintf __builtin_snprintf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sprintf __builtin_sprintf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_sscanf __builtin_sscanf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_vfprintf __builtin_vfprintf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_vfscanf __builtin_vfscanf must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isascii __builtin_isascii must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_islower __builtin_islower must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isprint __builtin_isprint must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isspace __builtin_isspace must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isupper __builtin_isupper must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_tolower __builtin_tolower must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_iswalnum __builtin_iswalnum must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_iswalpha __builtin_iswalpha must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_iswdigit __builtin_iswdigit must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_iswgraph __builtin_iswgraph must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_iswlower __builtin_iswlower must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_iswupper __builtin_iswupper must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_towupper __builtin_towupper must be a function
+Error: recursive type
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_apply_args __builtin_apply_args must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_args_info __builtin_args_info must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_bswap32 __builtin_bswap32 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_calloc __builtin_calloc must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_clz __builtin_clz must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_clzimax __builtin_clzimax must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_clzl __builtin_clzl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_clzll __builtin_clzll must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_dcgettext __builtin_dcgettext must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_execve __builtin_execve must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_init_dwarf_reg_size_table __builtin_init_dwarf_reg_size_table must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_finited32 __builtin_finited32 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_finited128 __builtin_finited128 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isinfd64 __builtin_isinfd64 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isinfd128 __builtin_isinfd128 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isnanl __builtin_isnanl must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isnand64 __builtin_isnand64 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isgreaterequal __builtin_isgreaterequal must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_isunordered __builtin_isunordered must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_labs __builtin_labs must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_prefetch __builtin_prefetch must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_realloc __builtin_realloc must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin___stpcpy_chk __builtin___stpcpy_chk must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin___strncat_chk __builtin___strncat_chk must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin___vsprintf_chk __builtin___vsprintf_chk must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_add_1 __sync_fetch_and_add_1 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_add_2 __sync_fetch_and_add_2 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_add_4 __sync_fetch_and_add_4 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_add_8 __sync_fetch_and_add_8 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_sub_1 __sync_fetch_and_sub_1 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_sub_2 __sync_fetch_and_sub_2 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_sub_4 __sync_fetch_and_sub_4 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_sub_8 __sync_fetch_and_sub_8 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_and_4 __sync_fetch_and_and_4 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_fetch_and_nand_2 __sync_fetch_and_nand_2 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_and_and_fetch_2 __sync_and_and_fetch_2 must be a function
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__sync_and_and_fetch_4 __sync_and_and_fetch_4 must be a function
+Error: recursive type
+Error: recursive type
+Error: recursive type
+Error: recursive type
+Error: recursive type
+Error: recursive type
+Error: recursive type
+../../../libphobos/gcc/builtins.d: function gcc.builtins.__builtin_vec_dstt __builtin_vec_dstt must be a function
+../../../libphobos/std/c/stdio.d:246: Error: std.stdint.Clong_t at ../../../libphobos/std/stdint.d:191 conflicts with gcc.config.libc.Clong_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:4
+../../../libphobos/std/c/stdio.d:325: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:326: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:327: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:328: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:329: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:330: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:331: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:332: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:333: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:334: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:335: pragma GNU_asm second argument of GNU_asm must be a character string
+../../../libphobos/std/c/stdio.d:400: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:401: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:402: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:403: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:404: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:405: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:406: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:409: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:411: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:412: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:414: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:414: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:415: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:416: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:417: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:421: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:424: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:426: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:429: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdio.d:432: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdlib.d:85: Error: std.stdint.Clong_t at ../../../libphobos/std/stdint.d:191 conflicts with gcc.config.libc.Clong_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:4
+../../../libphobos/std/c/stdlib.d:101: Error: std.stdint.Clong_t at ../../../libphobos/std/stdint.d:191 conflicts with gcc.config.libc.Clong_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:4
+../../../libphobos/std/c/stdlib.d:140: Error: std.stdint.Clong_t at ../../../libphobos/std/stdint.d:191 conflicts with gcc.config.libc.Clong_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:4
+../../../libphobos/std/c/stdlib.d:141: Error: std.stdint.Culong_t at ../../../libphobos/std/stdint.d:192 conflicts with gcc.config.libc.Culong_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:5
+../../../libphobos/std/c/stdlib.d:150: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdlib.d:151: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdlib.d:152: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/c/stdlib.d:153: Error: std.c.stddef.wchar_t at ../../../libphobos/std/c/stddef.d:15 conflicts with gcc.config.libc.wchar_t at ./powerpc-apple-darwin9.8.0/gcc/config/libc.d:7
+../../../libphobos/std/stdio.d:285: Error: cannot implicitly convert expression (stdin) of type const(_iobuf*) to _iobuf*
+../../../libphobos/std/c/unix/unix.d:34: Error: gcc.config.unix.DIR at ./powerpc-apple-darwin9.8.0/gcc/config/unix.d:13 conflicts with std.c.dirent.DIR at ../../../libphobos/std/c/dirent.d:25
+make[3]: *** [std/c/linux/linux.o] Error 1
+make[2]: *** [all] Error 2
+make[1]: *** [all-target-libphobos] Error 2
+make: *** [all] Error 2

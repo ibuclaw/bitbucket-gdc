@@ -1,0 +1,12 @@
+diff -r 1fb27285a969 d/d-glue.cc
+--- a/d/d-glue.cc	Sun Oct 03 20:48:47 2010 +0100
++++ b/d/d-glue.cc	Mon Oct 04 23:49:03 2010 +0100
+@@ -714,7 +714,7 @@
+ 	while (1)
+ 	{
+ 	    tree array_exp;
+-	    if (irs->typesCompatible(oe->type->toBasetype(), elem_type))
++	    if (irs->typesCompatible(oe->type->toBasetype(), elem_type->toBasetype()))
+ 	    {
+ 		tree elem_var = NULL_TREE;
+ 		array_exp = one_elem_array(irs, oe, elem_var);

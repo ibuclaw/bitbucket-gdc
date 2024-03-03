@@ -1,0 +1,36 @@
+diff -r d53a8be7c0ed d/d-decls.cc
+--- a/d/d-decls.cc	Sat Jul 24 21:14:54 2010 +0100
++++ b/d/d-decls.cc	Sat Jul 31 12:26:41 2010 -0400
+@@ -162,6 +162,32 @@
+ 	sv->intvalue++;
+     }
+ 
++    // Modify name for Windows linkage(stdcall)
++    if (f && f->linkage == LINKwindows)
++    {
++        int hasVarArgs = 0;
++        Parameters *args = f->getParameters(&hasVarArgs);
++        
++        // Stdcall doesn't work with varargs. is this an error? Consult DMD.        
++        if (!hasVarArgs) 
++        {        
++            size_t nArgs = Parameter::dim(args);  
++            d_uns64 nSize = 0;
++            for(size_t i=0; i < nArgs; i++)
++            {
++                Parameter *p = Parameter::getNth(args, i);
++                
++                nSize += p->type->size();
++            }
++    
++            if (alloc_name)
++                free(alloc_name);
++            out_name = alloc_name = (char *) alloca(strlen(asm_name) + 32);
++            
++            sprintf (alloc_name, "%s@%llu", asm_name, nSize);
++        }
++    }
++
+     SET_DECL_ASSEMBLER_NAME(t, get_identifier(out_name));
+ 
+     if (alloc_name)

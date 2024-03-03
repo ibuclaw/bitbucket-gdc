@@ -1,0 +1,21 @@
+--- gcc-4.3.5.original/gcc/except.c	2008-06-28 06:43:12 -0400
++++ gcc-4.3.5/gcc/except.c	2010-08-05 17:38:16 -0400
+@@ -1821,6 +1821,18 @@ sjlj_mark_call_sites (struct sjlj_lp_inf
+ 
+ 	  region = VEC_index (eh_region, cfun->eh->region_array, INTVAL (XEXP (note, 0)));
+ 	  this_call_site = lp_info[region->region_number].call_site_index;
++	  if (region->type == ERT_CATCH)
++	  {
++	    /* Use previous region information */
++	    region = region->outer;
++	    if (!region)
++	    {
++	      /* No previous region, must change function contexts. */
++	      this_call_site = -1;
++	    }
++	    else
++	    this_call_site = lp_info[region->region_number].call_site_index;        
++	  }
+ 	}
+ 
+       if (this_call_site == last_call_site)

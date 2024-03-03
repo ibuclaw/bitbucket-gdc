@@ -1,0 +1,184 @@
+diff -r 593d72d554d2 d/Make-lang.in
+--- a/d/Make-lang.in	Wed Jul 07 22:48:48 2010 +0100
++++ b/d/Make-lang.in	Thu Jul 08 19:40:40 2010 +0100
+@@ -250,7 +250,7 @@
+ # The full path for -include ...total.h is only needed for g++ < 3.x
+ # ALL_D_COMPILER_FLAGS causes issues -- c++ <complex.h> instead of C <complex.h>
+ # Not all DMD sources depend on d-dmd-gcc.h
+-d/%.dmd.o: $(srcdir)/$(D_dmd_srcdir)/%.c $(D_DMD_H)
++d/%.dmd.o: $(srcdir)/$(D_dmd_srcdir)/%.c $(D_DMD_H) d/d-confdefs.h
+ 	$(CXX) $(ALL_DMD_COMPILER_FLAGS) -include $(srcdir)/$(D_dmd_srcdir)/total.h -o d/$*.dmd.o -c $<
+ 
+ # For generator programs, can't implicitly include "total.h" which includes "id.h"
+diff -r 593d72d554d2 d/dmd/mtype.c
+--- a/d/dmd/mtype.c	Wed Jul 07 22:48:48 2010 +0100
++++ b/d/dmd/mtype.c	Thu Jul 08 19:40:40 2010 +0100
+@@ -30,7 +30,10 @@
+ #include <assert.h>
+ #include <float.h>
+ 
++#if IN_GCC
+ #include "gdc_alloca.h"
++#include "d-confdefs.h"
++#endif
+ 
+ // TODO%% this undefines signbit and includes is the wrong complex.h anyway
+ // -- not sure why this is needed, anyway
+@@ -1072,7 +1075,7 @@
+ 	    sz = REALALIGNSIZE;
+ 	    break;
+ 	    
+-	#if TARGET_LINUX || TARGET_OSX || TARGET_FREEBSD || TARGET_SOLARIS
++#if TARGET_LINUX || TARGET_OSX || TARGET_FREEBSD || TARGET_SOLARIS
+ 	case Tint64:
+ 	case Tuns64:
+ 	case Tfloat64:
+@@ -1081,7 +1084,7 @@
+ 	case Tcomplex64:
+ 	    sz = 4;
+ 	    break;
+-	#endif
++#endif
+ 
+ 	default:
+ 	    sz = size(0);
+diff -r 593d72d554d2 d/dmd/struct.c
+--- a/d/dmd/struct.c	Wed Jul 07 22:48:48 2010 +0100
++++ b/d/dmd/struct.c	Thu Jul 08 19:40:40 2010 +0100
+@@ -51,12 +51,12 @@
+ 
+     stag = NULL;
+     sinit = NULL;
+-    #if DMDV2
++#if DMDV2
+      dtor = NULL;
+  
+      ctor = NULL;
+      defaultCtor = NULL;
+- 	 #endif
++#endif
+ }
+ 
+ enum PROT AggregateDeclaration::prot()
+@@ -149,7 +149,7 @@
+     //printf("salign = %d, size = %d, offset = %d\n",salign,size,offset);
+     if (salign > 1)
+     {
+-    assert(size != 3);
++	assert(size != 3);
+  	int sa = size;
+  	if (sa == 0 || salign < sa)
+  	    sa = salign;
+@@ -171,12 +171,12 @@
+     Type *t = v->type->toBasetype();
+     if (t->ty == Tstruct /*&& isStructDeclaration()*/)
+     {	TypeStruct *ts = (TypeStruct *)t;
+-    #if DMDV2
++#if DMDV2
+  	if (ts->sym == this)
+  	{
+  	    error("cannot have field %s with same struct type", v->toChars());
+  	}
+- 	#endif
++#endif
+ 
+ 	if (ts->sym->sizeok != 1)
+ 	{
+@@ -216,11 +216,11 @@
+     : AggregateDeclaration(loc, id)
+ {
+     zeroInit = 0;	// assume false until we do semantic processing
+-    #if DMDV2
+-     hasIdentityAssign = 0;
+-     cpctor = NULL;
+-     postblit = NULL;
+- 	#endif
++#if DMDV2
++    hasIdentityAssign = 0;
++    cpctor = NULL;
++    postblit = NULL;
++#endif
+ 
+     // For forward references
+     type = new TypeStruct(this);
+@@ -269,11 +269,11 @@
+ 
+     parent = sc->parent;
+     type = type->semantic(loc, sc);
+-    #if STRUCTTHISREF
+-     handle = type;
+- 	#else
+-      handle = type->pointerTo();
+- 	#endif
++#if STRUCTTHISREF
++    handle = type;
++#else
++    handle = type->pointerTo();
++#endif
+     structalign = sc->structalign;
+     protection = sc->protection;
+     if (sc->stc & STCdeprecated)
+@@ -281,12 +281,12 @@
+     assert(!isAnonymous());
+     if (sc->stc & STCabstract)
+ 	error("structs, unions cannot be abstract");
+-	#if DMDV2
+-     if (storage_class & STCinvariant)
+-         type = type->invariantOf();
+-     else if (storage_class & STCconst)
+-         type = type->constOf();
+- 	#endif
++#if DMDV2
++    if (storage_class & STCinvariant)
++	type = type->invariantOf();
++    else if (storage_class & STCconst)
++	type = type->constOf();
++#endif
+     if (attributes)
+ 	attributes->append(sc->attributes);
+     else
+@@ -384,12 +384,11 @@
+ 
+ 	id = Id::cmp;
+     }
+-
+ #if DMDV2
+-     dtor = buildDtor(sc2);
+-     postblit = buildPostBlit(sc2);
+-     cpctor = buildCpCtor(sc2);
+-     buildOpAssign(sc2);
++    dtor = buildDtor(sc2);
++    postblit = buildPostBlit(sc2);
++    cpctor = buildCpCtor(sc2);
++    buildOpAssign(sc2);
+ #endif
+ 
+     sc2->pop();
+@@ -453,9 +452,9 @@
+ 
+     /* Look for special member functions.
+      */
+-     #if DMDV2
+-     ctor =   (CtorDeclaration *)search(0, Id::ctor, 0);
+- 	#endif
++#if DMDV2
++    ctor =   (CtorDeclaration *)search(0, Id::ctor, 0);
++#endif
+     inv =    (InvariantDeclaration *)search(0, Id::classInvariant, 0);
+     aggNew =       (NewDeclaration *)search(0, Id::classNew,       0);
+     aggDelete = (DeleteDeclaration *)search(0, Id::classDelete,    0);
+diff -r 593d72d554d2 d/target-ver-syms.sh
+--- a/d/target-ver-syms.sh	Wed Jul 07 22:48:48 2010 +0100
++++ b/d/target-ver-syms.sh	Thu Jul 08 19:40:40 2010 +0100
+@@ -75,3 +75,11 @@
+ if test -n "$d_os_versym"; then
+     echo "#define D_OS_VERSYM \"$d_os_versym\""
+ fi
++
++case "$d_os_versym" in
++# What about aix, bsd and sysv? 
++darwin)  echo "#define TARGET_OSX     1" ;;
++freebsd) echo "#define TARGET_FREEBSD 1" ;;
++linux)   echo "#define TARGET_LINUX   1" ;;
++solaris) echo "#define TARGET_SOLARIS 1" ;;
++esac

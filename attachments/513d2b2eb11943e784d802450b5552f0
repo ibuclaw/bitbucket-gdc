@@ -1,0 +1,283 @@
+diff -r 7e22befef29c d/d-builtins2.cc
+--- a/d/d-builtins2.cc	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/d-builtins2.cc	Mon Nov 14 00:10:00 2011 +0000
+@@ -602,6 +602,48 @@
+     }
+ }
+ 
++// Return GCC align size for type T.
++int
++d_gcc_type_align(Type * t)
++{
++    gcc_assert(t->isTypeBasic());
++    return TYPE_ALIGN_UNIT(t->toCtype());
++}
++
++// Return GCC align size for field VAR.
++int
++d_gcc_field_align(VarDeclaration * var, int known_align)
++{
++    static tree d_gcc_vfield = make_node(FIELD_DECL);
++
++    /* %% stor-layout.c:
++       Some targets (i.e. i386, VMS) limit struct field alignment
++       to a lower boundary than alignment of variables unless
++       it was overridden by attribute aligned.  */
++    if (var->salign != 0)
++        return var->salign;
++
++    // Work out the correct alignment for the field decl.
++    DECL_ALIGN(d_gcc_vfield) = known_align * BITS_PER_UNIT;
++
++#ifdef BIGGEST_FIELD_ALIGNMENT
++    DECL_ALIGN(d_gcc_vfield)
++        = MIN(DECL_ALIGN(d_gcc_vfield), (unsigned) BIGGEST_FIELD_ALIGNMENT);
++#endif
++
++    if (var->type->isTypeBasic())
++    {
++        TREE_TYPE(d_gcc_vfield) = var->type->toCtype();
++#ifdef ADJUST_FIELD_ALIGN
++        DECL_ALIGN(d_gcc_vfield)
++            = ADJUST_FIELD_ALIGN(d_gcc_vfield, DECL_ALIGN(d_gcc_vfield));
++#endif
++    }
++
++    return DECL_ALIGN_UNIT(d_gcc_vfield);
++}
++
++
+ #if V2
+ // Convert backend evaluated trees to D Frontend Expressions for CTFE
+ static Expression *
+diff -r 7e22befef29c d/d-dmd-gcc.h
+--- a/d/d-dmd-gcc.h	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/d-dmd-gcc.h	Mon Nov 14 00:10:00 2011 +0000
+@@ -26,8 +26,8 @@
+ 
+ /* used in module.c */
+ struct Module;
+-extern void d_gcc_magic_module(Module *m);
+-extern void d_gcc_dump_source(const char * filename, const char * ext, unsigned char * data, unsigned len);
++extern void d_gcc_magic_module(Module *);
++extern void d_gcc_dump_source(const char *, const char *, unsigned char *, unsigned);
+ 
+ /* used in func.c */
+ struct Type;
+@@ -41,6 +41,12 @@
+ extern void d_gcc_emit_local_variable(VarDeclaration *);
+ extern bool d_gcc_supports_weak();
+ 
++/* used in mtype.c */
++extern int d_gcc_type_align(Type *);
++
++/* used in struct.c */
++extern int d_gcc_field_align(VarDeclaration *, int);
++
+ #if V2
+ struct Symbol;
+ enum RTLSYM
+diff -r 7e22befef29c d/dmd/attrib.c
+--- a/d/dmd/attrib.c	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd/attrib.c	Mon Nov 14 00:10:00 2011 +0000
+@@ -693,6 +693,14 @@
+     //printf("\tAlignDeclaration::semantic '%s'\n",toChars());
+     if (decl)
+     {
++#if IN_GCC
++        for (unsigned i = 0; i < decl->dim; i++)
++        {   Dsymbol *s = decl->tdata()[i];
++            VarDeclaration * v = s->isVarDeclaration();
++            if (v)
++                v->salign = salign;
++        }
++#endif
+         semanticNewSc(sc, sc->stc, sc->linkage, sc->protection, sc->explicitProtection, salign);
+     }
+ }
+diff -r 7e22befef29c d/dmd/declaration.c
+--- a/d/dmd/declaration.c	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd/declaration.c	Mon Nov 14 00:10:00 2011 +0000
+@@ -694,6 +694,9 @@
+ #endif
+     this->loc = loc;
+     offset = 0;
++#if IN_GCC
++    salign = 0;
++#endif
+     noscope = 0;
+ #if DMDV2
+     isargptr = FALSE;
+diff -r 7e22befef29c d/dmd/declaration.h
+--- a/d/dmd/declaration.h	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd/declaration.h	Mon Nov 14 00:10:00 2011 +0000
+@@ -251,6 +251,9 @@
+ {
+     Initializer *init;
+     unsigned offset;
++#if IN_GCC
++    unsigned salign;            // user defined alignment
++#endif
+     int noscope;                 // no auto semantics
+ #if DMDV2
+     FuncDeclarations nestedrefs; // referenced by these lexically nested functions
+diff -r 7e22befef29c d/dmd/mtype.c
+--- a/d/dmd/mtype.c	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd/mtype.c	Mon Nov 14 00:10:00 2011 +0000
+@@ -63,6 +63,10 @@
+ #include "aggregate.h"
+ #include "hdrgen.h"
+ 
++#ifdef IN_GCC
++#include "d-dmd-gcc.h"
++#endif
++
+ FuncDeclaration *hasThis(Scope *sc);
+ 
+ 
+@@ -1093,6 +1097,9 @@
+ unsigned TypeBasic::alignsize()
+ {   unsigned sz;
+ 
++#if IN_GCC
++    sz = d_gcc_type_align(this);
++#else
+     switch (ty)
+     {
+         case Tfloat80:
+@@ -1125,6 +1132,7 @@
+             sz = size(0);
+             break;
+     }
++#endif
+     return sz;
+ }
+ 
+diff -r 7e22befef29c d/dmd/struct.c
+--- a/d/dmd/struct.c	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd/struct.c	Mon Nov 14 00:10:00 2011 +0000
+@@ -27,6 +27,10 @@
+ #include "statement.h"
+ #include "template.h"
+ 
++#ifdef IN_GCC
++#include "d-dmd-gcc.h"
++#endif
++
+ /********************************* AggregateDeclaration ****************************/
+ 
+ AggregateDeclaration::AggregateDeclaration(Loc loc, Identifier *id)
+@@ -194,7 +198,11 @@
+     }
+ 
+     memsize = v->type->size(loc);
++#if IN_GCC
++    memalignsize = d_gcc_field_align(v, v->type->alignsize());
++#else
+     memalignsize = v->type->alignsize();
++#endif
+     xalign = v->type->memalign(sc->structalign);
+ #if 0
+     alignmember(xalign, memalignsize, &sc->offset);
+diff -r 7e22befef29c d/dmd2/attrib.c
+--- a/d/dmd2/attrib.c	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd2/attrib.c	Mon Nov 14 00:10:00 2011 +0000
+@@ -685,6 +685,14 @@
+     //printf("\tAlignDeclaration::semantic '%s'\n",toChars());
+     if (decl)
+     {
++#if IN_GCC
++        for (unsigned i = 0; i < decl->dim; i++)
++        {   Dsymbol *s = decl->tdata()[i];
++            VarDeclaration * v = s->isVarDeclaration();
++            if (v)
++                v->salign = salign;
++        }
++#endif
+         semanticNewSc(sc, sc->stc, sc->linkage, sc->protection, sc->explicitProtection, salign);
+     }
+ }
+diff -r 7e22befef29c d/dmd2/declaration.c
+--- a/d/dmd2/declaration.c	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd2/declaration.c	Mon Nov 14 00:10:00 2011 +0000
+@@ -634,6 +634,9 @@
+     this->hinit = NULL;
+     this->loc = loc;
+     offset = 0;
++#if IN_GCC
++    salign = 0;
++#endif
+     noscope = 0;
+ #if DMDV2
+     isargptr = FALSE;
+diff -r 7e22befef29c d/dmd2/declaration.h
+--- a/d/dmd2/declaration.h	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd2/declaration.h	Mon Nov 14 00:10:00 2011 +0000
+@@ -246,6 +246,9 @@
+ {
+     Initializer *init;
+     unsigned offset;
++#if IN_GCC
++    unsigned salign;            // user defined alignment
++#endif
+     int noscope;                 // no auto semantics
+ #if DMDV2
+     FuncDeclarations nestedrefs; // referenced by these lexically nested functions
+diff -r 7e22befef29c d/dmd2/mtype.c
+--- a/d/dmd2/mtype.c	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd2/mtype.c	Mon Nov 14 00:10:00 2011 +0000
+@@ -63,6 +63,10 @@
+ #include "aggregate.h"
+ #include "hdrgen.h"
+ 
++#ifdef IN_GCC
++#include "d-dmd-gcc.h"
++#endif
++
+ FuncDeclaration *hasThis(Scope *sc);
+ void ObjectNotFound(Identifier *id);
+ 
+@@ -2518,6 +2522,9 @@
+ unsigned TypeBasic::alignsize()
+ {   unsigned sz;
+ 
++#if IN_GCC
++    sz = d_gcc_type_align(this);
++#else
+     switch (ty)
+     {
+         case Tfloat80:
+@@ -2550,6 +2557,7 @@
+             sz = size(0);
+             break;
+     }
++#endif
+     return sz;
+ }
+ 
+diff -r 7e22befef29c d/dmd2/struct.c
+--- a/d/dmd2/struct.c	Tue Nov 08 23:07:33 2011 +0000
++++ b/d/dmd2/struct.c	Mon Nov 14 00:10:00 2011 +0000
+@@ -27,6 +27,10 @@
+ #include "statement.h"
+ #include "template.h"
+ 
++#ifdef IN_GCC
++#include "d-dmd-gcc.h"
++#endif
++
+ /********************************* AggregateDeclaration ****************************/
+ 
+ AggregateDeclaration::AggregateDeclaration(Loc loc, Identifier *id)
+@@ -206,7 +210,11 @@
+     }
+ 
+     memsize = t->size(loc);
++#if IN_GCC
++    memalignsize = d_gcc_field_align(v, t->alignsize());
++#else
+     memalignsize = t->alignsize();
++#endif
+     xalign = t->memalign(sc->structalign);
+ #if 0
+     alignmember(xalign, memalignsize, &sc->offset);

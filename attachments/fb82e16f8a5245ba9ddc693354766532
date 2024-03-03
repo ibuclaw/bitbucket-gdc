@@ -1,0 +1,12 @@
+diff -r ef0d5e8ec06d d/d-gcc-real.cc
+--- a/d/d-gcc-real.cc	Tue Oct 26 17:16:26 2010 +0100
++++ b/d/d-gcc-real.cc	Wed Oct 27 12:45:41 2010 +0100
+@@ -353,7 +353,7 @@
+ void
+ real_t::format(char * buf, unsigned buf_size) const
+ {
+-    real_to_decimal(buf, & rv(), buf_size, 0, 1);
++    real_to_decimal(buf, & rv(), buf_size, 18, 1);
+ }
+ 
+ void

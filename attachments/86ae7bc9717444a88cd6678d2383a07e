@@ -1,0 +1,52 @@
+module stubs;
+
+class TypeInfo_Ai : TypeInfo {}		// int[]
+class TypeInfo_Ak : TypeInfo_Ai {}	// uint[]
+class TypeInfo_Aw : TypeInfo_Ak {}	// dchar[]
+class TypeInfo_AC : TypeInfo {}		// Object[]
+class TypeInfo_Ar : TypeInfo {}		// cdouble[]
+class TypeInfo_Aq : TypeInfo {}		// cfloat[]
+class TypeInfo_Ac : TypeInfo {}		// creal[]
+class TypeInfo_Ad : TypeInfo {}		// double[]
+class TypeInfo_Ap : TypeInfo_Ad {}	// idouble[]
+class TypeInfo_Af : TypeInfo {}		// float[]
+class TypeInfo_Ao : TypeInfo_Af {}	// ifloat[]
+class TypeInfo_Ag : TypeInfo {}		// byte[]
+class TypeInfo_Ah : TypeInfo_Ag {}	// ubyte[]
+class TypeInfo_Av : TypeInfo_Ah {}	// void[]
+class TypeInfo_Ab : TypeInfo_Ah {}	// bool[]
+class TypeInfo_Aa : TypeInfo_Ag {}	// char[]
+class TypeInfo_Aya : TypeInfo_Aa {}	// immutable(char)[]
+class TypeInfo_Al : TypeInfo {}		// long[]
+class TypeInfo_Am : TypeInfo_Al {}	// ulong[]
+class TypeInfo_Ae : TypeInfo {}		// real[]
+class TypeInfo_Aj : TypeInfo_Ae {}	// ireal[]
+class TypeInfo_As : TypeInfo {}		// short[]
+class TypeInfo_At : TypeInfo_As {}	// ushort[]
+class TypeInfo_Au : TypeInfo_At {}	// wchar[]
+class TypeInfo_C : TypeInfo {}		// Object
+class TypeInfo_g : TypeInfo {}		// byte
+class TypeInfo_r : TypeInfo {}		// cdouble
+class TypeInfo_q : TypeInfo {}		// cfloat
+class TypeInfo_a : TypeInfo {}		// char
+class TypeInfo_c : TypeInfo {}		// creal
+class TypeInfo_w : TypeInfo {}		// dchar
+class TypeInfo_D : TypeInfo {}		// delegate
+class TypeInfo_d : TypeInfo {}		// double
+class TypeInfo_f : TypeInfo {}		// float
+class TypeInfo_p : TypeInfo_d {}	// idouble
+class TypeInfo_o : TypeInfo_f {}	// ifloat
+class TypeInfo_i : TypeInfo {}		// int
+class TypeInfo_j : TypeInfo_e {}	// ireal
+class TypeInfo_l : TypeInfo {}		// long
+class TypeInfo_P : TypeInfo {}		// pointer
+class TypeInfo_e : TypeInfo {}		// real
+class TypeInfo_s : TypeInfo {}		// short
+class TypeInfo_h : TypeInfo {}		// ubyte
+class TypeInfo_k : TypeInfo {}		// uint
+class TypeInfo_m : TypeInfo {}		// ulong
+class TypeInfo_t : TypeInfo {}		// ushort
+class TypeInfo_v : TypeInfo {}		// void
+class TypeInfo_u : TypeInfo {}		// wchar
+
+

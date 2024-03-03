@@ -1,0 +1,213 @@
+==Compiling with MinGW==
+
+*Install:
+# **MinGW** http://sourceforge.net/projects/mingw/files/Automated%20MinGW%20Installer/MinGW%205.1.6/MinGW-5.1.6.exe/download
+# **MSYS** http://downloads.sourceforge.net/mingw/MSYS-1.0.11.exe
+# **msysDTK** http://downloads.sourceforge.net/mingw/msysDTK-1.0.1.exe
+# **msysCore** http://sourceforge.net/projects/mingw/files/MSYS/BaseSystem/msys-1.0.11/msysCORE-1.0.11-bin.tar.gz/download
+
+*Get wget and extract into C:\msys\1.0\
+**http://ftp.heanet.ie/mirrors/sourceforge/g/project/gn/gnuwin32/wget/1.11.4-1/wget-1.11.4-1-bin.zip
+**http://ftp.heanet.ie/mirrors/sourceforge/g/project/gn/gnuwin32/wget/1.11.4-1/wget-1.11.4-1-dep.zip
+ 
+*Delete Subfolders of C:\MinGW\*
+ 
+*Create a 'mingwget.sh' file in C:\msys\1.0\home\<username>
+
+{{{
+#!sh
+ 
+#!/bin/bash
+ARCHIVEDIR=/mingw
+EXTBIN=mingw32-bin.tar.gz
+EXTDEV=mingw32-dev.tar.gz
+EXTDLL=mingw32-dll.tar.gz
+EXTLZMABIN=mingw32-bin.tar.lzma
+EXTLZMADEV=mingw32-dev.tar.lzma
+EXTLZMADLL=mingw32-dll.tar.lzma
+if [ ! -d $ARCHIVEDIR ]
+then 
+    mkdir $ARCHIVEDIR 
+fi 
+cd $ARCHIVEDIR
+NAME=binutils
+VERSION=2.20.1-2
+SRC=$NAME-$VERSION-$EXTBIN
+echo "mingw binutils: " $SRC
+LINK="http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/m/project/mi/mingw/MinGW/BaseSystem/GNU-Binutils/binutils-2.20.1"
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=mingwrt
+VERSION=3.18
+SRC=$NAME-$VERSION-$EXTDEV
+echo "mingw runtime: " $SRC
+LINK="http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/m/project/mi/mingw/MinGW/BaseSystem/RuntimeLibrary/MinGW-RT/mingwrt-3.18"
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+SRC=$NAME-$VERSION-$EXTDLL
+echo "mingw runtime: " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=w32api
+VERSION=3.14
+SRC=$NAME-$VERSION-$EXTDEV
+echo "mingw win32 API: " $SRC
+LINK="http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/m/project/mi/mingw/MinGW/BaseSystem/RuntimeLibrary/Win32-API/w32api-3.14/"
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=mpc
+VERSION=0.8.1-1
+SRC=$NAME-$VERSION-$EXTLZMADEV
+echo "mingw mpc (Math Precision library for Complex numbers): " $SRC
+LINK="http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/m/project/mi/mingw/MinGW/mpc/mpc-0.8.1-1"
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=libmpc
+SRC=$NAME-$VERSION-mingw32-dll-2.tar.lzma
+echo "mingw mpc (Multi-Precision library for Complex numbers): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=mpfr
+VERSION=2.4.1-1
+SRC=$NAME-$VERSION-$EXTLZMADEV
+LINK="http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/m/project/mi/mingw/MinGW/mpfr/mpfr-2.4.1-1"
+echo "mingw mpfr (Multiple-Precision Floating-point computations with correct Rounding): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=libmpfr
+SRC=$NAME-$VERSION-mingw32-dll-1.tar.lzma
+echo "mingw mpfr (Multiple-Precision Floating-point computations with correct Rounding): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=gmp
+VERSION=5.0.1-1
+SRC=$NAME-$VERSION-$EXTLZMADEV
+LINK="http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/m/project/mi/mingw/MinGW/gmp/gmp-5.0.1-1"
+echo "mingw gmp (GNU Multiple Precision arithmetic library): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=libgmp
+SRC=$NAME-$VERSION-mingw32-dll-10.tar.lzma
+echo "mingw gmp (GNU Multiple Precision arithmetic library): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=pthreads-w32
+VERSION=2.8.0-3
+SRC=$NAME-$VERSION-$EXTLZMADEV
+LINK="http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/m/project/mi/mingw/MinGW/pthreads-w32/pthreads-w32-2.8.0-3"
+echo "mingw pthreads (Posix THREADS): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=libpthread
+SRC=$NAME-$VERSION-mingw32-dll-2.tar.lzma
+echo "mingw pthreads (Posix THREADS): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=libgomp
+VERSION=4.5.0-1
+SRC=$NAME-$VERSION-mingw32-dll-1.tar.lzma
+LINK="http://www.mirrorservice.org/sites/download.sourceforge.net/pub/sourceforge/m/project/mi/mingw/MinGW/BaseSystem/GCC/Version4/gcc-4.5.0-1/"
+echo "mingw gomp (GNU implementation of OpenMP - multi-platform shared-memory parallel programming): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=libssp
+SRC=$NAME-$VERSION-mingw32-dll-0.tar.lzma
+echo "mingw ssp (Stack Smashing Protection): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=gcc-core
+SRC=$NAME-$VERSION-$EXTLZMABIN
+echo "mingw gcc-core (gnu compiler): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=libgcc
+SRC=$NAME-$VERSION-mingw32-dll-1.tar.lzma
+echo "mingw libgcc (gnu compiler libraries): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=gcc-c++
+SRC=$NAME-$VERSION-$EXTLZMABIN
+echo "mingw gcc-core (gnu C/C++ compiler): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+NAME=libstdc++
+SRC=$NAME-$VERSION-mingw32-dll-6.tar.lzma
+echo "mingw libgcc (gnu C/C++ compiler libraries): " $SRC
+if [ ! -f $ARCHIVEDIR/$SRC ]
+then
+        wget "$LINK/$SRC"
+fi
+}}}
+ 
+*Start msys command prompt:
+ 
+*Run:
+{{{
+chmod +x getmingw.sh
+./getmingw.sh
+}}}
+ 
+*Browse to your MinGW installation directory (e.g. C:\mingw32) and extract all archives in the directory, e.g. with 7z.
+
+=== Other prerequisites ===
+
+* **autoconf** + **automake**:
+** http://sourceforge.net/projects/mingw/files/MinGW/autoconf/autoconf2.5/autoconf2.5-2.64-1/autoconf2.5-2.64-1-mingw32-bin.tar.lzma/download
+** http://sourceforge.net/projects/mingw/files/MinGW/automake/automake1.11/automake1.11-1.11-1/automake1.11-1.11-1-mingw32-bin.tar.lzma/download
+
+* **expat**:
+** http://sourceforge.net/projects/mingw/files/MinGW/expat/expat-2.0.1-1/libexpat-2.0.1-1-mingw32-dll-1.tar.gz/download
+** http://sourceforge.net/projects/mingw/files/MinGW/expat/expat-2.0.1-1/expat-2.0.1-1-mingw32-bin.tar.gz/download
+
+* **patch**:
+** http://sourceforge.net/projects/mingw/files/MSYS/patch/patch-2.6.1-1/patch-2.6.1-1-msys-1.0.13-bin.tar.lzma/download
+
+* **m4**:
+** http://sourceforge.net/projects/mingw/files/MSYS/m4/m4-1.4.14-1/m4-1.4.14-1-msys-1.0.13-bin.tar.lzma/download
+
+Extract them into C:\msys\1.0
+ 
+ 
+Once done, Download GDC + GCC-4.1.2 (or 4.3.4 / 4.3.5 if you wish) and pretty much follow the same instructions on the wiki page.
+
+NOTE: you'll also want to include in the configure line:  --prefix=/mingw 
+ 
+If you get any popups about missing libraries during the build, you can usually ignore them.
+Any needing dependencies can be found http://sourceforge.net/projects/mingw/files/
+ 
+ 
+Hope this helps :-)

@@ -1,0 +1,111 @@
+diff -r 6e2ba321e290 d/d-glue.cc
+--- a/d/d-glue.cc	Mon Sep 20 19:17:21 2010 +0100
++++ b/d/d-glue.cc	Tue Sep 21 19:43:14 2010 +0100
+@@ -2888,12 +2888,13 @@
+ #if D_GCC_VER >= 40
+     if (v_argptr) {
+ 	tree body = irs->popStatementList();
++#if GCC_BUILTIN_VALIST
++	// Use portable builtin_va_list
+ 	tree var = irs->var(v_argptr);
+ 	tree init_exp = irs->buildCall(void_type_node,
+ 	    irs->addressOf( built_in_decls[BUILT_IN_VA_START] ),
+ 	    tree_cons(NULL_TREE, irs->addressOf(var),
+ 		tree_cons( NULL_TREE, parm_decl, NULL_TREE)));
+-	v_argptr->init = NULL; // VoidInitializer?
+ 	irs->emitLocalVar(v_argptr, true);
+ 	irs->addExp(init_exp);
+ 
+@@ -2901,6 +2902,11 @@
+ 	    irs->addressOf( built_in_decls[BUILT_IN_VA_END] ),
+ 	    tree_cons(NULL_TREE, irs->addressOf(var), NULL_TREE));
+ 	irs->addExp( build2( TRY_FINALLY_EXPR, void_type_node, body, cleanup ));
++#else
++	// _argptr is a void pointer
++	irs->emitLocalVar(v_argptr, true);
++	irs->addExp(body);
++#endif
+     }
+ #endif
+ 
+diff -r 6e2ba321e290 d/dmd/func.c
+--- a/d/dmd/func.c	Mon Sep 20 19:17:21 2010 +0100
++++ b/d/dmd/func.c	Tue Sep 21 19:43:14 2010 +0100
+@@ -810,7 +810,7 @@
+             }
+             if (f->linkage == LINKd || (f->parameters && Parameter::dim(f->parameters)))
+             {   // Declare _argptr
+-#if IN_GCC
++#if GCC_BUILTIN_VALIST
+                 t = d_gcc_builtin_va_list_d_type;
+ #else
+                 t = Type::tvoid->pointerTo();
+@@ -1223,7 +1223,8 @@
+                 // Handled in FuncDeclaration::toObjFile
+                 v_argptr = argptr;
+                 v_argptr->init = new VoidInitializer(loc);
+-#else
++#endif
++#if !GCC_BUILTIN_VALIST
+                 Type *t = argptr->type;
+                 VarDeclaration *p;
+                 unsigned offset = 0;
+diff -r 6e2ba321e290 d/dmd/mars.h
+--- a/d/dmd/mars.h	Mon Sep 20 19:17:21 2010 +0100
++++ b/d/dmd/mars.h	Tue Sep 21 19:43:14 2010 +0100
+@@ -86,6 +86,9 @@
+ #define V1      1
+ #define V2      0
+ /* Changes for the GDC compiler by David Friedman */
++#ifndef GCC_BUILTIN_VALIST
++#define GCC_BUILTIN_VALIST  1	// Use GCC's builtin va_list
++#endif
+ #endif
+ 
+ #define DMDV1   1
+diff -r 6e2ba321e290 d/dmd2/func.c
+--- a/d/dmd2/func.c	Mon Sep 20 19:17:21 2010 +0100
++++ b/d/dmd2/func.c	Tue Sep 21 19:43:14 2010 +0100
+@@ -761,7 +761,7 @@
+ 	    }
+ 	    if (f->linkage == LINKd || (parameters && parameters->dim))
+ 	    {	// Declare _argptr
+-#if IN_GCC
++#if GCC_BUILTIN_VALIST
+ 		t = d_gcc_builtin_va_list_d_type;
+ #else
+ 		t = Type::tvoid->pointerTo();
+@@ -1144,7 +1144,8 @@
+ 		// Handled in FuncDeclaration::toObjFile
+ 		v_argptr = argptr;
+ 		v_argptr->init = new VoidInitializer(loc);
+-#else
++#endif
++#if !GCC_BUILTIN_VALIST
+ 		Expression *e1;
+ 		Expression *e;
+ 		Type *t = argptr->type;
+@@ -1159,6 +1160,10 @@
+ 		offset = p->type->size();
+ 		offset = (offset + 3) & ~3;	// assume stack aligns on 4
+ 		e = new SymOffExp(0, p, offset);
++#if IN_GCC
++		e->type = Type::tvoidptr;
++		//e = e->semantic(sc);
++#endif
+ 		e = new AssignExp(0, e1, e);
+ 		e->type = t;
+ 		a->push(new ExpStatement(0, e));
+diff -r 6e2ba321e290 d/dmd2/mars.h
+--- a/d/dmd2/mars.h	Mon Sep 20 19:17:21 2010 +0100
++++ b/d/dmd2/mars.h	Tue Sep 21 19:43:14 2010 +0100
+@@ -36,6 +36,9 @@
+ 
+ #ifdef IN_GCC
+ /* Changes for the GDC compiler by David Friedman */
++#ifndef GCC_BUILTIN_VALIST
++#define GCC_BUILTIN_VALIST  1	// Use GCC's builtin va_list
++#endif
+ #endif
+ 
+ #define V1	0

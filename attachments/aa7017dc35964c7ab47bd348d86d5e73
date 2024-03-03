@@ -1,0 +1,3674 @@
+diff -r c428531055ed d/phobos/configure
+--- a/d/phobos/configure	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/configure	Tue Jun 29 22:00:53 2010 +0100
+@@ -5099,9 +5099,14 @@
+ # AC_SUBST(DCFG_EXPM1)
+ # also erf, erfc
+ 
+-# use version(Posix)/version(Unix) instead.
+-#AC_CHECK_FUNC(execvpe,DCFG_EXECVPE="",DCFG_EXECVPE="GNU_Need_execvpe")
+-#AC_SUBST(DCFG_EXECVPE)
++ac_fn_c_check_func "$LINENO" "execvpe" "ac_cv_func_execvpe"
++if test "x$ac_cv_func_execvpe" = x""yes; then :
++  DCFG_EXECVPE=""
++else
++  DCFG_EXECVPE="GNU_Need_execvpe"
++fi
++
++
+ 
+ ac_fn_c_check_func "$LINENO" "spawnvp" "ac_cv_func_spawnvp"
+ if test "x$ac_cv_func_spawnvp" = x""yes; then :
+@@ -5423,7 +5428,7 @@
+     freebsd*|k*bsd*-gnu)
+ 	     d_have_loader=1
+ 	     D_EXTRA_OBJS="$D_EXTRA_OBJS gcc/cbridge_stdio.o"
+-         D_EXTRA_OBJS="$D_EXTRA_OBJS std/c/freebsd/freebsd.o"
++	     D_EXTRA_OBJS="$D_EXTRA_OBJS std/c/freebsd/freebsd.o"
+ 	     DCFG_CBRIDGE_STDIO=GNU_CBridge_Stdio
+ 	     ;;
+     linux*)  #D_EXTRA_OBJS="$D_EXTRA_OBJS std/c/linux/linux.o"
+diff -r c428531055ed d/phobos/configure.in
+--- a/d/phobos/configure.in	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/configure.in	Tue Jun 29 22:00:53 2010 +0100
+@@ -440,9 +440,8 @@
+ # AC_SUBST(DCFG_EXPM1)
+ # also erf, erfc
+ 
+-# use version(Posix)/version(Unix) instead.
+-#AC_CHECK_FUNC(execvpe,DCFG_EXECVPE="",DCFG_EXECVPE="GNU_Need_execvpe")
+-#AC_SUBST(DCFG_EXECVPE)
++AC_CHECK_FUNC(execvpe,DCFG_EXECVPE="",DCFG_EXECVPE="GNU_Need_execvpe")
++AC_SUBST(DCFG_EXECVPE)
+ 
+ AC_CHECK_FUNC(spawnvp,DCFG_SPAWNVP="",DCFG_SPAWNVP="GNU_Need_spawnvp")
+ AC_SUBST(DCFG_SPAWNVP)
+@@ -571,7 +570,7 @@
+     freebsd*|k*bsd*-gnu)
+ 	     d_have_loader=1
+ 	     D_EXTRA_OBJS="$D_EXTRA_OBJS gcc/cbridge_stdio.o"
+-         D_EXTRA_OBJS="$D_EXTRA_OBJS std/c/freebsd/freebsd.o"
++	     D_EXTRA_OBJS="$D_EXTRA_OBJS std/c/freebsd/freebsd.o"
+ 	     DCFG_CBRIDGE_STDIO=GNU_CBridge_Stdio
+ 	     ;;
+     linux*)  #D_EXTRA_OBJS="$D_EXTRA_OBJS std/c/linux/linux.o"
+diff -r c428531055ed d/phobos/etc/c/zlib.d
+--- a/d/phobos/etc/c/zlib.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/etc/c/zlib.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -800,7 +800,7 @@
+    any decompression apart from reading the zlib header if present: this will
+    be done by inflate(). (So next_in and avail_in may be modified, but next_out
+    and avail_out are unchanged.)
+-/
++*/
+ 
+ int inflateSetDictionary(z_streamp strm, ubyte* dictionary, uint  dictLength);
+ /*
+diff -r c428531055ed d/phobos/gcstats.d
+--- a/d/phobos/gcstats.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/gcstats.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -8,7 +8,7 @@
+     size_t poolsize;		// total size of pool
+     size_t usedsize;		// bytes allocated
+     size_t freeblocks;		// number of blocks marked FREE
+-    size_t freelistsize;		// total of memory on free lists
++    size_t freelistsize;	// total of memory on free lists
+     size_t pageblocks;		// number of blocks marked PAGE
+ }
+ 
+diff -r c428531055ed d/phobos/internal/aaA.d
+--- a/d/phobos/internal/aaA.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/aaA.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -6,7 +6,7 @@
+  */
+ 
+ /*
+- *  Copyright (C) 2000-2007 by Digital Mars, www.digitalmars.com
++ *  Copyright (C) 2000-2008 by Digital Mars, http://www.digitalmars.com
+  *  Written by Walter Bright
+  *
+  *  This software is provided 'as-is', without any express or implied
+@@ -47,13 +47,14 @@
+ // Auto-rehash and pre-allocate - Dave Fladebo
+ 
+ static size_t[] prime_list = [
+-    97UL,         389UL,
+-    1543UL,       6151UL,
+-    24593UL,      98317UL,
+-    393241UL,     1572869UL,
+-    6291469UL,    25165843UL,
+-    100663319UL,  402653189UL,
+-    1610612741UL, 4294967291UL
++               97UL,            389UL,
++            1_543UL,          6_151UL,
++           24_593UL,         98_317UL,
++          393_241UL,      1_572_869UL,
++        6_291_469UL,     25_165_843UL,
++      100_663_319UL,    402_653_189UL,
++    1_610_612_741UL,  4_294_967_291UL,
++//    8_589_934_513UL, 17_179_869_143UL
+ ];
+ 
+ /* This is the type of the return value for dynamic arrays.
+@@ -280,7 +281,7 @@
+ 	//printf("create new one\n");
+ 	std.gc.disable();
+ 	e = cast(aaA *) cast(void*) new void[aaA.sizeof + keysize + valuesize];
+-	std.gc.enable;
++	std.gc.enable();
+ 	memcpy(e + 1, pkey, keysize);
+ 	e.hash = key_hash;
+ 	*pe = e;
+@@ -815,7 +816,7 @@
+     BB* result;
+ 
+     //printf("_d_assocarrayliteralT(keysize = %d, valuesize = %d, length = %d)\n", keysize, valuesize, length);
+-    //writefln("tivalue = %s", ti.next.classinfo.name);
++    //printf("tivalue = %.*s\n", ti.next.classinfo.name);
+     if (length == 0 || valuesize == 0 || keysize == 0)
+     {
+ 	;
+diff -r c428531055ed d/phobos/internal/adi.d
+--- a/d/phobos/internal/adi.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/adi.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -650,14 +650,14 @@
+ }
+ 
+ extern (C) int _adEq2(Array a1, Array a2, TypeInfo ti)
+- {
+-     //printf("_adEq2(a1.length = %d, a2.length = %d)\n", a1.length, a2.length);
+-     if (a1.length != a2.length)
+- 	return 0;		// not equal
+-     if (!ti.equals(&a1, &a2))
+- 	return 0;
+-     return 1;
+- }
++{
++    //printf("_adEq2(a1.length = %d, a2.length = %d)\n", a1.length, a2.length);
++    if (a1.length != a2.length)
++	return 0;		// not equal
++    if (!ti.equals(&a1, &a2))
++	return 0;
++    return 1;
++}
+ 
+ unittest
+ {
+@@ -752,10 +752,10 @@
+ }
+ 
+ extern (C) int _adCmp2(Array a1, Array a2, TypeInfo ti)
+- {
+-     //printf("_adCmp2(a1.length = %d, a2.length = %d)\n", a1.length, a2.length);
+-     return ti.compare(&a1, &a2);
+- }
++{
++    //printf("_adCmp2(a1.length = %d, a2.length = %d)\n", a1.length, a2.length);
++    return ti.compare(&a1, &a2);
++}
+ 
+ unittest
+ {
+diff -r c428531055ed d/phobos/internal/alloca.d
+--- a/d/phobos/internal/alloca.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/alloca.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -35,27 +35,27 @@
+ 	push	EBX		;
+ 	push	EDI		;
+ 	push	ESI		;
+-	}
+- 
+-     version (OSX)
+-     {
+-     asm
+-     {
+- 	add	EAX,15		;
+- 	and	EAX,0xFFFFFFF0	; // round up to 16 byte boundary
+-     }
+-     }
+-     else
+-     {
+-     asm
+-     {
+-  	add	EAX,3		;
+-  	and	EAX,0xFFFFFFFC	; // round up to dword
+-     }
+-     }
+- 
+-     asm
+-     {
++    }
++
++    version (OSX)
++    {
++    asm
++    {
++	add	EAX,15		;
++	and	EAX,0xFFFFFFF0	; // round up to 16 byte boundary
++    }
++    }
++    else
++    {
++    asm
++    {
++	add	EAX,3		;
++	and	EAX,0xFFFFFFFC	; // round up to dword
++    }
++    }
++
++    asm
++    {
+ 	jnz	Abegin		;
+ 	mov	EAX,4		; // allow zero bytes allocation, 0 rounded to dword is 4..
+     Abegin:
+diff -r c428531055ed d/phobos/internal/arraycat.d
+--- a/d/phobos/internal/arraycat.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/arraycat.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -3,35 +3,16 @@
+  */
+ 
+ /*
+- *  Copyright (C) 2004-2007 by Digital Mars, www.digitalmars.com
++ *  http://www.digitalmars.com
+  *  Written by Walter Bright
+- *
+- *  This software is provided 'as-is', without any express or implied
+- *  warranty. In no event will the authors be held liable for any damages
+- *  arising from the use of this software.
+- *
+- *  Permission is granted to anyone to use this software for any purpose,
+- *  including commercial applications, and to alter it and redistribute it
+- *  freely, in both source and binary form, subject to the following
+- *  restrictions:
+- *
+- *  o  The origin of this software must not be misrepresented; you must not
+- *     claim that you wrote the original software. If you use this software
+- *     in a product, an acknowledgment in the product documentation would be
+- *     appreciated but is not required.
+- *  o  Altered source versions must be plainly marked as such, and must not
+- *     be misrepresented as being the original software.
+- *  o  This notice may not be removed or altered from any source
+- *     distribution.
++ *  Placed in the Public Domain
+  */
+-
+ /* NOTE: This file has been patched from the original DMD distribution to
+    work with the GDC compiler.
+ 
+    Modified by David Friedman, November 2006
+ */
+ 
+- 
+ module arraycat;
+ 
+ import object;
+diff -r c428531055ed d/phobos/internal/critical.c
+--- a/d/phobos/internal/critical.c	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/critical.c	Tue Jun 29 22:00:53 2010 +0100
+@@ -91,7 +91,7 @@
+ #if linux || __APPLE__
+ // while the _NP version is specific to Linux
+ #ifndef PTHREAD_MUTEX_RECURSIVE
+-#define PTHREAD_MUTEX_RECURSIVE PTHREAD_MUTEX_RECURSIVE_NP
++#    define PTHREAD_MUTEX_RECURSIVE PTHREAD_MUTEX_RECURSIVE_NP
+ #endif
+ #endif
+ 
+@@ -139,7 +139,7 @@
+ 	    dcs->next = dcs_list;
+ 	    dcs_list = dcs;
+ #ifndef PTHREAD_MUTEX_ALREADY_RECURSIVE
+-	    pthread_mutex_init(&dcs->cs, & _criticals_attr);
++	    pthread_mutex_init(&dcs->cs, &_criticals_attr);
+ #else
+ 	    pthread_mutex_init(&dcs->cs, NULL);
+ #endif
+diff -r c428531055ed d/phobos/internal/deh.c
+--- a/d/phobos/internal/deh.c	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/deh.c	Tue Jun 29 22:00:53 2010 +0100
+@@ -271,66 +271,61 @@
+         case STATUS_STACK_OVERFLOW:
+             pti = _d_create_exception_object(&_Class_9Exception, "Stack Overflow");
+             break;
+-            
++
+         case STATUS_DATATYPE_MISALIGNMENT:
+-             pti = _d_create_exception_object(&_Class_9Exception, "Datatype Misalignment");
+-             break;
+- 
++            pti = _d_create_exception_object(&_Class_9Exception, "Datatype Misalignment");
++            break;
++
+         case STATUS_ARRAY_BOUNDS_EXCEEDED:
+-             pti = _d_create_exception_object(&_Class_9Exception, "Array Bounds Exceeded");
+-             break;
+-             
++            pti = _d_create_exception_object(&_Class_9Exception, "Array Bounds Exceeded");
++            break;
++  
+         case STATUS_FLOAT_INVALID_OPERATION:
+-             pti = _d_create_exception_object(&_Class_9Exception, "Invalid Floating Point Operation");
+-             break;
+- 
+- 		case STATUS_FLOAT_DENORMAL_OPERAND:
+-             pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Denormal Operand");
+-             break;
+- 
+- 		case STATUS_FLOAT_INEXACT_RESULT:
+-             pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Inexact Result");
+-             break;
+- 
+- 		case STATUS_FLOAT_OVERFLOW:
+-             pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Overflow");
+-             break;
+- 
+- 		case STATUS_FLOAT_UNDERFLOW:
+-             pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Underflow");
+-             break;
+- 
+- 		case STATUS_FLOAT_STACK_CHECK:
+-             pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Stack Check");
+-             break;
+- 
+- 		case STATUS_PRIVILEGED_INSTRUCTION:
+-             #if 0 // doesn't compile
++            pti = _d_create_exception_object(&_Class_9Exception, "Invalid Floating Point Operation");
++            break;
++
++		case STATUS_FLOAT_DENORMAL_OPERAND:
++            pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Denormal Operand");
++            break;
++
++		case STATUS_FLOAT_INEXACT_RESULT:
++            pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Inexact Result");
++            break;
++
++		case STATUS_FLOAT_OVERFLOW:
++            pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Overflow");
++            break;
++
++		case STATUS_FLOAT_UNDERFLOW:
++            pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Underflow");
++            break;
++
++		case STATUS_FLOAT_STACK_CHECK:
++            pti = _d_create_exception_object(&_Class_9Exception, "Floating Point Stack Check");
++            break;
++
++		case STATUS_PRIVILEGED_INSTRUCTION:
+             if (*((unsigned char *)(exception_record->ExceptionAddress))==0xF4) { // HLT
+-                pti = _d_create_exception_object(&_Class_5Error, "assert(0) or HLT instruction");
++                pti = _d_create_exception_object(&_Class_9Exception, "assert(0) or HLT instruction");
+             } else {
+-                pti = _d_create_exception_object(&_Class_5Error, "Privileged Instruction");
++                pti = _d_create_exception_object(&_Class_9Exception, "Privileged Instruction");
+             }
+-				#else
+-            pti = _d_create_exception_object(&_Class_9Exception, "Privileged Instruction");
+-				#endif
+-             break;
+- 
+- 		case STATUS_ILLEGAL_INSTRUCTION:
+-             pti = _d_create_exception_object(&_Class_9Exception, "Illegal Instruction");
+-             break;
+- /*
+- 		case STATUS_INTEGER_OVERFLOW: // not supported on any x86 processor
+- 		case STATUS_IN_PAGE_ERROR:
+- 		case STATUS_INVALID_DISPOSITION:
+- 		case STATUS_NONCONTINUABLE_EXCEPTION:
+- 		case STATUS_BREAKPOINT:
+- 		case STATUS_SINGLE_STEP:
+- 		// In DMC, but not in Microsoft docs
++            break;
++
++		case STATUS_ILLEGAL_INSTRUCTION:
++            pti = _d_create_exception_object(&_Class_9Exception, "Illegal Instruction");
++            break;
++/*
++		case STATUS_INTEGER_OVERFLOW: // not supported on any x86 processor
++		case STATUS_IN_PAGE_ERROR:
++		case STATUS_INVALID_DISPOSITION:
++		case STATUS_NONCONTINUABLE_EXCEPTION:
++		case STATUS_BREAKPOINT:
++		case STATUS_SINGLE_STEP:
++		// In DMC, but not in Microsoft docs
+ 		case STATUS_GUARD_PAGE_VIOLATION:
+- 		case STATUS_INVALID_HANDLE:
+- */
+-
++		case STATUS_INVALID_HANDLE:
++*/
+         // convert all other exception codes into a Win32Exception
+         default:
+             pti = _d_create_exception_object(&_Class_9Exception, "Win32 Exception");
+diff -r c428531055ed d/phobos/internal/deh2.d
+--- a/d/phobos/internal/deh2.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/deh2.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -285,38 +285,37 @@
+ 		// accesses all items on the stack as relative to EBP.
+ 
+ 		void *blockaddr = phi.finally_code;
+-		
++
+ 		version (OSX)
+- 		{
+- 		    asm
+- 		    {
+- 			sub	ESP,4		;
+- 			push	EBX		;
+- 			mov	EBX,blockaddr	;
+- 			push	EBP		;
+- 			mov	EBP,regebp	;
+- 			call	EBX		;
+- 			pop	EBP		;
+- 			pop	EBX		;
+- 			add	ESP,4		;
+- 		    }
+- 		}
+- 		else
+- 		{
+-
+-		asm
+ 		{
+-		    push	EBX		;
+-		    mov		EBX,blockaddr	;
+-		    push	EBP		;
+-		    mov		EBP,regebp	;
+-		    call	EBX		;
+-		    pop		EBP		;
+-		    pop		EBX		;
++		    asm
++		    {
++			sub	ESP,4		;
++			push	EBX		;
++			mov	EBX,blockaddr	;
++			push	EBP		;
++			mov	EBP,regebp	;
++			call	EBX		;
++			pop	EBP		;
++			pop	EBX		;
++			add	ESP,4		;
++		    }
++		}
++		else
++		{
++		    asm
++		    {
++			push	EBX		;
++			mov	EBX,blockaddr	;
++			push	EBP		;
++			mov	EBP,regebp	;
++			call	EBX		;
++			pop	EBP		;
++			pop	EBX		;
++		    }
+ 		}
+ 	    }
+ 	}
+     }
+-    }
+ }
+ 
+diff -r c428531055ed d/phobos/internal/dmain2.d
+--- a/d/phobos/internal/dmain2.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/dmain2.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -61,30 +61,30 @@
+     int myebx;
+ 
+     version (OSX)
+-     {	/* OSX does not provide a way to get at the top of the
++    {	/* OSX does not provide a way to get at the top of the
+ 	 * stack, except for the magic value 0xC0000000.
+ 	 * But as far as the gc is concerned, argv is at the top
+ 	 * of the main thread's stack, so save the address of that.
+ 	 */
+- 	__osx_stack_end = cast(void*)&argv;
+-     }
+-     
+-     version (FreeBSD)
++	__osx_stack_end = cast(void*)&argv;
++    }
++
++    version (FreeBSD)
+     {	/* FreeBSD does not provide a way to get at the top of the
+- 	 * stack.
+- 	 * But as far as the gc is concerned, argv is at the top
+- 	 * of the main thread's stack, so save the address of that.
+- 	 */
+- 	__libc_stack_end = cast(void*)&argv;
+-    }
+-    
+-    version (Solaris)
+-    {	/* As far as the gc is concerned, argv is at the top
+-    	 * of the main thread's stack, so save the address of that.
++	 * stack.
++	 * But as far as the gc is concerned, argv is at the top
++	 * of the main thread's stack, so save the address of that.
+ 	 */
+ 	__libc_stack_end = cast(void*)&argv;
+     }
+- 
++
++    version (Solaris)
++    {	/* As far as the gc is concerned, argv is at the top
++	 * of the main thread's stack, so save the address of that.
++	 */
++	__libc_stack_end = cast(void*)&argv;
++    }
++
+     version (Posix)
+     {
+ 	_STI_monitor_staticctor();
+diff -r c428531055ed d/phobos/internal/gc/gc.d
+--- a/d/phobos/internal/gc/gc.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/gc/gc.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -70,16 +70,16 @@
+ void setV1_0()			      { _gc.setV1_0(); }
+ 
+ // for gcosxc.c
+- extern (C) void _d_gc_addrange(void *pbot, void *ptop)
+- {
+-     _gc.addRange(pbot, ptop);
+- }
+- 
+- //for gcosxc.c
+- extern (C) void _d_gc_removerange(void *pbot)
+- {
+-     _gc.removeRange(pbot);
+- }
++extern (C) void _d_gc_addrange(void *pbot, void *ptop)
++{
++    _gc.addRange(pbot, ptop);
++}
++
++//for gcosxc.c
++extern (C) void _d_gc_removerange(void *pbot)
++{
++    _gc.removeRange(pbot);
++}
+ 
+ void[] malloc(size_t nbytes)
+ {
+@@ -327,7 +327,8 @@
+ 	else*/
+ 	    size *= length;
+ 	auto p = _gc.malloc(size + 1);
+-	debug(PRINTF) printf(" p = %p\n", p);
++	debug(PRINTF)
++	    printf(" p = %p, isize = %d\n", p, isize);
+ 	if (!(ti.next.flags() & 1))
+ 	    _gc.hasNoPointers(p);
+ 	if (isize == 1)
+@@ -349,8 +350,7 @@
+ 	    }
+ 	}
+ 	result.length = length;
+-	result.data = cast(byte*) p
+-;
++	result.data = cast(byte*) p;
+     }
+     return result;
+ 
+diff -r c428531055ed d/phobos/internal/gc/gclinux.d
+--- a/d/phobos/internal/gc/gclinux.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/gc/gclinux.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -144,31 +144,31 @@
+ 
+ void os_query_staticdataseg(void **base, uint *nbytes)
+ {
+-	version (OSX)
+-     {	/* These are probably wrong.
++    version (OSX)
++    {	/* These are probably wrong.
+ 	 * See http://www.manpagez.com/man/3/get_etext/
+ 	 * Should use dylib(3) instead.
+ 	 *
+ 	 * EDIT: should be handled by _d_osx_image_init() now. - SK
+ 	 */
+- 	//*base = cast(void *)get_etext();
+- 	//*nbytes = cast(byte *)get_end() - cast(byte *)get_etext();
+- 	*base = null;
+- 	*nbytes = 0;
+-     }
+-     else version (FreeBSD)
++	//*base = cast(void *)get_etext();
++	//*nbytes = cast(byte *)get_end() - cast(byte *)get_etext();
++	*base = null;
++	*nbytes = 0;
++    }
++    else version (FreeBSD)
+     {
+- 	*base = cast(void *)&etext;
+- 	*nbytes = cast(byte *)&_end - cast(byte *)&etext;
++	*base = cast(void *)&etext;
++	*nbytes = cast(byte *)&_end - cast(byte *)&etext;
+     }
+     else version (Solaris)
+     {
+ 	*base = cast(void *)&etext;
+ 	*nbytes = cast(byte *)&_end - cast(byte *)&etext;
+     }
+-     else
+-     {
+-    *base = cast(void *)&__data_start;
+-    *nbytes = cast(byte *)&_end - cast(byte *)&__data_start;
++    else
++    {
++	*base = cast(void *)&__data_start;
++	*nbytes = cast(byte *)&_end - cast(byte *)&__data_start;
+     }
+ }
+diff -r c428531055ed d/phobos/internal/gc/gcold.d
+--- a/d/phobos/internal/gc/gcold.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/gc/gcold.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -40,6 +40,7 @@
+ {
+     Array result;
+ 
++    //debug(PRINTF) printf("_d_newarrayi(length = %d, size = %d)\n", length, size);
+     if (length && size)
+     {
+ 	result.length = length;
+diff -r c428531055ed d/phobos/internal/gc/gcx.d
+--- a/d/phobos/internal/gc/gcx.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/gc/gcx.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -86,10 +86,6 @@
+ 	import std.c.osx.osx;
+ }
+ 
+-/*version (BigEndian)
+-  private import std.intrinsic;*/
+-
+-
+ 
+ version (MULTI_THREADED)
+ {
+@@ -2060,9 +2056,6 @@
+ 		    *b = 0;
+ 
+ 		    o = pool.baseAddr + (b - bbase) * 32 * 16;
+-		    /*		    version (BigEndian)
+-			bitm = bswap(bitm);
+-		    */
+ 		    if (!(bitm & 0xFFFF))
+ 		    {
+ 			bitm >>= 16;
+diff -r c428531055ed d/phobos/internal/gc/win32.d
+--- a/d/phobos/internal/gc/win32.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/gc/win32.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -42,7 +42,7 @@
+ 
+ int os_mem_decommit(void *base, uint offset, uint nbytes)
+ {
+-    return cast(int)VirtualFree(base + offset, nbytes, MEM_DECOMMIT) == 0; 
++    return cast(int)(VirtualFree(base + offset, nbytes, MEM_DECOMMIT) == 0);
+ }
+ 
+ /***********************************
+@@ -55,7 +55,7 @@
+ 
+ int os_mem_unmap(void *base, uint nbytes)
+ {
+-    return cast(int)VirtualFree(base, 0, MEM_RELEASE) == 0; 
++    return cast(int)(VirtualFree(base, 0, MEM_RELEASE) == 0);
+ }
+ 
+ 
+diff -r c428531055ed d/phobos/internal/llmath.d
+--- a/d/phobos/internal/llmath.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/llmath.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -157,31 +157,31 @@
+ 	mov	EDX,ECX		;
+ 	xor	ECX,ECX		;
+ 	ret			;
+-	
+-	quo0:	// Quotient is 0
+- 	// Remainder is [EDX,EAX]
+- 	mov	EBX,EAX		;
+- 	mov	ECX,EDX		;
+- 	xor	EAX,EAX		;
+- 	xor	EDX,EDX		;
+- 	ret			;
+- 
+- Lleft:	// The quotient is 0 or 1 and EDX >= ECX
+- 	cmp	EDX,ECX		;
+- 	ja	quo1		;	// [EDX,EAX] > [ECX,EBX]
+- 	// EDX == ECX
+- 	cmp	EAX,EBX		;
+- 	jb	quo0		;
+- 
+- quo1:	// Quotient is 1
+- 	// Remainder is [EDX,EAX] - [ECX,EBX]
+- 	sub	EAX,EBX		;
+- 	sbb	EDX,ECX		;
+- 	mov	EBX,EAX		;
+- 	mov	ECX,EDX		;
+- 	mov	EAX,1		;
+- 	xor	EDX,EDX		;
+- 	ret			;
++
++quo0:	// Quotient is 0
++	// Remainder is [EDX,EAX]
++	mov	EBX,EAX		;
++	mov	ECX,EDX		;
++	xor	EAX,EAX		;
++	xor	EDX,EDX		;
++	ret			;
++
++Lleft:	// The quotient is 0 or 1 and EDX >= ECX
++	cmp	EDX,ECX		;
++	ja	quo1		;	// [EDX,EAX] > [ECX,EBX]
++	// EDX == ECX
++	cmp	EAX,EBX		;
++	jb	quo0		;
++
++quo1:	// Quotient is 1
++	// Remainder is [EDX,EAX] - [ECX,EBX]
++	sub	EAX,EBX		;
++	sbb	EDX,ECX		;
++	mov	EBX,EAX		;
++	mov	ECX,EDX		;
++	mov	EAX,1		;
++	xor	EDX,EDX		;
++	ret			;
+     }
+ }
+ 
+@@ -286,43 +286,43 @@
+ 
+ real __U64_LDBL()
+ {
+-version (OSX)
+-     {
+- 	asm
+- 	{   naked				;
+- 	    push	EDX			;
+- 	    push	EAX			;
+- 	    and		dword ptr 4[ESP], 0x7FFFFFFF	;
+- 	    fild	qword ptr [ESP]		;
+- 	    test	EDX,EDX			;
+- 	    jns		L1			;
+- 	    push	0x0000403e		;
+- 	    push	0x80000000		;
+- 	    push	0			;
+- 	    fld		real ptr [ESP]		; // adjust
+- 	    add		ESP,12			;
+- 	    faddp	ST(1), ST		;
+- 	L1:					;
+- 	    add		ESP, 8			;
+- 	    ret					;
++    version (OSX)
++    {
++	asm
++	{   naked				;
++	    push	EDX			;
++	    push	EAX			;
++	    and		dword ptr 4[ESP], 0x7FFFFFFF	;
++	    fild	qword ptr [ESP]		;
++	    test	EDX,EDX			;
++	    jns		L1			;
++	    push	0x0000403e		;
++	    push	0x80000000		;
++	    push	0			;
++	    fld		real ptr [ESP]		; // adjust
++	    add		ESP,12			;
++	    faddp	ST(1), ST		;
++	L1:					;
++	    add		ESP, 8			;
++	    ret					;
+ 	}
+     }
+     else
+     {
+-    asm
+-    {	naked					;
+-	push	EDX				;
+-	push	EAX				;
+-	and	dword ptr 4[ESP], 0x7FFFFFFF	;
+-	fild	qword ptr [ESP]			;
+-	test	EDX,EDX				;
+-	jns	L1				;
+-	fld	real ptr adjust			;
+-	faddp	ST(1), ST			;
+-    L1:						;
+-	add	ESP, 8				;
+-	ret					;
+-    }
++	asm
++	{   naked				;
++	    push	EDX			;
++	    push	EAX			;
++	    and		dword ptr 4[ESP], 0x7FFFFFFF	;
++	    fild	qword ptr [ESP]		;
++	    test	EDX,EDX			;
++	    jns		L1			;
++	    fld		real ptr adjust		;
++	    faddp	ST(1), ST		;
++	L1:					;
++	    add		ESP, 8			;
++	    ret					;
++	}
+     }
+ }
+ 
+@@ -386,36 +386,36 @@
+     }
+     else
+     {
+-    asm
+-    {	naked					;
+-	push	EDX				;
+-	push	EAX				;
+-	fld	double ptr [ESP]		;
+-	sub	ESP,8				;
+-	fld	real ptr adjust			;
+-	fcomp					;
+-	fstsw	AX				;
+-	fstcw	8[ESP]				;
+-	fldcw	roundTo0			;
+-	sahf					;
+-	jae	L1				;
+-	fld	real ptr adjust			;
+-	fsubp	ST(1), ST			;
+-	fistp	qword ptr [ESP]			;
+-	pop	EAX				;
+-	pop	EDX				;
+-	fldcw	[ESP]				;
+-	add	ESP,8				;
+-	add	EDX,0x8000_0000			;
+-	ret					;
+-    L1:						;
+-	fistp	qword ptr [ESP]			;
+-	pop	EAX				;
+-	pop	EDX				;
+-	fldcw	[ESP]				;
+-	add	ESP,8				;
+-	ret					;
+-    }
++	asm
++	{   naked				;
++	    push	EDX			;
++	    push	EAX			;
++	    fld		double ptr [ESP]	;
++	    sub		ESP,8			;
++	    fld		real ptr adjust		;
++	    fcomp				;
++	    fstsw	AX			;
++	    fstcw	8[ESP]			;
++	    fldcw	roundTo0		;
++	    sahf				;
++	    jae		L1			;
++	    fld		real ptr adjust		;
++	    fsubp	ST(1), ST		;
++	    fistp	qword ptr [ESP]		;
++	    pop		EAX			;
++	    pop		EDX			;
++	    fldcw	[ESP]			;
++	    add		ESP,8			;
++	    add		EDX,0x8000_0000		;
++	    ret					;
++	L1:					;
++	    fistp	qword ptr [ESP]		;
++	    pop		EAX			;
++	    pop		EDX			;
++	    fldcw	[ESP]			;
++	    add		ESP,8			;
++	    ret					;
++	}
+     }
+ }
+ 
+@@ -441,17 +441,17 @@
+     }
+     else
+     {
+-    asm
+-    {	naked					;
+-	sub	ESP,16				;
+-	fstcw	8[ESP]				;
+-	fldcw	roundTo0			;
+-	fistp	qword ptr [ESP]			;
+-	fldcw	8[ESP]				;
+-	pop	EAX				;
+-	add	ESP,12				;
+-	ret					;
+-    }
++	asm
++	{   naked				;
++	    sub		ESP,16			;
++	    fstcw	8[ESP]			;
++	    fldcw	roundTo0		;
++	    fistp	qword ptr [ESP]		;
++	    fldcw	8[ESP]			;
++	    pop		EAX			;
++	    add		ESP,12			;
++	    ret					;
++	}
+     }
+ }
+ 
+diff -r c428531055ed d/phobos/internal/monitor.c
+--- a/d/phobos/internal/monitor.c	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/monitor.c	Tue Jun 29 22:00:53 2010 +0100
+@@ -138,6 +138,7 @@
+ #endif
+ #endif
+ 
++// Includes attribute fixes from David Friedman's GDC port
+ #ifndef HAVE_PTHREAD_MUTEX_RECURSIVE
+ #define PTHREAD_MUTEX_RECURSIVE PTHREAD_MUTEX_RECURSIVE_NP
+ #endif
+diff -r c428531055ed d/phobos/internal/object.d
+--- a/d/phobos/internal/object.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/object.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -61,13 +61,6 @@
+ 
+ alias size_t hash_t;
+ 
+-/// Standard boolean type.
+-alias bool bit;
+-
+-alias char[] string;
+-alias wchar[] wstring;
+-alias dchar[] dstring;
+-
+ extern (C)
+ {   /// C's printf function.
+     int printf(char *, ...);
+@@ -82,6 +75,13 @@
+     Object _d_newclass(ClassInfo ci);
+ }
+ 
++/// Standard boolean type.
++alias bool bit;
++
++alias char[] string;
++alias wchar[] wstring;
++alias dchar[] dstring;
++
+ /* *************************
+  * Internal struct pointed to by the hidden .monitor member.
+  */
+diff -r c428531055ed d/phobos/internal/trace.d
+--- a/d/phobos/internal/trace.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/internal/trace.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -779,38 +779,37 @@
+      *	dw	length
+      *	ascii	string
+      */
+-     
+-     version (OSX)
+-   { // 16 byte align stack
+-     asm
+-     {	naked				;
+- 	pushad				;
+- 	mov	ECX,8*4[ESP]		;
+- 	xor	EAX,EAX			;
+- 	mov	AL,[ECX]		;
+- 	cmp	AL,0xFF			;
+- 	jne	L1			;
+- 	cmp	byte ptr 1[ECX],0	;
+- 	jne	L1			;
+- 	mov	AX,2[ECX]		;
+- 	add	8*4[ESP],3		;
+- 	add	ECX,3			;
+-     L1:	inc	EAX			;
+- 	inc	ECX			;
+- 	add	8*4[ESP],EAX		;
+- 	dec	EAX			;
+- 	sub	ESP,4			;
+- 	push	ECX			;
+- 	push	EAX			;
+- 	call	trace_pro		;
+- 	add	ESP,12			;
+- 	popad				;
+- 	ret				;
+-     }
+-   }
+-   else
+-   {
+ 
++  version (OSX)
++  { // 16 byte align stack
++    asm
++    {	naked				;
++	pushad				;
++	mov	ECX,8*4[ESP]		;
++	xor	EAX,EAX			;
++	mov	AL,[ECX]		;
++	cmp	AL,0xFF			;
++	jne	L1			;
++	cmp	byte ptr 1[ECX],0	;
++	jne	L1			;
++	mov	AX,2[ECX]		;
++	add	8*4[ESP],3		;
++	add	ECX,3			;
++    L1:	inc	EAX			;
++	inc	ECX			;
++	add	8*4[ESP],EAX		;
++	dec	EAX			;
++	sub	ESP,4			;
++	push	ECX			;
++	push	EAX			;
++	call	trace_pro		;
++	add	ESP,12			;
++	popad				;
++	ret				;
++    }
++  }
++  else
++  {
+     asm
+     {	naked				;
+ 	pushad				;
+@@ -835,7 +834,7 @@
+ 	popad				;
+ 	ret				;
+     }
+-    }
++  }
+ }
+ 
+ /////////////////////////////////////////////
+@@ -844,23 +843,23 @@
+ 
+ void _trace_epi_n()
+ {
+-	version (OSX)
+-    { // 16 byte align stack
+-     asm
+-     {	naked	;
+- 	pushad	;
+- 	sub	ESP,12	;
+-     }
+-     trace_epi();
+-     asm
+-     {
+- 	add	ESP,12	;
+- 	popad	;
+- 	ret	;
+-     }
+-   }
+-   else
+-   {
++  version (OSX)
++  { // 16 byte align stack
++    asm
++    {	naked	;
++	pushad	;
++	sub	ESP,12	;
++    }
++    trace_epi();
++    asm
++    {
++	add	ESP,12	;
++	popad	;
++	ret	;
++    }
++  }
++  else
++  {
+     asm
+     {	naked	;
+ 	pushad	;
+@@ -871,7 +870,7 @@
+ 	popad	;
+ 	ret	;
+     }
+-    }
++  }
+ }
+ 
+ 
+diff -r c428531055ed d/phobos/object.d
+--- a/d/phobos/object.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/object.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -168,11 +168,11 @@
+ 
+ class Exception : Object
+ {
+-    char[] msg;
++    string msg;
+ 
+-    this(char[] msg);
+-    void print();
+-    char[] toString();
++    this(string msg);
++    override void print();
++    override string toString();
+ }
+ 
+ // Non-recoverable errors
+@@ -181,7 +181,7 @@
+ {
+     Error next;
+ 
+-    this(char[] msg);
+-    this(char[] msg, Error next);
++    this(string msg);
++    this(string msg, Error next);
+ }
+ 
+diff -r c428531055ed d/phobos/std/boxer.d
+--- a/d/phobos/std/boxer.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/boxer.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -53,6 +53,11 @@
+  *	Burton Radons
+  * License:
+  *	Public Domain
++ * Bugs:
++ *	$(UL
++ *	$(LI $(BUGZILLA 309))
++ *	$(LI $(BUGZILLA 1968))
++ *	)
+  * Macros:
+  *	WIKI=Phobos/StdBoxer
+  */
+@@ -203,7 +208,6 @@
+                 default: return TypeClass.Other;
+             }
+         }
+-	//assert(0);
+     }
+     
+     /** Return whether this value could be unboxed as the given type without throwing. */
+@@ -500,15 +504,15 @@
+     return array;
+ }
+ 
+- /**
+-  * Box each argument passed to the function, returning an array of boxes.
+-  */    
++/**
++ * Box each argument passed to the function, returning an array of boxes.
++ */    
+ Box[] boxArray(...)
+ {
+     version (GNU)
+     {
+ 	Box[] array = new Box[_arguments.length];
+-	
++
+ 	foreach(size_t index, TypeInfo ti_orig; _arguments)
+ 	{
+ 	    TypeInfo ti = ti_orig;
+@@ -544,12 +548,12 @@
+ 	return array;
+     }
+     else
+-	return boxArray(_arguments, cast(void *) _argptr);
++	return boxArray(_arguments, cast(void*) _argptr);
+ }
+ 
+- /**
+-  * Convert an array of boxes into an array of arguments.
+-  */    
++/**
++ * Convert an array of boxes into an array of arguments.
++ */    
+ void boxArrayToArguments(Box[] arguments, out TypeInfo[] types, out void* data)
+ {
+     size_t dataLength;
+diff -r c428531055ed d/phobos/std/c/fenv.d
+--- a/d/phobos/std/c/fenv.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/c/fenv.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -23,36 +23,36 @@
+ 	ushort reserved[2];
+     }
+     extern fenv_t _FE_DFL_ENV;
+- 
+-     /// Default floating point environment
+-     fenv_t* FE_DFL_ENV = &_FE_DFL_ENV;
+- 
+-     alias int fexcept_t;	/// Floating point status flags
+- 
+-     int fetestexcept(int excepts);		///
+-     int feraiseexcept(int excepts);		///
+-     int feclearexcept(int excepts);		///
+-     //int fegetexcept(fexcept_t *flagp,int excepts);	///
+-     //int fesetexcept(fexcept_t *flagp,int excepts);	///
+-     int fegetround();			///
+-     int fesetround(int round);		///
+-     int fegetprec();			///
+-     int fesetprec(int prec);		///
+-     int fegetenv(fenv_t *envp);		///
+-     int fesetenv(fenv_t *envp);		///
+-     //void feprocentry(fenv_t *envp);	///
+-     //void feprocexit(const fenv_t *envp);	///
+- 
+-     int fegetexceptflag(fexcept_t *flagp,int excepts);	///
+-     int fesetexceptflag(fexcept_t *flagp,int excepts);	///
+-     int feholdexcept(fenv_t *envp);		///
+-     int feupdateenv(fenv_t *envp);		///
+- 
+- }
+- else version (linux)
+- {
+-     /// Entire floating point environment
+- 
++
++    /// Default floating point environment
++    fenv_t* FE_DFL_ENV = &_FE_DFL_ENV;
++
++    alias int fexcept_t;	/// Floating point status flags
++
++    int fetestexcept(int excepts);		///
++    int feraiseexcept(int excepts);		///
++    int feclearexcept(int excepts);		///
++    //int fegetexcept(fexcept_t *flagp,int excepts);	///
++    //int fesetexcept(fexcept_t *flagp,int excepts);	///
++    int fegetround();			///
++    int fesetround(int round);		///
++    int fegetprec();			///
++    int fesetprec(int prec);		///
++    int fegetenv(fenv_t *envp);		///
++    int fesetenv(fenv_t *envp);		///
++    //void feprocentry(fenv_t *envp);	///
++    //void feprocexit(const fenv_t *envp);	///
++
++    int fegetexceptflag(fexcept_t *flagp,int excepts);	///
++    int fesetexceptflag(fexcept_t *flagp,int excepts);	///
++    int feholdexcept(fenv_t *envp);		///
++    int feupdateenv(fenv_t *envp);		///
++
++}
++else version (linux)
++{
++    /// Entire floating point environment
++
+     struct fenv_t
+     {
+ 	ushort __control_word;
+@@ -81,7 +81,7 @@
+     //int fegetexcept(fexcept_t *flagp,int excepts);	///
+     //int fesetexcept(fexcept_t *flagp,int excepts);	///
+     int fegetround();			///
+-   int fesetround(int round);		///
++    int fesetround(int round);		///
+     int fegetprec();			///
+     int fesetprec(int prec);		///
+     int fegetenv(fenv_t *envp);		///
+@@ -96,10 +96,10 @@
+ }
+ else version (OSX)
+ {
+-  /// Entire floating point environment
++    /// Entire floating point environment
+ 
+-   struct fenv_t
+-   {
++    struct fenv_t
++    {
+ 	ushort __control;
+ 	ushort __status;
+ 	uint __mxcsr;
+@@ -138,15 +138,15 @@
+ 
+     struct fenv_t
+     {
+-		struct X87
+-		{
+-		    uint __control;
+-		    uint __status;
+-		    uint __tag;
+-		    char[16] other;
+-	   }
+-	   X87 __x87;
+-		uint __mxcsr;
++	struct X87
++	{
++	    uint __control;
++	    uint __status;
++	    uint __tag;
++	    char[16] other;
++	}
++	X87 __x87;
++	uint __mxcsr;
+     }
+ 
+     extern fenv_t __fe_defl_env;
+@@ -202,7 +202,8 @@
+ {
+     static assert(0);
+ }
+-}
++
++
+ 
+ /// The various floating point exceptions
+ enum
+diff -r c428531055ed d/phobos/std/c/freebsd/freebsd.d
+--- a/d/phobos/std/c/freebsd/freebsd.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/c/freebsd/freebsd.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -23,16 +23,16 @@
+     int   dlclose(void* handle);
+     void* dlsym(void* handle, char* name);
+     char* dlerror();
+-
+-	extern
++    
++    extern
+     {
+-		void* __libc_stack_end;
+-		int __data_start;
+-		int _end;
+-		int timezone;
++	void* __libc_stack_end;
++	int __data_start;
++	int _end;
++	int timezone;
+ 	
+-		void *_deh_beg;
+-		void *_deh_end;
++	void *_deh_beg;
++	void *_deh_end;
+     }
+ }
+ 
+diff -r c428531055ed d/phobos/std/c/linux/linuxextern.d
+--- a/d/phobos/std/c/linux/linuxextern.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/c/linux/linuxextern.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1,6 +1,6 @@
+ 
+ /* Written by Walter Bright.
+- * http://www.digitalmars.com/d/
++ * www.digitalmars.com
+  * Placed into public domain.
+  * Linux(R) is the registered trademark of Linus Torvalds in the U.S. and other
+  * countries.
+diff -r c428531055ed d/phobos/std/c/linux/socket.d
+--- a/d/phobos/std/c/linux/socket.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/c/linux/socket.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -24,8 +24,8 @@
+ 
+ version (linux)
+ {
+-	alias int socklen_t;
+- 
++    alias int socklen_t;
++
+     enum: int
+     {
+ 	AF_UNSPEC =     0,
+@@ -42,16 +42,15 @@
+ 	PF_IPX =        AF_IPX,
+ 	PF_APPLETALK =  AF_APPLETALK,
+ 	PF_INET6 =      AF_INET6,
+-}
++    }
+ 
+-enum: int
+-{
++    enum: int
++    {
+ 	SOL_SOCKET =  1,
+-}
++    }
+ 
+-
+-enum: int
+-{
++    enum: int
++    {
+ 	SO_DEBUG =       1,
+ 	SO_BROADCAST =   6,
+ 	SO_REUSEADDR =   2,
+@@ -97,7 +96,7 @@
+ 	IPV6_LEAVE_ANYCAST =   28,
+ 	IPV6_IPSEC_POLICY =    34,
+ 	IPV6_XFRM_POLICY =     35,
+-}
++    }
+ 
+     enum: int
+     {
+@@ -148,7 +147,7 @@
+ 	char* ai_canonname;
+ 	addrinfo* ai_next;
+     }
+-  }
++}
+ else version (OSX)
+ {
+     alias uint socklen_t;
+diff -r c428531055ed d/phobos/std/c/stddef.d
+--- a/d/phobos/std/c/stddef.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/c/stddef.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1,10 +1,10 @@
+ 
+ /**
+- * C's &lt;stdarg.h&gt;
+- * Authors: Hauke Duden and Walter Bright, Digital Mars, http://www.digitalmars.com
++ * C's &lt;stddef.h&gt;
++ * Authors: Walter Bright, Digital Mars, http://www.digitalmars.com
+  * License: Public Domain
+  * Macros:
+- *	WIKI=Phobos/StdCStdarg
++ *	WIKI=Phobos/StdCStddef
+  */
+ 
+ module std.c.stddef;
+diff -r c428531055ed d/phobos/std/c/stdlib.d
+--- a/d/phobos/std/c/stdlib.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/c/stdlib.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1,6 +1,7 @@
+ /**
+  * C's &lt;stdlib.h&gt;
+- * Authors: Walter Bright, Digital Mars, www.digitalmars.com
++ * D Programming Language runtime library
++ * Authors: Walter Bright, Digital Mars, http://www.digitalmars.com
+  * License: Public Domain
+  * Macros:
+  *	WIKI=Phobos/StdCStdlib
+@@ -22,13 +23,13 @@
+ 
+ version (Windows)
+ {
+-     enum
+-     {
+-    _MAX_PATH   = 260,
+-    _MAX_DRIVE  = 3,
+-    _MAX_DIR    = 256,
+-    _MAX_FNAME  = 256,
+-    _MAX_EXT    = 256,
++    enum
++    {
++	_MAX_PATH   = 260,
++	_MAX_DRIVE  = 3,
++	_MAX_DIR    = 256,
++	_MAX_FNAME  = 256,
++	_MAX_EXT    = 256,
+     }
+ }
+ 
+diff -r c428531055ed d/phobos/std/c/time.d
+--- a/d/phobos/std/c/time.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/c/time.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -39,26 +39,28 @@
+ version (Windows)
+ {   const clock_t CLOCKS_PER_SEC = 1000;
+     const clock_t CLK_TCK        = 1000;
++
+     struct tm
+-     {  int     tm_sec,
+-                tm_min,
+-                tm_hour,
+-                tm_mday,
+-                tm_mon,
+-                tm_year,
+-                tm_wday,
+-                tm_yday,
+-                tm_isdst;
+-     }
++    {  int     tm_sec,
++               tm_min,
++               tm_hour,
++               tm_mday,
++               tm_mon,
++               tm_year,
++               tm_wday,
++               tm_yday,
++               tm_isdst;
++    }
+ }
+ else version (linux)
+ {   const clock_t CLOCKS_PER_SEC = 1000000;
+-   extern (C) int sysconf(int);
+-   extern clock_t CLK_TCK;
+-   /*static this()
+-   {
+-CLK_TCK = cast(clock_t) sysconf(2);
+-   }*/
++    extern (C) int sysconf(int);
++    extern clock_t CLK_TCK;
++    /*static this()
++    {
++	CLK_TCK = cast(clock_t) sysconf(2);
++    }*/
++
+     struct tm
+     {  int     tm_sec,
+                tm_min,
+diff -r c428531055ed d/phobos/std/c/windows/windows.d
+--- a/d/phobos/std/c/windows/windows.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/c/windows/windows.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -250,8 +250,11 @@
+     FILE_VOLUME_IS_COMPRESSED       = 0x00008000,  
+ }
+ 
+-const DWORD MAILSLOT_NO_MESSAGE = cast(DWORD)-1;
+-const DWORD MAILSLOT_WAIT_FOREVER = cast(DWORD)-1; 
++enum
++{
++    MAILSLOT_NO_MESSAGE = cast(DWORD)-1,
++    MAILSLOT_WAIT_FOREVER = cast(DWORD)-1, 
++}
+ 
+ enum : uint
+ {
+@@ -275,8 +278,12 @@
+ }
+ 
+ const HANDLE INVALID_HANDLE_VALUE = cast(HANDLE)-1;
+-const DWORD INVALID_SET_FILE_POINTER = cast(DWORD)-1;
+-const DWORD INVALID_FILE_SIZE = cast(DWORD)0xFFFFFFFF;
++
++enum : DWORD
++{
++    INVALID_SET_FILE_POINTER = cast(DWORD)-1,
++    INVALID_FILE_SIZE = cast(DWORD)0xFFFFFFFF,
++}
+ 
+ struct OVERLAPPED {
+     DWORD   Internal;
+@@ -326,6 +333,13 @@
+     wchar  cAlternateFileName[ 14 ];
+ }
+ 
++enum
++{
++	STD_INPUT_HANDLE =    cast(DWORD)-10,
++	STD_OUTPUT_HANDLE =   cast(DWORD)-11,
++	STD_ERROR_HANDLE =    cast(DWORD)-12,
++}
++
+ export
+ {
+ BOOL SetCurrentDirectoryA(LPCSTR lpPathName);
+@@ -428,8 +442,11 @@
+ // Key creation/open disposition
+ //
+ 
+-const int REG_CREATED_NEW_KEY =         0x00000001;   // New Registry Key created
+-const int REG_OPENED_EXISTING_KEY =     0x00000002;   // Existing Key opened
++enum : int
++{
++	REG_CREATED_NEW_KEY =         0x00000001,   // New Registry Key created
++	REG_OPENED_EXISTING_KEY =     0x00000002,   // Existing Key opened
++}
+ 
+ 
+ //
+@@ -1102,6 +1119,7 @@
+ export HANDLE GetCurrentThread();
+ export BOOL GetProcessTimes(HANDLE hProcess, LPFILETIME lpCreationTime, LPFILETIME lpExitTime, LPFILETIME lpKernelTime, LPFILETIME lpUserTime);
+ export HANDLE GetCurrentProcess();
++export DWORD GetCurrentProcessId();
+ export BOOL DuplicateHandle (HANDLE sourceProcess, HANDLE sourceThread,
+         HANDLE targetProcessHandle, HANDLE *targetHandle, DWORD access, 
+         BOOL inheritHandle, DWORD options);
+@@ -2083,11 +2101,15 @@
+ 	COLOR_BTNHILIGHT =        COLOR_BTNHIGHLIGHT,
+ }
+ 
+-const int CW_USEDEFAULT = cast(int)0x80000000;
++enum : int
++{
++	CW_USEDEFAULT = cast(int)0x80000000
++}
++
+ /*
+  * Special value for CreateWindow, et al.
+  */
+-const HWND HWND_DESKTOP = (cast(HWND)0);
++const HWND HWND_DESKTOP = cast(HWND)0;
+ 
+ 
+ export ATOM RegisterClassA(WNDCLASSA *lpWndClass);
+@@ -2713,8 +2735,11 @@
+ export int wsprintfA(LPSTR, LPCSTR, ...);
+ export int wsprintfW(LPWSTR, LPCWSTR, ...);
+ 
+-const uint INFINITE = uint.max;
+-const uint WAIT_OBJECT_0 = 0;
++enum : uint
++{
++	INFINITE = uint.max,
++	WAIT_OBJECT_0 = 0,
++}
+ 
+ export HANDLE CreateSemaphoreA(LPSECURITY_ATTRIBUTES lpSemaphoreAttributes, LONG lInitialCount, LONG lMaximumCount, LPCTSTR lpName);
+ export HANDLE OpenSemaphoreA(DWORD dwDesiredAccess, BOOL bInheritHandle, LPCTSTR lpName);
+diff -r c428531055ed d/phobos/std/conv.d
+--- a/d/phobos/std/conv.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/conv.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -105,7 +105,7 @@
+ 	goto Lerr;
+ 
+     int sign = 0;
+-    uint v = 0;
++    int v = 0;
+ 
+     for (int i = 0; i < length; i++)
+     {
+@@ -133,13 +133,13 @@
+     }
+     if (sign == -1)
+     {
+-	if (v > 0x80000000)
++	if (cast(uint)v > 0x80000000)
+ 	    goto Loverflow;
+ 	v = -v;
+     }
+     else
+     {
+-	if (v > 0x7FFFFFFF)
++	if (cast(uint)v > 0x7FFFFFFF)
+ 	    goto Loverflow;
+     }
+     return v;
+@@ -325,7 +325,7 @@
+ 	goto Lerr;
+ 
+     int sign = 0;
+-    ulong v = 0;
++    long v = 0;
+ 
+     for (int i = 0; i < length; i++)
+     {
+@@ -353,13 +353,13 @@
+     }
+     if (sign == -1)
+     {
+-	if (v > 0x8000000000000000)
++	if (cast(ulong)v > 0x8000000000000000)
+ 	    goto Loverflow;
+ 	v = -v;
+     }
+     else
+     {
+-	if (v > 0x7FFFFFFFFFFFFFFF)
++	if (cast(ulong)v > 0x7FFFFFFFFFFFFFFF)
+ 	    goto Loverflow;
+     }
+     return v;
+diff -r c428531055ed d/phobos/std/cover.d
+--- a/d/phobos/std/cover.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/cover.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -108,7 +108,7 @@
+ 	// Generate source file name
+ 	string srcfilename = std.path.join(srcpath, c.filename);
+ 
+-	string buf = cast(char[])std.file.read(srcfilename);
++	string buf = cast(string)std.file.read(srcfilename);
+ 	string[] lines = std.string.splitlines(buf);
+ 
+ 	// Generate listing file name
+@@ -116,7 +116,7 @@
+ 
+ 	if (merge && exists(lstfilename) && isfile(lstfilename))
+ 	{
+-	    string lst = cast(char[])std.file.read(lstfilename);
++	    string lst = cast(string)std.file.read(lstfilename);
+ 	    string[] lstlines = std.string.splitlines(lst);
+ 
+ 	    for (size_t i = 0; i < lstlines.length; i++)
+diff -r c428531055ed d/phobos/std/date.d
+--- a/d/phobos/std/date.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/date.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -413,7 +413,7 @@
+ {
+     return (t == d_time_nan)
+ 	? d_time_nan
+-	/* BUGZILLA 1752 says this line should be:
++/* BUGZILLA 1752 says this line should be:
+  *	: t - LocalTZA - DaylightSavingTA(t);
+  */
+ 	: t - LocalTZA - DaylightSavingTA(t - LocalTZA);
+@@ -428,13 +428,13 @@
+ 	   ms * TicksPerMs;
+ }
+ 
+-/******************************
+-  * Params:
+-  *	month = 0..11
+-  *	date = day of month, 1..31
+-  * Returns:
+-  *	number of days since start of epoch
+-  */
++/* *****************************
++ * Params:
++ *	month = 0..11
++ *	date = day of month, 1..31
++ * Returns:
++ *	number of days since start of epoch
++ */
+ 
+ d_time MakeDay(d_time year, d_time month, d_time date)
+ {   d_time t;
+diff -r c428531055ed d/phobos/std/file.d
+--- a/d/phobos/std/file.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/file.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -98,7 +98,7 @@
+  *	FileException on error.
+  */
+ 
+-void[] read(string name)
++void[] read(char[] name)
+ {
+     DWORD numread;
+     HANDLE h;
+@@ -151,7 +151,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-void write(string name, void[] buffer)
++void write(char[] name, void[] buffer)
+ {
+     HANDLE h;
+     DWORD numwritten;
+@@ -193,7 +193,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-void append(string name, void[] buffer)
++void append(char[] name, void[] buffer)
+ {
+     HANDLE h;
+     DWORD numwritten;
+@@ -237,7 +237,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-void rename(string from, string to)
++void rename(char[] from, char[] to)
+ {
+     BOOL result;
+ 
+@@ -255,7 +255,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-void remove(string name)
++void remove(char[] name)
+ {
+     BOOL result;
+ 
+@@ -273,7 +273,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-ulong getSize(string name)
++ulong getSize(char[] name)
+ {
+     HANDLE findhndl;
+     uint resulth;
+@@ -309,7 +309,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-void getTimes(string name, out d_time ftc, out d_time fta, out d_time ftm)
++void getTimes(char[] name, out d_time ftc, out d_time fta, out d_time ftm)
+ {
+     HANDLE findhndl;
+ 
+@@ -345,7 +345,7 @@
+  * Return 1 if it does, 0 if not.
+  */
+ 
+-int exists(string name)
++int exists(char[] name)
+ {
+     uint result;
+ 
+@@ -383,7 +383,7 @@
+  * Throws: FileException if name[] doesn't exist.
+  */
+ 
+-int isfile(string name)
++int isfile(char[] name)
+ {
+     return (getAttributes(name) & FILE_ATTRIBUTE_DIRECTORY) == 0;
+ }
+@@ -393,7 +393,7 @@
+  * Throws: FileException if name[] doesn't exist.
+  */
+ 
+-int isdir(string name)
++int isdir(char[] name)
+ {
+     return (getAttributes(name) & FILE_ATTRIBUTE_DIRECTORY) != 0;
+ }
+@@ -403,7 +403,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-void chdir(string pathname)
++void chdir(char[] pathname)
+ {   BOOL result;
+ 
+     if (useWfuncs)
+@@ -422,7 +422,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-void mkdir(string pathname)
++void mkdir(char[] pathname)
+ {   BOOL result;
+ 
+     if (useWfuncs)
+@@ -441,7 +441,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-void rmdir(string pathname)
++void rmdir(char[] pathname)
+ {   BOOL result;
+ 
+     if (useWfuncs)
+@@ -460,7 +460,7 @@
+  * Throws: FileException on error.
+  */
+ 
+-string getcwd()
++char[] getcwd()
+ {
+     if (useWfuncs)
+     {
+@@ -508,7 +508,7 @@
+ 
+     void init(string path, WIN32_FIND_DATA *fd)
+     {
+-	wstring wbuf;
++	wchar[] wbuf;
+ 	size_t clength;
+ 	size_t wlength;
+ 	size_t n;
+@@ -946,20 +946,19 @@
+     }
+     else
+     {
+- 	buf = std.gc.malloc(cast(int)size);
+-    if (buf.ptr)
+-	std.gc.hasNoPointers(buf.ptr);
++	buf = std.gc.malloc(cast(int)size);
++	if (buf.ptr)
++	    std.gc.hasNoPointers(buf.ptr);
+ 
+     auto numread = unix.read(fd, buf.ptr, cast(int)size); //auto numread = std.c.linux.linux.read(fd, buf.ptr, cast(int)size);
+-    if (numread != size)
+-    {
+-        //printf("\tread error, errno = %d\n",getErrno());
+-        goto err2;
++	if (numread != size)
++	{
++	    //printf("\tread error, errno = %d\n",getErrno());
++	    goto err2;
++	}
+     }
+-    }
+-  
+-   Leof:
+ 
++  Leof:
+     if (unix.close(fd) == -1)
+     {
+ 	//printf("\tclose error, errno = %d\n",getErrno());
+@@ -1156,21 +1155,21 @@
+     }
+ 	else version (linux)
+     {
+-    ftc = cast(d_time)statbuf.st_ctime * std.date.TicksPerSecond;
+-    fta = cast(d_time)statbuf.st_atime * std.date.TicksPerSecond;
+-    ftm = cast(d_time)statbuf.st_mtime * std.date.TicksPerSecond;
++	ftc = cast(d_time)statbuf.st_ctime * std.date.TicksPerSecond;
++	fta = cast(d_time)statbuf.st_atime * std.date.TicksPerSecond;
++	ftm = cast(d_time)statbuf.st_mtime * std.date.TicksPerSecond;
+     }
+-     else version (OSX)
+-     {	// BUG: should add in tv_nsec field
+- 	ftc = cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
+- 	fta = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
+- 	ftm = cast(d_time)statbuf.st_mtimespec.tv_sec * std.date.TicksPerSecond;
+-     }
+-     else version (FreeBSD)
++    else version (OSX)
+     {	// BUG: should add in tv_nsec field
+- 	ftc = cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
+- 	fta = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
+- 	ftm = cast(d_time)statbuf.st_mtimespec.tv_sec * std.date.TicksPerSecond;
++	ftc = cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
++	fta = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
++	ftm = cast(d_time)statbuf.st_mtimespec.tv_sec * std.date.TicksPerSecond;
++    }
++    else version (FreeBSD)
++    {	// BUG: should add in tv_nsec field
++	ftc = cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
++	fta = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
++	ftm = cast(d_time)statbuf.st_mtimespec.tv_sec * std.date.TicksPerSecond;
+     }
+     else version (Solaris)
+     {  // BUG: should add in *nsec fields
+@@ -1178,10 +1177,10 @@
+        fta = cast(d_time)statbuf.st_atime * std.date.TicksPerSecond;
+        ftm = cast(d_time)statbuf.st_mtime * std.date.TicksPerSecond;
+     }
+-     else
+-     {
+- 	static assert(0);
+-     }
++    else
++    {
++	static assert(0);
++    }
+ }
+ 
+ 
+@@ -1189,7 +1188,7 @@
+  * Does file/directory exist?
+  */
+ 
+-int exists(string name)
++int exists(char[] name)
+ {
+     return access(toStringz(name),0) == 0;
+ 
+@@ -1245,7 +1244,7 @@
+  * Make directory.
+  */
+ 
+-void mkdir(string pathname)
++void mkdir(char[] pathname)
+ {
+     if (unix.mkdir(toStringz(pathname), 0777))
+     {
+@@ -1323,10 +1322,10 @@
+ 	    { }
+ 	else
+ 	    d_type = fd.d_type;
+-	    // Some platforms, like Solaris, don't have this member.
+-        // TODO: Bug: d_type is never set on Solaris (see bugzilla 2838 for fix.)
+-        static if (is(fd.d_type))
+-            d_type = fd.d_type;
++       // Some platforms, like Solaris, don't have this member.
++       // TODO: Bug: d_type is never set on Solaris (see bugzilla 2838 for fix.)
++       static if (is(fd.d_type))
++           d_type = fd.d_type;
+ 	didstat = 0;
+     }
+ 
+@@ -1406,33 +1405,33 @@
+ 	_lastWriteTime = cast(d_time)statbuf.st_mtime * std.date.TicksPerSecond;
+ 	}
+  	else version (linux)
+- 	{
+-	_creationTime = cast(d_time)statbuf.st_ctime * std.date.TicksPerSecond;
+-	_lastAccessTime = cast(d_time)statbuf.st_atime * std.date.TicksPerSecond;
+-	_lastWriteTime = cast(d_time)statbuf.st_mtime * std.date.TicksPerSecond;
++	{
++	    _creationTime = cast(d_time)statbuf.st_ctime * std.date.TicksPerSecond;
++	    _lastAccessTime = cast(d_time)statbuf.st_atime * std.date.TicksPerSecond;
++	    _lastWriteTime = cast(d_time)statbuf.st_mtime * std.date.TicksPerSecond;
+ 	}
+- 	else version (OSX)
+- 	{
+- 	    _creationTime =   cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
+- 	    _lastAccessTime = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
+- 	    _lastWriteTime =  cast(d_time)statbuf.st_mtimespec.tv_sec * std.date.TicksPerSecond;
+- 	}
+- 	else version (FreeBSD)
+- 	{
+- 	    _creationTime =   cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
+- 	    _lastAccessTime = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
++	else version (OSX)
++	{
++	    _creationTime =   cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
++	    _lastAccessTime = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
+ 	    _lastWriteTime =  cast(d_time)statbuf.st_mtimespec.tv_sec * std.date.TicksPerSecond;
+- 	}
+- 	else version (Solaris)
+- 	{
+- 	    _creationTime   = cast(d_time)statbuf.st_ctime * std.date.TicksPerSecond;
+- 	    _lastAccessTime = cast(d_time)statbuf.st_atime * std.date.TicksPerSecond;
+- 	    _lastWriteTime  = cast(d_time)statbuf.st_mtime * std.date.TicksPerSecond;
+- 	}
+- 	else
+- 	{
+- 	    static assert(0);
+- 	}
++	}
++	else version (FreeBSD)
++	{
++	    _creationTime =   cast(d_time)statbuf.st_ctimespec.tv_sec * std.date.TicksPerSecond;
++	    _lastAccessTime = cast(d_time)statbuf.st_atimespec.tv_sec * std.date.TicksPerSecond;
++	    _lastWriteTime =  cast(d_time)statbuf.st_mtimespec.tv_sec * std.date.TicksPerSecond;
++	}
++	else version (Solaris)
++	{
++	    _creationTime   = cast(d_time)statbuf.st_ctime * std.date.TicksPerSecond;
++	    _lastAccessTime = cast(d_time)statbuf.st_atime * std.date.TicksPerSecond;
++	    _lastWriteTime  = cast(d_time)statbuf.st_mtime * std.date.TicksPerSecond;
++	}
++	else
++	{
++	    static assert(0);
++	}
+ 	_st_mode = statbuf.st_mode;
+ 	didstat = 1;
+     }
+diff -r c428531055ed d/phobos/std/format.d
+--- a/d/phobos/std/format.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/format.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1899,7 +1899,8 @@
+ 
+     r = std.string.format(">%14d<, ", 15, [1,2,3]);
+     assert(r == ">            15<, [1,2,3]");
++
+     assert(std.string.format("%8s", "bar") == "     bar");
+-   assert(std.string.format("%8s", "b\u00e9ll\u00f4") == "   b\u00e9ll\u00f4");
++    assert(std.string.format("%8s", "b\u00e9ll\u00f4") == "   b\u00e9ll\u00f4");
+ }
+ 
+diff -r c428531055ed d/phobos/std/intrinsic.d
+--- a/d/phobos/std/intrinsic.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/intrinsic.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -19,10 +19,10 @@
+ 	integrated in with intrinsic functions, bringing to bear
+ 	their full power on them.
+ 	This can result in some surprising speedups.
+-  *
+-  * Copyright: Public Domain
+-  * License:   Public Domain
+-  * Authors:   Walter Bright
++ *
++ * Copyright: Public Domain
++ * License:   Public Domain
++ * Authors:   Walter Bright
+  * Macros:
+  *	WIKI=Phobos/StdIntrinsic
+  */
+diff -r c428531055ed d/phobos/std/loader.d
+--- a/d/phobos/std/loader.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/loader.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -434,11 +434,11 @@
+     private void ExeModule_Uninit_()
+     {
+         if(0 == --s_init)
+-	    {
++        {
+         }
+     }
+ 
+-    private HXModule ExeModule_Load_(in char[] moduleName)
++    private HXModule ExeModule_Load_(in string moduleName)
+     in
+     {
+         assert(null !is moduleName);
+@@ -903,10 +903,10 @@
+ 	    {
+ 		m_hModule = ExeModule_AddRef(hModule);
+ 	    }
+-        else version (darwin)
+-        {
+-        m_hModule = ExeModule_AddRef(hModule);
+-        }
++	    else version (darwin)
++	    {
++		m_hModule = ExeModule_AddRef(hModule);
++	    }
+ 	    else
+ 		static assert(0);
+         }
+@@ -931,12 +931,12 @@
+ 	    if (null is m_hModule)
+ 		throw new ExeModuleException(ExeModule_Error());
+ 	}
+-    else version (darwin)
+-    {
+-        m_hModule = ExeModule_Load(moduleName);
+-        if (null is m_hModule)
+-        throw new ExeModuleException(ExeModule_Error());
+-    }
++	else version (darwin)
++	{
++	    m_hModule = ExeModule_Load(moduleName);
++	    if (null is m_hModule)
++		throw new ExeModuleException(ExeModule_Error());
++	}
+ 	else
+ 	{
+ 	    static assert(0);		// unsupported system
+@@ -968,10 +968,10 @@
+ 	    {
+ 		ExeModule_Release(m_hModule);
+ 	    }
+-        else version (darwin)
+-        {
+-        ExeModule_Release(m_hModule);
+-        }
++	    else version (darwin)
++	    {
++		ExeModule_Release(m_hModule);
++	    }
+ 	    else
+ 		static assert(0);
+         }
+@@ -1005,15 +1005,15 @@
+ 		throw new ExeModuleException(ExeModule_Error());
+ 	    }
+ 	}
+-    else version (darwin)
+-    {
+-        void *symbol = ExeModule_GetSymbol(m_hModule, symbolName);
++	else version (darwin)
++	{
++	    void *symbol = ExeModule_GetSymbol(m_hModule, symbolName);
+ 
+-        if(null is symbol)
+-        {
+-        throw new ExeModuleException(ExeModule_Error());
+-        }
+-    }
++	    if(null is symbol)
++	    {
++		throw new ExeModuleException(ExeModule_Error());
++	    }
++	}
+ 	else
+ 	{
+ 	    static assert(0);
+@@ -1065,10 +1065,10 @@
+ 	{
+ 	    return ExeModule_GetPath_(m_hModule);
+ 	}
+-    else version (darwin)
+-    {
+-        return ExeModule_GetPath_(m_hModule);
+-    }
++	else version (darwin)
++	{
++	    return ExeModule_GetPath_(m_hModule);
++	}
+ 	else
+ 	    static assert(0);
+     }
+diff -r c428531055ed d/phobos/std/math.d
+--- a/d/phobos/std/math.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/math.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -412,7 +412,7 @@
+ version(GNU) alias std.c.math.tanl tan; else
+ real tan(real x)
+ {
+-	version(Naked_D_InlineAsm_X86) {
++    version(Naked_D_InlineAsm_X86) {
+     asm
+     {
+         fld     x[EBP]                  ; // load theta
+@@ -446,8 +446,8 @@
+ Lret:
+     ;
+     } else {
+-         return stdc.math.tanl(x);
+-     }
++        return stdc.math.tanl(x);
++    }
+ }
+ 
+ unittest
+@@ -802,15 +802,15 @@
+ }
+ 
+ /**
+-   * Calculates e$(SUP x).
+-   *
+-   *  $(TABLE_SV
+-   *    $(TR $(TH x)             $(TH e$(SUP x)) )
+-   *    $(TD +$(INFIN))          $(TD +$(INFIN)) )
+-   *    $(TD -$(INFIN))          $(TD +0.0)      )
+-   *    $(TR $(TD $(NAN))        $(TD $(NAN))    )
+-   *  )
+-   */
++ * Calculates e$(SUP x).
++ *
++ *  $(TABLE_SV
++ *    $(TR $(TH x)             $(TH e$(SUP x)) )
++ *    $(TD +$(INFIN))          $(TD +$(INFIN)) )
++ *    $(TD -$(INFIN))          $(TD +0.0)      )
++ *    $(TR $(TD $(NAN))        $(TD $(NAN))    )
++ *  )
++ */
+ real exp(real x) {
+     version(Naked_D_InlineAsm_X86) {
+    //  e^x = 2^(LOG2E*x)
+@@ -832,13 +832,13 @@
+  * For very small x, expm1(x) is more accurate 
+  * than exp(x)-1. 
+  *
+- *      $(TABLE_SV
++ *  $(TABLE_SV
+  *    $(TR $(TH x)             $(TH e$(SUP x)-1)  )
+  *    $(TR $(TD $(PLUSMN)0.0)  $(TD $(PLUSMN)0.0) )
+  *    $(TD +$(INFIN))          $(TD +$(INFIN))    )
+  *    $(TD -$(INFIN))          $(TD -1.0)         )
+  *    $(TR $(TD $(NAN))        $(TD $(NAN))       )
+- *      )
++ *  )
+  */
+ real expm1(real x) 
+ {
+@@ -1321,7 +1321,7 @@
+  
+ unittest
+ {
+-	//printf("%Lg\n", log10(1000) - 3);
++    //printf("%Lg\n", log10(1000) - 3);
+     assert(fabs(log10(1000) - 3) < .000001);
+ }
+ 
+diff -r c428531055ed d/phobos/std/mmfile.d
+--- a/d/phobos/std/mmfile.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/mmfile.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1,4 +1,6 @@
+-/* Copyright 2004-2005 by Digital Mars
++// Written in the D programming language
++
++/* Copyright 2004-2008 by Digital Mars
+  * Written by Walter Bright and Matthew Wilson
+  *
+  * This software is provided 'as-is', without any express or implied
+@@ -105,7 +107,7 @@
+      * Throws:
+      *	std.file.FileException
+      */
+-    this(char[] filename)
++    this(string filename)
+     {
+ 		this(filename, Mode.Read, 0, null);
+     }
+@@ -128,7 +130,7 @@
+      * Throws:
+      *	std.file.FileException
+      */
+-    this(char[] filename, Mode mode, ulong size, void* address,
++    this(string filename, Mode mode, ulong size, void* address,
+ 			size_t window = 0)
+     {
+ 		this.filename = filename;
+@@ -369,7 +371,7 @@
+ 				errNo();
+ 			hFileMap = null;
+ 
+-			if (hFile != INVALID_HANDLE_VALUE && CloseHandle(hFile) != TRUE)
++			if (hFile && hFile != INVALID_HANDLE_VALUE && CloseHandle(hFile) != TRUE)
+ 				errNo();
+ 			hFile = INVALID_HANDLE_VALUE;
+ 		}
+@@ -561,7 +563,7 @@
+ 	}
+ 
+ 	private:
+-	char[] filename;
++	string filename;
+ 	void[] data;
+ 	ulong  start;
+ 	size_t window;
+@@ -643,5 +645,8 @@
+ 	assert( data2[length-1] == 'b' );
+ 	delete mf;
+ 	std.file.remove("testing.txt");
++
++	// Create anonymous mapping
++	auto test = new MmFile(null, MmFile.Mode.ReadWriteNew, 1024*1024, null);
+     }
+ }
+diff -r c428531055ed d/phobos/std/moduleinit.d
+--- a/d/phobos/std/moduleinit.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/moduleinit.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -235,7 +235,7 @@
+ 	    m.name.ptr);
+ 	if (m.flags & MIctordone)
+ 	    continue;
+-    debug printf("\tmodule[%d] = '%.*s', m = x%x, m.flags = x%x\n", i, m.name, m, m.flags);
++	debug printf("\tmodule[%d] = '%.*s', m = x%x, m.flags = x%x\n", i, m.name, m, m.flags);
+ 
+ 	if (m.ctor || m.dtor)
+ 	{
+diff -r c428531055ed d/phobos/std/path.d
+--- a/d/phobos/std/path.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/path.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -147,7 +147,7 @@
+ unittest
+ {
+     debug(path) printf("path.getExt.unittest\n");
+-    char[] result;
++    string result;
+ 
+     version (Win32)
+ 	result = getExt("d:\\path\\foo.bat");
+@@ -213,7 +213,7 @@
+  * -----
+  */
+ 
+-char[] getName(char[] fullname)
++string getName(string fullname)
+ {
+     size_t i = fullname.length;
+     while (i > 0)
+@@ -238,7 +238,7 @@
+ unittest
+ {
+     debug(path) printf("path.getName.unittest\n");
+-    char[] result;
++    string result;
+ 
+     result = getName("foo.bar");
+     auto i = cmp(result, "foo");
+@@ -278,7 +278,7 @@
+  * -----
+  */
+ 
+-char[] getBaseName(char[] fullname)
++string getBaseName(string fullname)
+     out (result)
+     {
+ 	assert(result.length <= fullname.length);
+@@ -306,7 +306,7 @@
+ {
+     debug(path) printf("path.getBaseName.unittest\n");
+     int i;
+-    char[] result;
++    string result;
+ 
+     version (Windows)
+ 	result = getBaseName("d:\\path\\foo.bat");
+@@ -346,7 +346,7 @@
+  * version(Win32)
+  * {
+  *     getDirName(r"d:\path\foo.bat") => "d:\path"
+- *     getDirName(getDirName(r"d:\path\foo.bat")) => "d:\"
++ *     getDirName(getDirName(r"d:\path\foo.bat")) => r"d:\"
+  * }
+  * version(linux)
+  * {
+@@ -356,7 +356,7 @@
+  * -----
+  */
+ 
+-char[] getDirName(char[] fullname)
++string getDirName(string fullname)
+     out (result)
+     {
+ 	assert(result.length <= fullname.length);
+@@ -371,7 +371,7 @@
+ 	    {
+ 		if (fullname[i - 1] == ':')
+ 		    break;
+-		if (fullname[i - 1] == '\\')
++		if (fullname[i - 1] == '\\' || fullname[i - 1] == '/')
+ 		{   i--;
+ 		    break;
+ 		}
+@@ -387,6 +387,12 @@
+ 	return fullname[0 .. i];
+     }
+ 
++unittest
++{
++    string filename = "foo/bar";
++    auto d = getDirName(filename);
++    assert(d == "foo");
++}
+ 
+ /********************************
+  * Extracts the drive letter of a path.
+@@ -406,7 +412,7 @@
+  * -----
+  */
+ 
+-char[] getDrive(char[] fullname)
++string getDrive(string fullname)
+     out (result)
+     {
+ 	assert(result.length <= fullname.length);
+@@ -450,9 +456,9 @@
+  * -----
+  */
+ 
+-char[] defaultExt(char[] filename, char[] ext)
++string defaultExt(string filename, string ext)
+ {
+-    char[] existing;
++    string existing;
+ 
+     existing = getExt(filename);
+     if (existing.length == 0)
+@@ -490,9 +496,9 @@
+  * -----
+  */
+ 
+-char[] addExt(char[] filename, char[] ext)
++string addExt(string filename, string ext)
+ {
+-    char[] existing;
++    string existing;
+ 
+     existing = getExt(filename);
+     if (existing.length == 0)
+@@ -536,9 +542,9 @@
+  * -----
+  */
+ 
+-int isabs(char[] path)
++int isabs(string path)
+ {
+-    char[] d = getDrive(path);
++    string d = getDrive(path);
+ 
+     version (Windows)
+     {
+@@ -591,15 +597,15 @@
+  * -----
+  */
+ 
+-char[] join(char[] p1, char[] p2)
++string join(string p1, string p2)
+ {
+     if (!p2.length)
+ 	return p1;
+     if (!p1.length)
+ 	return p2;
+ 
+-    char[] p;
+-    char[] d1;
++    string p;
++    string d1;
+ 
+     version(Win32)
+     {
+@@ -655,7 +661,7 @@
+ {
+     debug(path) printf("path.join.unittest\n");
+ 
+-    char[] p;
++    string p;
+     int i;
+ 
+     p = join("foo", "bar");
+@@ -831,7 +837,7 @@
+  * -----
+  */
+ 
+-int fnmatch(char[] filename, char[] pattern)
++int fnmatch(string filename, string pattern)
+     in
+     {
+ 	// Verify that pattern[] is valid
+@@ -997,9 +1003,9 @@
+  * -----
+  * import std.path;
+  *
+- * void process_file(char[] filename)
++ * void process_file(string filename)
+  * {
+- *     char[] path = expandTilde(filename);
++ *     string path = expandTilde(filename);
+  *     ...
+  * }
+  * -----
+@@ -1007,10 +1013,10 @@
+  * -----
+  * import std.path;
+  *
+- * const char[] RESOURCE_DIR_TEMPLATE = "~/.applicationrc";
+- * char[] RESOURCE_DIR;    // This gets expanded in main().
++ * const string RESOURCE_DIR_TEMPLATE = "~/.applicationrc";
++ * string RESOURCE_DIR;    // This gets expanded in main().
+  *
+- * int main(char[][] args)
++ * int main(string[] args)
+  * {
+  *     RESOURCE_DIR = expandTilde(RESOURCE_DIR_TEMPLATE);
+  *     ...
+@@ -1020,7 +1026,7 @@
+  * Authors: Grzegorz Adam Hankiewicz, Thomas Kühne.
+  */
+ 
+-char[] expandTilde(char[] inputPath)
++string expandTilde(string inputPath)
+ {
+     version(Unix)
+     {
+@@ -1094,7 +1100,7 @@
+ /**
+  * Replaces the tilde from path with the environment variable HOME.
+  */
+-private char[] expandFromEnvironment(char[] path)
++private string expandFromEnvironment(string path)
+ {
+     assert(path.length >= 1);
+     assert(path[0] == '~');
+@@ -1115,7 +1121,7 @@
+  * is joined to path[char_pos .. length] if char_pos is smaller
+  * than length, otherwise path is not appended to c_path.
+  */
+-private char[] combineCPathWithDPath(char* c_path, char[] path, int char_pos)
++private string combineCPathWithDPath(char* c_path, string path, int char_pos)
+ {
+     assert(c_path != null);
+     assert(path.length > 0);
+@@ -1129,7 +1135,7 @@
+ 	end--;
+ 
+     // Create our own copy, as lifetime of c_path is undocumented
+-    char[] cp = c_path[0 .. end].dup;
++    string cp = c_path[0 .. end].dup;
+ 
+     // Do we append something from path?
+     if (char_pos < path.length)
+diff -r c428531055ed d/phobos/std/process.d
+--- a/d/phobos/std/process.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/process.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1,6 +1,7 @@
+ // Written in the D programming language
++
+ /*
+- *  Copyright (C) 2003-2009 by Digital Mars, www.digitalmars.com
++ *  Copyright (C) 2003-2009 by Digital Mars, http://www.digitalmars.com
+  *  Written by Matthew Wilson and Walter Bright
+  *
+  *  Incorporating idea (for execvpe() on Linux) from Russ Lewis
+@@ -205,7 +206,7 @@
+ /** ditto */
+ int execvpe(string pathname, string[] argv, string[] envp)
+ {
+-version(Posix)
++version (GNU_Need_execvpe)
+ {
+     // Is pathname rooted?
+     if(pathname[0] == '/')
+@@ -237,7 +238,7 @@
+         return iRet;
+     }
+ }
+-else version(Windows)
++else
+ {
+     auto argv_ = cast(char**)alloca((char*).sizeof * (1 + argv.length));
+     auto envp_ = cast(char**)alloca((char*).sizeof * (1 + envp.length));
+@@ -246,10 +247,6 @@
+     toAStringz(envp, envp_);
+ 
+     return std.c.process.execvpe(toStringz(pathname), argv_, envp_);
+-}
+-else
+-{
+-  static assert(0);
+ } // version
+ }
+ 
+diff -r c428531055ed d/phobos/std/random.d
+--- a/d/phobos/std/random.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/random.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1,3 +1,5 @@
++// Written in the D programming language
++
+ /**
+  * Macros:
+  *	WIKI = Phobos/StdRandom
+diff -r c428531055ed d/phobos/std/socket.d
+--- a/d/phobos/std/socket.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/socket.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -269,8 +269,8 @@
+ 			aliases = new string[i];
+ 			for(i = 0; i != aliases.length; i++)
+ 			{
+-				aliases[i] =
+- 				std.string.toString(proto.p_aliases[i]).dup;
++			    aliases[i] =
++				std.string.toString(proto.p_aliases[i]).dup;
+ 			}
+ 		}
+ 		else
+@@ -353,8 +353,8 @@
+ 			aliases = new string[i];
+ 			for(i = 0; i != aliases.length; i++)
+ 			{
+-				aliases[i] =
+-                                 std.string.toString(serv.s_aliases[i]).dup;
++                            aliases[i] =
++                                std.string.toString(serv.s_aliases[i]).dup;
+ 			}
+ 		}
+ 		else
+@@ -499,7 +499,8 @@
+ 			aliases = new string[i];
+ 			for(i = 0; i != aliases.length; i++)
+ 			{
+-				aliases[i] = std.string.toString(he.h_aliases[i]).dup;
++                            aliases[i] =
++                                std.string.toString(he.h_aliases[i]).dup;
+ 			}
+ 		}
+ 		else
+@@ -727,7 +728,8 @@
+ 			InternetHost ih = new InternetHost;
+ 			if(!ih.getHostByName(addr))
+ 				//throw new AddressException("Invalid internet address");
+-				throw new AddressException("Unable to resolve host '" ~ addr ~ "'");
++                            throw new AddressException(
++                                 "Unable to resolve host '" ~ addr ~ "'");
+ 			uiaddr = ih.addrList[0];
+ 		}
+ 		sin.sin_addr.s_addr = htonl(uiaddr);
+@@ -767,7 +769,7 @@
+ 	/// Human readable string representing the IPv4 address and port in the form $(I a.b.c.d:e).
+ 	string toString()
+ 	{
+-		return toAddrString() ~ ":" ~ toPortString();
++            return toAddrString() ~ ":" ~ toPortString();
+ 	}
+ 	
+ 	/**
+@@ -1641,10 +1643,10 @@
+ 	/// ditto
+ 	static int select(SocketSet checkRead, SocketSet checkWrite, SocketSet checkError, int microseconds)
+ 	{
+-		timeval tv;
+-		tv.seconds = microseconds / 1_000_000;
+- 	    tv.microseconds = microseconds % 1_000_000;
+-		return select(checkRead, checkWrite, checkError, &tv);
++	    timeval tv;
++	    tv.seconds = microseconds / 1_000_000;
++	    tv.microseconds = microseconds % 1_000_000;
++	    return select(checkRead, checkWrite, checkError, &tv);
+ 	}
+ 	
+ 	
+diff -r c428531055ed d/phobos/std/stdarg.d
+--- a/d/phobos/std/stdarg.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/stdarg.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -14,13 +14,13 @@
+ 
+ module std.stdarg;
+ 
+-version (GNU) {
+-    // va_list might be a pointer, but assuming so is not portable.
++version(GNU)
++{   // va_list might be a pointer, but assuming so is not portable.
+     private import gcc.builtins;
+     alias __builtin_va_list va_list;
+-    
+-    // va_arg is handled magically by the compiler
+-} else {
++}
++else
++{   // va_arg is handled magically by the compiler
+     alias void* va_list;
+ }
+ 
+diff -r c428531055ed d/phobos/std/stream.d
+--- a/d/phobos/std/stream.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/stream.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1889,7 +1889,7 @@
+ 			 out int share,
+ 			 out int createMode) {
+     version (Win32) {
+-    	share |= FILE_SHARE_READ | FILE_SHARE_WRITE;
++      share |= FILE_SHARE_READ | FILE_SHARE_WRITE;
+       if (mode & FileMode.In) {
+ 	access |= GENERIC_READ;
+ 	createMode = OPEN_EXISTING;
+@@ -1903,7 +1903,7 @@
+       }
+     }
+     version (Unix) {
+-    	share = 0666;
++      share = 0666;
+       if (mode & FileMode.In) {
+ 	access = O_RDONLY;
+       }
+@@ -2397,7 +2397,7 @@
+     writeBlock(bom.ptr, bom.length);
+   }
+ 
+-	override void write(byte x) { writeExact(&x, x.sizeof); }
++  override void write(byte x) { writeExact(&x, x.sizeof); }
+   override void write(ubyte x) { writeExact(&x, x.sizeof); }
+   void write(short x) { fixBO(&x,x.sizeof); writeExact(&x, x.sizeof); }
+   void write(ushort x) { fixBO(&x,x.sizeof); writeExact(&x, x.sizeof); }
+diff -r c428531055ed d/phobos/std/string.d
+--- a/d/phobos/std/string.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/string.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -210,17 +210,22 @@
+ 
+ /*********************************
+  * Convert array of chars s[] to a C-style 0 terminated string.
++ * s[] must not contain embedded 0's.
+  */
+ 
+ char* toStringz(char[] s)
+     in
+     {
++	assert(memchr(s.ptr, 0, s.length) == null);
+     }
+     out (result)
+     {
+ 	if (result)
+-	{   assert(strlen(result) == s.length);
+-	    assert(memcmp(result, s.ptr, s.length) == 0);
++	{
++	    auto slen = s.length;
++	    while (slen > 0 && s[slen-1] == '\0') --slen;
++	    assert(strlen(result) == slen);
++	    assert(memcmp(result, s.ptr, slen) == 0);
+ 	}
+     }
+     body
+@@ -265,6 +270,14 @@
+     char[] test = "";
+     p = toStringz(test);
+     assert(*p == 0);
++
++    test = "\0";
++    p = toStringz(test);
++    assert(*p == 0);
++
++    test = "foo\0";
++    p = toStringz(test);
++    assert(p[0] == 'f' && p[1] == 'o' && p[2] == 'o' && p[3] == 0);
+ }
+ 
+ /******************************************
+diff -r c428531055ed d/phobos/std/thread.d
+--- a/d/phobos/std/thread.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/thread.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -60,6 +60,8 @@
+ 	stdfp start_addr, void* arglist, uint initflag,
+ 	thread_id* thrdaddr);
+ 
++private const uint  WAIT_TIMEOUT = 258;
++
+ /**
+  * The type of the thread handle used by the operating system.
+  * For Windows, it is equivalent to a HANDLE from windows.d.
+@@ -73,7 +75,7 @@
+  */
+ class ThreadError : Error
+ {
+-    this(char[] s)
++    this(string s)
+     {
+ 	super("Thread error: " ~ s);
+     }
+@@ -156,15 +158,17 @@
+ 		}
+ 	    }
+ 	    nthreads++;
+-	}
+ 
+-	state = TS.RUNNING;
+-	hdl = _beginthreadex(null, cast(uint)stacksize, &threadstart, cast(void*)this, 0, &id);
+-	if (hdl == cast(thread_hdl)0)
+-	{   state = TS.FINISHED;
+-	    synchronized (Thread.classinfo) allThreads[idx] = null;
+-	    idx = -1;
+-	    error("failed to start");
++	    state = TS.RUNNING;
++	    hdl = _beginthreadex(null, cast(uint)stacksize, &threadstart, cast(void*)this, 0, &id);
++	    if (hdl == cast(thread_hdl)0)
++	    {
++		allThreads[idx] = null;
++		nthreads--;
++		state = TS.FINISHED;
++		idx = -1;
++		error("failed to start");
++	    }
+ 	}
+     }
+ 
+@@ -203,8 +207,9 @@
+ 	}
+     }
+ 
+-    /*****************************
+-     * Wait for this thread to terminate.
++    /******************************
++     * Wait for this thread to terminate or until milliseconds time has
++     * elapsed, whichever occurs first.
+      * Simply returns if thread has already terminated.
+      * Throws: $(B ThreadError) if the thread hasn't begun yet or
+      * is called on itself.
+@@ -217,9 +222,12 @@
+ 	{   DWORD dw;
+ 
+ 	    dw = WaitForSingleObject(hdl, milliseconds);
+-            state = TS.FINISHED;
+-            CloseHandle(hdl);
+-            hdl = null;
++	    if (dw != WAIT_TIMEOUT)
++	    {
++		state = TS.FINISHED;
++		CloseHandle(hdl);
++		hdl = null;
++	    }
+ 	}
+     }
+ 
+@@ -250,7 +258,8 @@
+ 	INCREASE,	/// Increase thread priority
+ 	DECREASE,	/// Decrease thread priority
+ 	IDLE,		/// Assign thread low priority
+-	CRITICAL	/// Assign thread high priority
++	CRITICAL,	/// Assign thread high priority
++	NORMAL,
+     }
+ 
+     /**
+@@ -275,6 +284,9 @@
+ 	    case PRIORITY.CRITICAL:
+ 		nPriority = THREAD_PRIORITY_TIME_CRITICAL;
+ 		break;
++	    case PRIORITY.NORMAL:
++		nPriority = THREAD_PRIORITY_NORMAL;
++		break;
+ 	    default:
+ 		assert(0);
+ 	}
+@@ -347,14 +359,14 @@
+         {
+             if (nthreads > 1)
+             {
+-                    thread_id thisid = GetCurrentThreadId();
++		thread_id thisid = GetCurrentThreadId();
+ 
+-                for (int i = 0; i < allThreadsDim; i++)
+-                    {
+-                        Thread t = allThreads[i];
+-                        if (t && t.id != thisid && t.state == TS.RUNNING)
+-                        t.pause();
+-                }
++		for (int i = 0; i < allThreadsDim; i++)
++		{
++		    Thread t = allThreads[i];
++		    if (t && t.id != thisid && t.state == TS.RUNNING)
++			t.pause();
++		}
+             }
+         }
+     }
+@@ -408,7 +420,7 @@
+ 
+     int delegate() dg;
+ 
+-    void error(char[] msg)
++    void error(string msg)
+     {
+ 	throw new ThreadError(msg);
+     }
+@@ -563,7 +575,7 @@
+ 
+ class ThreadError : Error
+ {
+-    this(char[] s)
++    this(string s)
+     {
+ 	super("Thread error: " ~ s);
+     }
+@@ -933,7 +945,7 @@
+ 
+     int delegate() dg;
+ 
+-    void error(char[] msg)
++    void error(string msg)
+     {
+ 	throw new ThreadError(msg);
+     }
+@@ -989,7 +1001,7 @@
+ 	}
+ 
+ 	debug (thread) printf("Ending thread %d\n", t.idx);
+-	    t.state = TS.TERMINATED;
++	t.state = TS.TERMINATED;
+         synchronized (Thread.classinfo)
+         {
+             allThreads[t.idx] = null;
+diff -r c428531055ed d/phobos/std/typeinfo/ti_C.d
+--- a/d/phobos/std/typeinfo/ti_C.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/typeinfo/ti_C.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1,5 +1,5 @@
+ /*
+- *  Copyright (C) 2004-2005 by Digital Mars, www.digitalmars.com
++ *  Copyright (C) 2004-2008 by Digital Mars, www.digitalmars.com
+  *  Written by Walter Bright
+  *
+  *  This software is provided 'as-is', without any express or implied
+@@ -30,8 +30,7 @@
+     hash_t getHash(void *p)
+     {
+ 	Object o = *cast(Object*)p;
+-	assert(o);
+-	return o.toHash();
++	return o ? o.toHash() : 0;
+     }
+ 
+     int equals(void *p1, void *p2)
+diff -r c428531055ed d/phobos/std/uni.d
+--- a/d/phobos/std/uni.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/uni.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -614,7 +614,7 @@
+ 	assert(0);		// should have been in table
+     }
+     else
+-    return 1;
++	return 1;
+ }
+ 
+ unittest
+diff -r c428531055ed d/phobos/std/zip.d
+--- a/d/phobos/std/zip.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos/std/zip.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -320,7 +320,7 @@
+ 		endcommentlength = getUshort(i + 20);
+ 		if (i + 22 + endcommentlength > data.length)
+ 		    continue;
+-		comment = cast(string)data[i + 22 .. i + 22 + endcommentlength];
++		comment = cast(string)(data[i + 22 .. i + 22 + endcommentlength]);
+ 		endrecOffset = i;
+ 		break;
+ 	    }
+@@ -381,11 +381,11 @@
+ 	    if (i + namelen + extralen + commentlen > directoryOffset + directorySize)
+ 		throw new ZipException("invalid directory entry 2");
+ 
+-	    de.name = cast(string)data[i .. i + namelen];
++	    de.name = cast(string)(data[i .. i + namelen]);
+ 	    i += namelen;
+ 	    de.extra = data[i .. i + extralen];
+ 	    i += extralen;
+-	    de.comment = cast(string)data[i .. i + commentlen];
++	    de.comment = cast(string)(data[i .. i + commentlen]);
+ 	    i += commentlen;
+ 
+ 	    directory[de.name] = de;
+diff -r c428531055ed d/phobos2/configure
+--- a/d/phobos2/configure	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/configure	Tue Jun 29 22:00:53 2010 +0100
+@@ -5735,9 +5735,108 @@
+ # AC_SUBST(DCFG_EXPM1)
+ # also erf, erfc
+ 
+-# use version(Unix) instead.
+-#AC_CHECK_FUNC(execvpe,DCFG_EXECVPE="",DCFG_EXECVPE="GNU_Need_execvpe")
+-#AC_SUBST(DCFG_EXECVPE)
++echo "$as_me:$LINENO: checking for execvpe" >&5
++echo $ECHO_N "checking for execvpe... $ECHO_C" >&6
++if test "${ac_cv_func_execvpe+set}" = set; then
++  echo $ECHO_N "(cached) $ECHO_C" >&6
++else
++  if test x$gcc_no_link = xyes; then
++  { { echo "$as_me:$LINENO: error: Link tests are not allowed after GCC_NO_EXECUTABLES." >&5
++echo "$as_me: error: Link tests are not allowed after GCC_NO_EXECUTABLES." >&2;}
++   { (exit 1); exit 1; }; }
++fi
++cat >conftest.$ac_ext <<_ACEOF
++/* confdefs.h.  */
++_ACEOF
++cat confdefs.h >>conftest.$ac_ext
++cat >>conftest.$ac_ext <<_ACEOF
++/* end confdefs.h.  */
++/* Define execvpe to an innocuous variant, in case <limits.h> declares execvpe.
++   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
++#define execvpe innocuous_execvpe
++
++/* System header to define __stub macros and hopefully few prototypes,
++    which can conflict with char execvpe (); below.
++    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
++    <limits.h> exists even on freestanding compilers.  */
++
++#ifdef __STDC__
++# include <limits.h>
++#else
++# include <assert.h>
++#endif
++
++#undef execvpe
++
++/* Override any gcc2 internal prototype to avoid an error.  */
++#ifdef __cplusplus
++extern "C"
++{
++#endif
++/* We use char because int might match the return type of a gcc2
++   builtin and then its argument prototype would still apply.  */
++char execvpe ();
++/* The GNU C library defines this for functions which it implements
++    to always fail with ENOSYS.  Some functions are actually named
++    something starting with __ and the normal name is an alias.  */
++#if defined (__stub_execvpe) || defined (__stub___execvpe)
++choke me
++#else
++char (*f) () = execvpe;
++#endif
++#ifdef __cplusplus
++}
++#endif
++
++int
++main ()
++{
++return f != execvpe;
++  ;
++  return 0;
++}
++_ACEOF
++rm -f conftest.$ac_objext conftest$ac_exeext
++if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
++  (eval $ac_link) 2>conftest.er1
++  ac_status=$?
++  grep -v '^ *+' conftest.er1 >conftest.err
++  rm -f conftest.er1
++  cat conftest.err >&5
++  echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); } &&
++	 { ac_try='test -z "$ac_c_werror_flag"
++			 || test ! -s conftest.err'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; } &&
++	 { ac_try='test -s conftest$ac_exeext'
++  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
++  (eval $ac_try) 2>&5
++  ac_status=$?
++  echo "$as_me:$LINENO: \$? = $ac_status" >&5
++  (exit $ac_status); }; }; then
++  ac_cv_func_execvpe=yes
++else
++  echo "$as_me: failed program was:" >&5
++sed 's/^/| /' conftest.$ac_ext >&5
++
++ac_cv_func_execvpe=no
++fi
++rm -f conftest.err conftest.$ac_objext \
++      conftest$ac_exeext conftest.$ac_ext
++fi
++echo "$as_me:$LINENO: result: $ac_cv_func_execvpe" >&5
++echo "${ECHO_T}$ac_cv_func_execvpe" >&6
++if test $ac_cv_func_execvpe = yes; then
++  DCFG_EXECVPE=""
++else
++  DCFG_EXECVPE="GNU_Need_execvpe"
++fi
++
++
+ 
+ echo "$as_me:$LINENO: checking for spawnvp" >&5
+ echo $ECHO_N "checking for spawnvp... $ECHO_C" >&6
+diff -r c428531055ed d/phobos2/configure.in
+--- a/d/phobos2/configure.in	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/configure.in	Tue Jun 29 22:00:53 2010 +0100
+@@ -440,9 +440,8 @@
+ # AC_SUBST(DCFG_EXPM1)
+ # also erf, erfc
+ 
+-# use version(Unix) instead.
+-#AC_CHECK_FUNC(execvpe,DCFG_EXECVPE="",DCFG_EXECVPE="GNU_Need_execvpe")
+-#AC_SUBST(DCFG_EXECVPE)
++AC_CHECK_FUNC(execvpe,DCFG_EXECVPE="",DCFG_EXECVPE="GNU_Need_execvpe")
++AC_SUBST(DCFG_EXECVPE)
+ 
+ AC_CHECK_FUNC(spawnvp,DCFG_SPAWNVP="",DCFG_SPAWNVP="GNU_Need_spawnvp")
+ AC_SUBST(DCFG_SPAWNVP)
+diff -r c428531055ed d/phobos2/internal/aaA.d
+--- a/d/phobos2/internal/aaA.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/internal/aaA.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -34,14 +34,13 @@
+    Modified by David Friedman, September 2004
+ */
+ 
+-import std.gc;
+-import std.gc;
+ //import std.stdio;
+ import std.c.stdarg;
+ import std.c.stdio;
+ import std.c.stdlib;
+ import std.c.string;
+ import std.string;
++import std.gc;
+ 
+ import std.outofmemory;
+ 
+@@ -430,13 +429,12 @@
+ 			    while (*pe);
+ 			    *pe = e.right;
+ 			    e.right = null;
+-			delete e;
+ 			}
+ 
+ 			aa.a.nodes--;
+-			delete e;
+ 
+ 			// Should notify GC that e can be free'd now
++			delete e;
+ 			break;
+ 		    }
+ 		    pe = (c < 0) ? &e.left : &e.right;
+diff -r c428531055ed d/phobos2/internal/critical.c
+--- a/d/phobos2/internal/critical.c	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/internal/critical.c	Tue Jun 29 22:00:53 2010 +0100
+@@ -85,7 +85,8 @@
+ 
+ #if linux || PHOBOS_USE_PTHREADS
+ 
+-
++#include	<stdio.h>
++#include	<stdlib.h>
+ #include	<pthread.h>
+ 
+ #ifndef HAVE_PTHREAD_MUTEX_RECURSIVE
+diff -r c428531055ed d/phobos2/internal/gc/gcx.d
+--- a/d/phobos2/internal/gc/gcx.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/internal/gc/gcx.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -30,7 +30,7 @@
+    Modified by David Friedman, July 2006
+ */
+ 
+-// D Garbage Collector implementation
++// D Programming Language Garbage Collector implementation
+ 
+ /************** Debugging ***************************/
+ 
+@@ -82,10 +82,6 @@
+     import gclinux;
+ }
+ 
+-/*version (BigEndian)
+-  private import std.intrinsic;*/
+-
+-
+ 
+ version (MULTI_THREADED)
+ {
+@@ -1870,7 +1866,7 @@
+ 	    asm
+ 	    {
+ 		pushad		;
+-		mov	sp[EBP],ESP	;
++		mov sp[EBP],ESP	;
+ 	    }
+ 	}
+ 	result = fullcollect(sp);
+@@ -2038,9 +2034,6 @@
+ 		    *b = 0;
+ 
+ 		    o = pool.baseAddr + (b - bbase) * 32 * 16;
+-		    /*		    version (BigEndian)
+-			bitm = bswap(bitm);
+-		    */
+ 		    if (!(bitm & 0xFFFF))
+ 		    {
+ 			bitm >>= 16;
+diff -r c428531055ed d/phobos2/internal/gc/win32.d
+--- a/d/phobos2/internal/gc/win32.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/internal/gc/win32.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -42,7 +42,7 @@
+ 
+ int os_mem_decommit(void *base, uint offset, uint nbytes)
+ {
+-    return cast(int)VirtualFree(base + offset, nbytes, MEM_DECOMMIT) == 0; 
++    return cast(int)(VirtualFree(base + offset, nbytes, MEM_DECOMMIT) == 0);
+ }
+ 
+ /***********************************
+@@ -55,7 +55,7 @@
+ 
+ int os_mem_unmap(void *base, uint nbytes)
+ {
+-    return cast(int)VirtualFree(base, 0, MEM_RELEASE) == 0; 
++    return cast(int)(VirtualFree(base, 0, MEM_RELEASE) == 0);
+ }
+ 
+ 
+diff -r c428531055ed d/phobos2/internal/monitor.c
+--- a/d/phobos2/internal/monitor.c	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/internal/monitor.c	Tue Jun 29 22:00:53 2010 +0100
+@@ -134,6 +134,7 @@
+ // needs to be else..
+ #if PHOBOS_USE_PTHREADS
+ 
++// Includes attribute fixes from David Friedman's GDC port
+ #ifndef HAVE_PTHREAD_MUTEX_RECURSIVE
+ #define PTHREAD_MUTEX_RECURSIVE PTHREAD_MUTEX_RECURSIVE_NP
+ #endif
+diff -r c428531055ed d/phobos2/internal/object.d
+--- a/d/phobos2/internal/object.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/internal/object.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -64,10 +64,6 @@
+ 
+ alias size_t hash_t;
+ 
+-alias invariant(char)[] string;
+-alias invariant(wchar)[] wstring;
+-alias invariant(dchar)[] dstring;
+-
+ extern (C)
+ {   /// C's printf function.
+     int printf(const char *, ...);
+@@ -82,6 +78,13 @@
+     Object _d_newclass(ClassInfo ci);
+ }
+ 
++/// Standard boolean type.
++alias bool bit;
++
++alias invariant(char)[] string;
++alias invariant(wchar)[] wstring;
++alias invariant(dchar)[] dstring;
++
+ /* *************************
+  * Internal struct pointed to by the hidden .monitor member.
+  */
+diff -r c428531055ed d/phobos2/std/algorithm.d
+--- a/d/phobos2/std/algorithm.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/algorithm.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -89,7 +89,6 @@
+     private import std.stdio;
+     private import std.random;
+     import std.string;
+-    import std.string;
+ }
+ 
+ /**
+@@ -121,7 +120,7 @@
+ */
+ template map(fun...)
+ {
+-	alias mapImpl!(fun).map map;
++    alias mapImpl!(fun).map map;
+ }
+ 
+ template mapImpl(fun...)
+@@ -157,7 +156,7 @@
+ // reduce
+ /*private*/ template NxNHelper(F...)
+ {
+-	/*private*/ template For(Args...)
++    /*private*/ template For(Args...)
+     {
+         enum uint fs = TypeTuple!(F).length;
+         static assert(
+@@ -508,12 +507,12 @@
+ {
+     alias unaryFun!(fun) f;
+     foreach (j; begin(r) .. end(r)) f(*j);
+-    	foreach (i, x; rs)
+-	    {
+-    		foreach (j; begin(x) .. end(x)) f(*j);
+-	    }
++    foreach (i, x; rs)
++    {
++        foreach (j; begin(x) .. end(x)) f(*j);
++    }
+ }
+-	  
++
+ version (wyda) unittest
+ {
+     // fill with 42
+@@ -963,7 +962,7 @@
+ 
+ version (wyda) unittest
+ {
+-	debug(string) writefln("Boyer-Moore implementation version (wyda) unittest\n");
++    debug(string) writefln("Boyer-Moore implementation version (wyda) unittest\n");
+     string h = "/homes/aalexand/d/dmd/bin/../lib/libphobos.a(dmain2.o)"
+         "(.gnu.linkonce.tmain+0x74): In function `main' undefined reference"
+         " to `_Dmain':";
+@@ -1279,7 +1278,7 @@
+     return equal!(binaryFun!(pred), Range1, Range2)(r1, r2);
+ }
+ 
+-unittest
++version (wyda) unittest
+ {
+     int[] a = [ 1, 2, 4, 3];
+     assert(!equal(a, a[1..$]));
+@@ -2198,7 +2197,8 @@
+                            SwapStrategy ss = SwapStrategy.unstable,
+                            alias iterSwap = .iterSwap, Range)(Range r)
+ {
+-	alias unaryFun!(predOrStr) pred;
++    alias unaryFun!(predOrStr) pred;
++    typeof(return) result = void;
+     auto left = begin(r), right = end(r);
+     if (left == right) return left;
+     static if (ss == SwapStrategy.stable)
+diff -r c428531055ed d/phobos2/std/boxer.d
+--- a/d/phobos2/std/boxer.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/boxer.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -508,9 +508,9 @@
+     return array;
+ }
+ 
+- /**
+-  * Box each argument passed to the function, returning an array of boxes.
+-  */    
++/**
++ * Box each argument passed to the function, returning an array of boxes.
++ */    
+ Box[] boxArray(...)
+ {
+     version (GNU)
+@@ -555,9 +555,9 @@
+ 	return boxArray(_arguments, cast(void *) _argptr);
+ }
+ 
+- /**
+-  * Convert an array of boxes into an array of arguments.
+-  */    
++/**
++ * Convert an array of boxes into an array of arguments.
++ */    
+ void boxArrayToArguments(Box[] arguments, out TypeInfo[] types, out void* data)
+ {
+     size_t dataLength;
+diff -r c428531055ed d/phobos2/std/c/linux/socket.d
+--- a/d/phobos2/std/c/linux/socket.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/c/linux/socket.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -32,20 +32,20 @@
+ int recvfrom(int s, void* buf, int len, int flags, sockaddr* from, int* fromlen);
+ int getsockopt(int s, int level, int optname, void* optval, int* optlen);
+ int setsockopt(int s, int level, int optname, void* optval, int optlen);
+-uint inet_addr(char* cp);
++uint inet_addr(in char* cp);
+ char* inet_ntoa(in_addr ina);
+-hostent* gethostbyname(char* name);
+-int gethostbyname_r(char* name, hostent* ret, void* buf, size_t buflen, hostent** result, int* h_errnop);
+-int gethostbyname2_r(char* name, int af, hostent* ret, void* buf, size_t buflen, hostent** result, int* h_errnop);
++hostent* gethostbyname(in char* name);
++int gethostbyname_r(in char* name, hostent* ret, void* buf, size_t buflen, hostent** result, int* h_errnop);
++int gethostbyname2_r(in char* name, int af, hostent* ret, void* buf, size_t buflen, hostent** result, int* h_errnop);
+ hostent* gethostbyaddr(void* addr, int len, int type);
+-protoent* getprotobyname(char* name);
++protoent* getprotobyname(in char* name);
+ protoent* getprotobynumber(int number);
+-servent* getservbyname(char* name, char* proto);
+-servent* getservbyport(int port, char* proto);
+-int gethostname(char* name, int namelen);
+-int getaddrinfo(char* nodename, char* servname, addrinfo* hints, addrinfo** res);
++servent* getservbyname(in char* name, in char* proto);
++servent* getservbyport(int port, in char* proto);
++int gethostname(in char* name, int namelen);
++int getaddrinfo(in char* nodename, in char* servname, addrinfo* hints, addrinfo** res);
+ void freeaddrinfo(addrinfo* ai);
+-int getnameinfo(sockaddr* sa, socklen_t salen, char* node, socklen_t nodelen, char* service, socklen_t servicelen, int flags);
++int getnameinfo(sockaddr* sa, socklen_t salen, in char* node, socklen_t nodelen, in char* service, socklen_t servicelen, int flags);
+ 
+ 
+ 
+diff -r c428531055ed d/phobos2/std/c/stddef.d
+--- a/d/phobos2/std/c/stddef.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/c/stddef.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1,10 +1,10 @@
+ 
+ /**
+- * C's &lt;stdarg.h&gt;
+- * Authors: Hauke Duden and Walter Bright, Digital Mars, www.digitalmars.com
++ * C's &lt;stddef.h&gt;
++ * Authors: Walter Bright, Digital Mars, www.digitalmars.com
+  * License: Public Domain
+  * Macros:
+- *	WIKI=Phobos/StdCStdarg
++ *	WIKI=Phobos/StdCStddef
+  */
+ 
+ module std.c.stddef;
+diff -r c428531055ed d/phobos2/std/conv.d
+--- a/d/phobos2/std/conv.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/conv.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -649,8 +649,6 @@
+ }
+ 
+ /***************************************************************
+- Convert character string to the return type. These functions will be
+- deprecated because to!(T) supersedes them.
+  * The $(D_PARAM parse) family of functions works quite like the
+  * $(D_PARAM to) family, except that (1) it only works with strings as
+  * input, (2) takes the input string by reference and advances it to
+diff -r c428531055ed d/phobos2/std/cpuid.d
+--- a/d/phobos2/std/cpuid.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/cpuid.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -385,10 +385,10 @@
+ }
+ else
+ {
+-    string toString() { return "unknown CPU\n"; }
++    char[] toString() { return "unknown CPU\n"; }
+ 
+-    string vendor()		{return "unknown vendor"; }
+-    string processor()		{return "unknown processor"; }
++    char[] vendor()		{return "unknown vendor"; }
++    char[] processor()		{return "unknown processor"; }
+ 
+     bool mmx()			{return false; }
+     bool fxsr()			{return false; }
+diff -r c428531055ed d/phobos2/std/file.d
+--- a/d/phobos2/std/file.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/file.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -976,8 +976,6 @@
+ 
+ /*********************************************
+  * Write a file.
+- * Returns:
+- *	0	success
+  */
+ 
+ void write(in string name, in void[] buffer)
+diff -r c428531055ed d/phobos2/std/functional.d
+--- a/d/phobos2/std/functional.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/functional.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -172,7 +172,7 @@
+ 
+ template not(alias pred)
+ {
+-	bool not(T...)(T args) { return !unaryFun!(pred)(args); }
++    bool not(T...)(T args) { return !unaryFun!(pred)(args); }
+ }
+ 
+ /*private*/ template Adjoin(F...)
+diff -r c428531055ed d/phobos2/std/loader.d
+--- a/d/phobos2/std/loader.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/loader.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -432,7 +432,7 @@
+     private void ExeModule_Uninit_()
+     {
+         if(0 == --s_init)
+-	    {
++        {
+         }
+     }
+ 
+@@ -901,10 +901,10 @@
+ 	    {
+ 		m_hModule = ExeModule_AddRef(hModule);
+ 	    }
+-        else version (darwin)
+-        {
+-        m_hModule = ExeModule_AddRef(hModule);
+-        }
++	    else version (darwin)
++	    {
++		m_hModule = ExeModule_AddRef(hModule);
++	    }
+ 	    else
+ 		static assert(0);
+         }
+@@ -929,12 +929,12 @@
+ 	    if (null is m_hModule)
+ 		throw new ExeModuleException(ExeModule_Error());
+ 	}
+-    else version (darwin)
+-    {
+-        m_hModule = ExeModule_Load(moduleName);
+-        if (null is m_hModule)
+-        throw new ExeModuleException(ExeModule_Error());
+-    }
++	else version (darwin)
++	{
++	    m_hModule = ExeModule_Load(moduleName);
++	    if (null is m_hModule)
++		throw new ExeModuleException(ExeModule_Error());
++	}
+ 	else
+ 	{
+ 	    static assert(0);		// unsupported system
+@@ -966,10 +966,10 @@
+ 	    {
+ 		ExeModule_Release(m_hModule);
+ 	    }
+-        else version (darwin)
+-        {
+-        ExeModule_Release(m_hModule);
+-        }
++	    else version (darwin)
++	    {
++		ExeModule_Release(m_hModule);
++	    }
+ 	    else
+ 		static assert(0);
+         }
+@@ -1003,15 +1003,15 @@
+ 		throw new ExeModuleException(ExeModule_Error());
+ 	    }
+ 	}
+-    else version (darwin)
+-    {
+-        void *symbol = ExeModule_GetSymbol(m_hModule, symbolName);
++	else version (darwin)
++	{
++	    void *symbol = ExeModule_GetSymbol(m_hModule, symbolName);
+ 
+-        if(null is symbol)
+-        {
+-        throw new ExeModuleException(ExeModule_Error());
+-        }
+-    }
++	    if(null is symbol)
++	    {
++		throw new ExeModuleException(ExeModule_Error());
++	    }
++	}
+ 	else
+ 	{
+ 	    static assert(0);
+@@ -1063,10 +1063,10 @@
+ 	{
+ 	    return ExeModule_GetPath_(m_hModule);
+ 	}
+-    else version (darwin)
+-    {
+-        return ExeModule_GetPath_(m_hModule);
+-    }
++	else version (darwin)
++	{
++	    return ExeModule_GetPath_(m_hModule);
++	}
+ 	else
+ 	    static assert(0);
+     }
+diff -r c428531055ed d/phobos2/std/math.d
+--- a/d/phobos2/std/math.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/math.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1017,7 +1017,7 @@
+         assert(exp == eptr);
+ 
+     }
+-    static if (real.mant_dig == 64) {
++   static if (real.mant_dig == 64) {
+      static real extendedvals[][3] = [ // x,frexp,exp
+         [0x1.a5f1c2eb3fe4efp+73, 0x1.A5F1C2EB3FE4EFp-1,   74],    // normal
+         [0x1.fa01712e8f0471ap-1064,  0x1.fa01712e8f0471ap-1,     -1063],
+diff -r c428531055ed d/phobos2/std/mmfile.d
+--- a/d/phobos2/std/mmfile.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/mmfile.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -37,8 +37,10 @@
+ 
+ module std.mmfile;
+ 
++private import std.file;
+ private import std.c.stdio;
+ private import std.c.stdlib;
++private import std.path;
+ private import std.string;
+ 
+ //debug = MMFILE;
+diff -r c428531055ed d/phobos2/std/process.d
+--- a/d/phobos2/std/process.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/process.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -241,7 +241,7 @@
+ /** ditto */
+ int execvpe(in string pathname, in string[] argv, in string[] envp)
+ {
+-version(Unix)
++version(GNU_Need_execvpe)
+ {
+     // Is pathname rooted?
+     if(pathname[0] == '/')
+@@ -273,7 +273,7 @@
+         return iRet;
+     }
+ }
+-else version(Windows)
++else
+ {
+     auto argv_ = cast(const(char)**)alloca((char*).sizeof * (1 + argv.length));
+     auto envp_ = cast(const(char)**)alloca((char*).sizeof * (1 + envp.length));
+@@ -283,9 +283,6 @@
+ 
+     return std.c.process.execvpe(toStringz(pathname), argv_, envp_);
+ }
+-else
+-{
+-    static assert(0);
+ } // version
+ }
+ 
+diff -r c428531055ed d/phobos2/std/regexp.d
+--- a/d/phobos2/std/regexp.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/regexp.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1317,7 +1317,7 @@
+ }
+ 
+ /************************************************
+- * Test string[] starting at startindex against regular expression.
++ * Test s[] starting at startindex against regular expression.
+  * Returns: 0 for no match, !=0 for match
+  */
+ 
+diff -r c428531055ed d/phobos2/std/stdio.d
+--- a/d/phobos2/std/stdio.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/stdio.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -496,7 +496,7 @@
+     return 0;
+ }
+ ---
+- */
++*/
+ string readln(FILE* fp = stdin, dchar terminator = '\n')
+ {
+     char[] buf;
+@@ -537,7 +537,7 @@
+ because $(D_PARAM readln(stdin, buf)) reuses (if possible) memory
+ allocated by $(D_PARAM buf), whereas $(D_PARAM buf = readln()) makes a
+ new memory allocation with every line.
+- */
++*/
+ size_t readln(FILE* fp, inout char[] buf, dchar terminator = '\n')
+ {
+     version (GNU)
+@@ -927,7 +927,7 @@
+     private dchar terminator = '\n';
+     private string fileName;
+ 
+-  /*  static lines opCall(FILE* f, dchar terminator = '\n')
++  /*static lines opCall(FILE* f, dchar terminator = '\n')
+     {
+         lines result;
+         result.f = f;
+diff -r c428531055ed d/phobos2/std/string.d
+--- a/d/phobos2/std/string.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/string.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -1565,6 +1565,7 @@
+ /**************************************
+  * Split s[] into an array of lines,
+  * using CR, LF, or CR-LF as the delimiter.
++ * The delimiter is not included in the line.
+  */
+ 
+ string[] splitlines(string s)
+@@ -4290,13 +4291,13 @@
+  * on each line.
+  * The last line is terminated with a \n.
+  * Params:
+- *	s = text string to be wrapped
+- *	columns = maximum number of _columns in the paragraph
+- *	firstindent = string used to _indent first line of the paragraph
+- *	indent = string to use to _indent following lines of the paragraph
+- *	tabsize = column spacing of tabs
++ *  s = text string to be wrapped
++ *  columns = maximum number of _columns in the paragraph
++ *  firstindent = string used to _indent first line of the paragraph
++ *  indent = string to use to _indent following lines of the paragraph
++ *  tabsize = column spacing of tabs
+  * Returns:
+- *	The resulting paragraph.
++ *  The resulting paragraph.
+  */
+ 
+ string wrap(string s, ptrdiff_t columns = 80, string firstindent = null,
+diff -r c428531055ed d/phobos2/std/thread.d
+--- a/d/phobos2/std/thread.d	Tue Jun 29 17:08:10 2010 +0100
++++ b/d/phobos2/std/thread.d	Tue Jun 29 22:00:53 2010 +0100
+@@ -207,8 +207,9 @@
+ 	}
+     }
+ 
+-    /*****************************
+-     * Wait for this thread to terminate.
++    /******************************
++     * Wait for this thread to terminate or until milliseconds time has
++     * elapsed, whichever occurs first.
+      * Simply returns if thread has already terminated.
+      * Throws: $(B ThreadError) if the thread hasn't begun yet or
+      * is called on itself.

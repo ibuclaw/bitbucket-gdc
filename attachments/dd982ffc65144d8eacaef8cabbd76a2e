@@ -1,0 +1,14 @@
+diff -r 43d4f23d7f00 d/d-codegen.cc
+--- a/d/d-codegen.cc	Thu Oct 28 22:57:19 2010 +0100
++++ b/d/d-codegen.cc	Fri Oct 29 00:43:21 2010 +0100
+@@ -2599,6 +2599,10 @@
+ 		FuncDeclaration * fndecl;
+ 		StructDeclaration * scdecl;
+ 
++		/* Silently accept these two compiler generated functions. */
++		if (nested_func->ident == Id::ensure || nested_func->ident == Id::require)
++		    break;
++
+ 		if ( (fndecl = this_func->isFuncDeclaration()) )
+ 		{
+ 		    if (parent_sym == fndecl->toParent2())

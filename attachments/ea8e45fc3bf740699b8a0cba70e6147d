@@ -1,0 +1,37 @@
+# HG changeset patch
+# User trass3r
+# Date 1279743325 -7200
+# Node ID aa32358ee46ee2a311c3ed21a000d398ca261123
+# Parent  fa9b66399a13eff9b36831c741cb58a553767ae9
+fixes some cast warnings in d-lang.cc
+
+diff -r fa9b66399a13 -r aa32358ee46e d/d-lang.cc
+--- a/d/d-lang.cc	Wed Jul 21 19:56:18 2010 +0100
++++ b/d/d-lang.cc	Wed Jul 21 22:15:25 2010 +0200
+@@ -361,21 +361,21 @@
+ #  endif
+ #endif
+     if (cpu_versym)
+-	VersionCondition::addPredefinedGlobalIdent((char*) cpu_versym);
++	VersionCondition::addPredefinedGlobalIdent(cpu_versym);
+ #ifdef D_OS_VERSYM
+-    VersionCondition::addPredefinedGlobalIdent((char*) D_OS_VERSYM);
++    VersionCondition::addPredefinedGlobalIdent(D_OS_VERSYM);
+     if (strcmp(D_OS_VERSYM, "darwin") == 0)
+-    VersionCondition::addPredefinedGlobalIdent((char*) "OSX");
++    VersionCondition::addPredefinedGlobalIdent("OSX");
+     if (strcmp(D_OS_VERSYM, "Win32") == 0)
+ 	 {
+ 		 VersionCondition::addPredefinedGlobalIdent("Windows");
+ 		 is_target_win32 = true;
+ 	 }
+     if (strcmp(D_OS_VERSYM, "freebsd") == 0)
+-    VersionCondition::addPredefinedGlobalIdent((char*) "FreeBSD");
++    VersionCondition::addPredefinedGlobalIdent("FreeBSD");
+ #endif
+ #ifdef D_OS_VERSYM2
+-    VersionCondition::addPredefinedGlobalIdent((char*) D_OS_VERSYM2);
++    VersionCondition::addPredefinedGlobalIdent(D_OS_VERSYM2);
+     if (strcmp(D_OS_VERSYM2, "Win32") == 0)
+ 	is_target_win32 = true;
+ #endif

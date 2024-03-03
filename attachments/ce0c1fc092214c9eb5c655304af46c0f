@@ -1,0 +1,23 @@
+diff -r 4a268e8f2389 d/Make-lang.in
+--- a/d/Make-lang.in	Mon Feb 28 22:12:21 2011 +0000
++++ b/d/Make-lang.in	Thu Mar 03 13:32:44 2011 -0500
+@@ -281,7 +280,7 @@
+ 	$(CXX) $(ALL_DMD_CXXFLAGS)  -o d/$*.gen.o -c $<
+ 
+ d/%.glue.o: $(srcdir)/d/%.cc $(D_TREE_H)
+-	$(CXX) $(ALL_D_CXXFLAGS) -DGCC_SAFE_DMD=1 -o d/$*.glue.o -c $<
++	$(CXX) ${PREPROCESSOR_DEFINES} $(ALL_D_CXXFLAGS) -DGCC_SAFE_DMD=1 -o d/$*.glue.o -c $<
+ 
+ d/%.cglue.o: $(srcdir)/d/%.c $(D_TREE_H)
+ 	$(CC) $(ALL_D_CFLAGS) -o d/$*.cglue.o -c $<
+diff -r 4a268e8f2389 d/d-lang.cc
+--- a/d/d-lang.cc	Mon Feb 28 22:12:21 2011 +0000
++++ b/d/d-lang.cc	Thu Mar 03 13:32:44 2011 -0500
+@@ -269,6 +269,7 @@
+     return is_target_win32;
+ }
+ 
++#define DIRSEP "/"
+ static char *
+ prefixed_path(const char * path)
+ {

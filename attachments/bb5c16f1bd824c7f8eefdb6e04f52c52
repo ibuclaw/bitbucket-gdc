@@ -1,0 +1,780 @@
+diff -aruw phobos62/internal/alloca.d phobos63/internal/alloca.d
+--- phobos62/internal/alloca.d	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/internal/alloca.d	2010-08-09 14:33:14.000000000 -0400
+@@ -27,6 +27,8 @@
+ 
+ extern (C) void* __alloca(int nbytes)
+ {
++  version (D_InlineAsm_X86)
++  {
+     asm
+     {
+ 	naked			;
+@@ -125,6 +127,11 @@
+ 	ret			;
+     }
+ }
++  else version (D_InlineAsm_X86_64)
++        static assert(0);
++  else
++        static assert(0);
++}
+ 
+ 
+ 
+diff -aruw phobos62/internal/deh2.d phobos63/internal/deh2.d
+--- phobos62/internal/deh2.d	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/internal/deh2.d	2010-08-09 14:33:14.000000000 -0400
+@@ -148,7 +148,7 @@
+ 
+ extern (Windows) void _d_throw(Object *h)
+ {
+-    uint regebp;
++    size_t regebp;
+ 
+     debug
+     {
+@@ -156,10 +156,18 @@
+ 	printf("\tvptr = %p\n", *cast(void **)h);
+     }
+ 
++    version (D_InlineAsm_X86)
+     asm
+     {
+ 	mov regebp,EBP	;
+     }
++    else version (D_InlineAsm_X86_64)
++        asm
++        {
++            mov regebp,RBP  ;
++        }
++    else
++        static assert(0);
+ 
+ //static uint abc;
+ //if (++abc == 2) *(char *)0=0;
+@@ -261,11 +269,12 @@
+ 
+ 			// Jump to catch block. Does not return.
+ 			{
+-			    uint catch_esp;
++                            size_t catch_esp;
+ 			    fp_t catch_addr;
+ 
+ 			    catch_addr = cast(fp_t)(pcb.code);
+ 			    catch_esp = regebp - handler_table.espoffset - fp_t.sizeof;
++                            version (D_InlineAsm_X86)
+ 			    asm
+ 			    {
+ 				mov	EAX,catch_esp	;
+@@ -275,6 +284,18 @@
+ 				mov	ESP,EAX		; // reset stack
+ 				ret			; // jump to catch block
+ 			    }
++                            else version (D_InlineAsm_X86_64)
++                                asm
++                                {
++                                    mov     RAX,catch_esp   ;
++                                    mov     RCX,catch_addr  ;
++                                    mov     [RAX],RCX       ;
++                                    mov     RBP,regebp      ;
++                                    mov     RSP,RAX         ; // reset stack
++                                    ret                     ; // jump to catch block
++                                }
++                            else
++                                static assert(0);
+ 			}
+ 		    }
+ 		}
+@@ -288,6 +309,7 @@
+ 
+ 		version (OSX)
+ 		{
++                    version (D_InlineAsm_X86)
+ 		    asm
+ 		    {
+ 			sub	ESP,4		;
+@@ -300,9 +322,25 @@
+ 			pop	EBX		;
+ 			add	ESP,4		;
+ 		    }
++                    else version (D_InlineAsm_X86_64)
++                        asm
++                        {
++                            sub     RSP,8           ;
++                            push    RBX             ;
++                            mov     RBX,blockaddr   ;
++                            push    RBP             ;
++                            mov     RBP,regebp      ;
++                            call    RBX             ;
++                            pop     RBP             ;
++                            pop     RBX             ;
++                            add     RSP,8           ;
++                        }
++                    else
++                        static assert(0);
+ 		}
+ 		else
+ 		{
++                    version (D_InlineAsm_X86)
+ 		    asm
+ 		    {
+ 			push	EBX		;
+@@ -313,6 +351,21 @@
+ 			pop	EBP		;
+ 			pop	EBX		;
+ 		    }
++                    else version (D_InlineAsm_X86_64)
++                        asm
++                        {
++                            sub     RSP,8           ;
++                            push    RBX             ;
++                            mov     RBX,blockaddr   ;
++                            push    RBP             ;
++                            mov     RBP,regebp      ;
++                            call    RBX             ;
++                            pop     RBP             ;
++                            pop     RBX             ;
++                            add     RSP,8           ;
++                        }
++                    else
++                        static assert(0);
+ 		}
+ 	    }
+ 	}
+diff -aruw phobos62/internal/gc/gcbits.d phobos63/internal/gc/gcbits.d
+--- phobos62/internal/gc/gcbits.d	2010-06-09 19:06:34.000000000 -0400
++++ phobos63/internal/gc/gcbits.d	2010-08-09 14:33:14.000000000 -0400
+@@ -87,7 +87,7 @@
+ 	{
+ 	    return std.intrinsic.btr(data + 1, i);
+ 	}
+-	else version (Asm86)
++        else version (D_InlineAsm_X86)
+ 	{
+ 	    asm
+ 	    {
+diff -aruw phobos62/internal/gc/gc.d phobos63/internal/gc/gc.d
+--- phobos62/internal/gc/gc.d	2010-06-09 19:06:34.000000000 -0400
++++ phobos63/internal/gc/gc.d	2010-08-09 14:33:14.000000000 -0400
+@@ -280,6 +280,14 @@
+ 		jc	Loverflow	;
+ 	    }
+ 	}
++        else version (D_InlineAsm_X86_64)
++            asm
++            {
++                mov     RAX,size        ;
++                mul     RAX,length      ;
++                mov     size,RAX        ;
++                jc      Loverflow       ;
++            }
+ 	else
+ 	    size *= length;
+ 	p = _gc.malloc(size + 1);
+@@ -321,6 +329,14 @@
+ 		jc	Loverflow	;
+ 	    }
+ 	}
++        else version (D_InlineAsm_X86_64)
++            asm
++            {
++                mov     RAX,size        ;
++                mul     RAX,length      ;
++                mov     size,RAX        ;
++                jc      Loverflow       ;
++            }
+ 	else
+ 	    size *= length;
+ 	auto p = _gc.malloc(size + 1);
+@@ -581,6 +597,14 @@
+ 		jc	Loverflow	;
+ 	    }
+ 	}
++        else version (D_InlineAsm_X86_64)
++            asm
++            {
++                mov     RAX,size        ;
++                mul     RAX,length      ;
++                mov     size,RAX        ;
++                jc      Loverflow       ;
++            }
+ 	else
+ 	{
+ 	    size_t newsize = sizeelem * newlength;
+@@ -684,6 +708,14 @@
+ 		jc	Loverflow	;
+ 	    }
+ 	}
++        else version (D_InlineAsm_X86_64)
++            asm
++            {
++                mov     RAX,size        ;
++                mul     RAX,length      ;
++                mov     size,RAX        ;
++                jc      Loverflow       ;
++            }
+ 	else
+ 	{
+ 	    size_t newsize = sizeelem * newlength;
+diff -aruw phobos62/internal/gc/gcx.d phobos63/internal/gc/gcx.d
+--- phobos62/internal/gc/gcx.d	2010-06-09 19:06:34.000000000 -0400
++++ phobos63/internal/gc/gcx.d	2010-08-09 14:33:14.000000000 -0400
+@@ -1831,11 +1831,20 @@
+ 	// get put on the stack so they'll be scanned
+ 	void *sp;
+ 	size_t result;
++        version (D_InlineAsm_X86)
+ 	asm
+ 	{
+ 	    pushad		;
+ 	    mov	sp[EBP],ESP	;
+ 	}
++        else version (D_InlineAsm_X86_64)
++            asm
++            {
++                pushad          ;
++                mov     sp[EBP],ESP     ;
++            }
++        else
++            static assert(0);
+ 	result = fullcollect(sp);
+ 	asm
+ 	{
+diff -aruw phobos62/internal/gc/win32.d phobos63/internal/gc/win32.d
+--- phobos62/internal/gc/win32.d	2010-06-09 19:06:34.000000000 -0400
++++ phobos63/internal/gc/win32.d	2010-08-09 14:33:14.000000000 -0400
+@@ -74,12 +74,22 @@
+ 
+ void *os_query_stackBottom()
+ {
++    version (D_InlineAsm_X86)
+     asm
+     {
+ 	naked			;
+ 	mov	EAX,FS:4	;
+ 	ret			;
+     }
++   else version (D_InlineAsm_X86_64)
++        asm
++        {
++            naked               ;
++            mov RAX,FS:8        ;
++            ret                 ;
++        }
++   else
++        static assert(0);
+ }
+ 
+ /**********************************************
+diff -aruw phobos62/internal/llmath.d phobos63/internal/llmath.d
+--- phobos62/internal/llmath.d	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/internal/llmath.d	2010-08-09 14:33:14.000000000 -0400
+@@ -19,6 +19,7 @@
+ 
+ void __ULDIV__()
+ {
++  version (D_InlineAsm_X86)
+     asm
+     {
+ 	naked			;
+@@ -176,6 +177,10 @@
+ 	xor	EDX,EDX		;
+ 	ret			;
+     }
++  else version (D_InlineAsm_X86_64)
++        static assert(0);
++  else
++        static assert(0);
+ }
+ 
+ 
+@@ -191,6 +196,7 @@
+ 
+ void __LDIV__()
+ {
++  version (D_InlineAsm_X86)
+     asm
+     {
+ 	naked			;
+@@ -239,6 +245,10 @@
+ 
+ L12:	jmp	__ULDIV__	;
+     }
++  else version (D_InlineAsm_X86_64)
++        static assert(0);
++  else
++        static assert(0);
+ }
+ 
+ 
+@@ -250,6 +260,7 @@
+ 
+ void __LCMP__()
+ {
++  version (D_InlineAsm_X86)
+     asm
+     {
+ 	naked			;
+@@ -268,6 +279,10 @@
+ C2:	pop	EDX		;
+ C1:	ret			;
+     }
++  else version (D_InlineAsm_X86_64)
++        static assert(0);
++  else
++        static assert(0);
+ }
+ 
+ 
+@@ -281,6 +296,7 @@
+ {
+     version (OSX)
+     {
++      version (D_InlineAsm_X86)
+ 	asm
+ 	{   naked				;
+ 	    push	EDX			;
+@@ -299,9 +315,14 @@
+ 	    add		ESP, 8			;
+ 	    ret					;
+ 	}
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+     }
+     else
+     {
++      version (D_InlineAsm_X86)
+ 	asm
+ 	{   naked				;
+ 	    push	EDX			;
+@@ -316,12 +337,17 @@
+ 	    add		ESP, 8			;
+ 	    ret					;
+ 	}
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+     }
+ }
+ 
+ // Same as __U64_LDBL, but return result as double in [EDX,EAX]
+ ulong __ULLNGDBL()
+ {
++  version (D_InlineAsm_X86)
+     asm
+     {	naked					;
+ 	call __U64_LDBL				;
+@@ -331,6 +357,10 @@
+ 	pop  EDX				;
+ 	ret					;
+     }
++  else version (D_InlineAsm_X86_64)
++        static assert(0);
++  else
++        static assert(0);
+ }
+ 
+ // Convert double to ulong
+@@ -342,6 +372,7 @@
+     // BUG: should handle NAN's and overflows
+     version (OSX)
+     {
++      version (D_InlineAsm_X86)
+ 	asm
+ 	{   naked				;
+ 	    push	0xFBF			; // roundTo0
+@@ -376,9 +407,14 @@
+ 	    add		ESP,24			;
+ 	    ret					;
+ 	}
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+     }
+     else
+     {
++      version (D_InlineAsm_X86)
+ 	asm
+ 	{   naked				;
+ 	    push	EDX			;
+@@ -409,6 +445,10 @@
+ 	    add		ESP,8			;
+ 	    ret					;
+ 	}
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+     }
+ }
+ 
+@@ -419,6 +459,7 @@
+     // BUG: should handle NAN's and overflows
+     version (OSX)
+     {
++      version (D_InlineAsm_X86)
+ 	asm
+ 	{   naked				;
+ 	    push	0xFBF			; // roundTo0
+@@ -431,9 +472,14 @@
+ 	    add		ESP,12			;
+ 	    ret					;
+ 	}
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+     }
+     else
+     {
++      version (D_InlineAsm_X86)
+ 	asm
+ 	{   naked				;
+ 	    sub		ESP,16			;
+@@ -445,6 +491,10 @@
+ 	    add		ESP,12			;
+ 	    ret					;
+ 	}
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+     }
+ }
+ 
+@@ -454,6 +504,7 @@
+ {
+     version (OSX)
+     {
++      version (D_InlineAsm_X86)
+ 	asm
+ 	{   naked				;
+ 	    push	0xFBF			; // roundTo0
+@@ -485,9 +536,14 @@
+ 	    add		ESP,24			;
+ 	    ret					;
+ 	}
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+     }
+     else
+     {
++      version (D_InlineAsm_X86)
+ 	asm
+ 	{   naked				;
+ 	    sub		ESP,16			;
+@@ -515,6 +571,10 @@
+ 	    add		ESP,8			;
+ 	    ret					;
+ 	}
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+     }
+ }
+ 
+diff -aruw phobos62/internal/object.d phobos63/internal/object.d
+--- phobos62/internal/object.d	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/internal/object.d	2010-08-09 14:33:14.000000000 -0400
+@@ -298,6 +298,8 @@
+     {
+ 	foreach (m; ModuleInfo.modules())
+ 	{
++            if (!m)
++                continue;
+ 	    //writefln("module %s, %d", m.name, m.localClasses.length);
+ 	    foreach (c; m.localClasses)
+ 	    {
+diff -aruw phobos62/internal/trace.d phobos63/internal/trace.d
+--- phobos62/internal/trace.d	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/internal/trace.d	2010-08-09 14:33:14.000000000 -0400
+@@ -782,6 +782,7 @@
+ 
+   version (OSX)
+   { // 16 byte align stack
++   version (D_InlineAsm_X86)
+     asm
+     {	naked				;
+ 	pushad				;
+@@ -807,9 +808,14 @@
+ 	popad				;
+ 	ret				;
+     }
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+   }
+   else
+   {
++   version (D_InlineAsm_X86)
+     asm
+     {	naked				;
+ 	pushad				;
+@@ -834,6 +840,10 @@
+ 	popad				;
+ 	ret				;
+     }
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
+   }
+ }
+ 
+@@ -845,6 +855,8 @@
+ {
+   version (OSX)
+   { // 16 byte align stack
++   version (D_InlineAsm_X86)
++   {
+     asm
+     {	naked	;
+ 	pushad	;
+@@ -858,7 +870,14 @@
+ 	ret	;
+     }
+   }
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
+   else
++            static assert(0);
++  }
++  else
++  {
++   version (D_InlineAsm_X86)
+   {
+     asm
+     {	naked	;
+@@ -871,6 +890,11 @@
+ 	ret	;
+     }
+   }
++      else version (D_InlineAsm_X86_64)
++            static assert(0);
++      else
++            static assert(0);
++  }
+ }
+ 
+ 
+@@ -888,6 +912,7 @@
+     {
+ 	void QueryPerformanceCounter(timer_t* ctr)
+ 	{
++          version (D_InlineAsm_X86)
+ 	    asm
+ 	    {   naked			;
+ 		mov	  ECX,EAX	;
+@@ -896,6 +921,10 @@
+ 		mov   4[ECX],EDX	;
+ 		ret			;
+ 	    }
++          else version (D_InlineAsm_X86_64)
++                static assert(0);
++          else
++                static assert(0);
+ 	}
+ 
+ 	void QueryPerformanceFrequency(timer_t* freq)
+diff -aruw phobos62/std/cpuid.d phobos63/std/cpuid.d
+--- phobos62/std/cpuid.d	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/std/cpuid.d	2010-08-09 14:33:14.000000000 -0400
+@@ -222,6 +222,7 @@
+     {
+         char* dst = vendorStr.ptr;
+         // puts the vendor string into dst
++        version (D_InlineAsm_X86)
+         asm
+         {
+             mov EAX, 0                  ;
+@@ -231,6 +232,10 @@
+             mov [EAX+4], EDX            ;
+             mov [EAX+8], ECX            ;
+         }
++        else version (D_InlineAsm_X86_64)
++            static assert(0);
++        else
++            static assert(0);
+     }
+ 
+     private void getProcessorString()
+@@ -238,6 +243,7 @@
+         char[48] buffer;
+         char* dst = buffer.ptr;
+         // puts the processor string into dst
++        version (D_InlineAsm_X86)
+         asm
+         {
+             mov EAX, 0x8000_0000        ;
+@@ -267,6 +273,10 @@
+             pop EDI                     ;
+         PSLabel:                        ;
+         }
++        else version (D_InlineAsm_X86_64)
++            static assert(0);
++        else
++            static assert(0);
+ 
+         if (buffer[0] == char.init) // no support
+             return;
+@@ -278,6 +288,7 @@
+     private void getFeatureFlags()
+     {
+         uint f,m,e,a,s;
++        version (D_InlineAsm_X86)
+         asm
+         {
+             mov EAX, 0                  ;
+@@ -303,6 +314,10 @@
+         FeatLabel2:
+             ;
+         }
++        else version (D_InlineAsm_X86_64)
++            static assert(0);
++        else
++            static assert(0);
+         flags = f;
+         misc = m;
+         exflags = e;
+@@ -314,6 +329,7 @@
+     {
+         uint n;
+         ubyte b = 0;
++        version (D_InlineAsm_X86)
+         asm
+         {
+             mov EAX, 0                  ;
+@@ -327,6 +343,10 @@
+             mov b, 1                    ;
+         IntelSingle:                    ;
+         }
++        else version (D_InlineAsm_X86_64)
++            static assert(0);
++        else
++            static assert(0);
+         if (b != 0)
+         {
+             maxCores = ((n>>>26)&0x3F)+1;
+@@ -342,6 +362,7 @@
+     {
+         ubyte n;
+         ubyte b = 0;
++        version (D_InlineAsm_X86)
+         asm
+         {
+             mov EAX, 0x8000_0000        ;
+@@ -354,6 +375,10 @@
+             mov b, 1                    ;
+         AMDSingle:                      ;
+         }
++        else version (D_InlineAsm_X86_64)
++            static assert(0);
++        else
++            static assert(0);
+         if (b != 0)
+         {
+             maxCores = n+1;
+diff -aruw phobos62/std/math.d phobos63/std/math.d
+--- phobos62/std/math.d	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/std/math.d	2010-08-09 14:33:14.000000000 -0400
+@@ -391,7 +391,8 @@
+ 
+ real tan(real x)
+ {
+-    version(Naked_D_InlineAsm_X86) {
++    version(Naked_D_InlineAsm_X86)
++    {
+     asm
+     {
+         fld     x[EBP]                  ; // load theta
+diff -aruw phobos62/std/thread.d phobos63/std/thread.d
+--- phobos62/std/thread.d	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/std/thread.d	2010-08-09 14:33:14.000000000 -0400
+@@ -606,12 +606,22 @@
+ 
+ void *os_query_stackBottom()
+ {
++    version (D_InlineAsm_X86)
+     asm
+     {
+         naked                   ;
+         mov     EAX,FS:4        ;
+         ret                     ;
+     }
++    else version (D_InlineAsm_X86_64)
++    asm
++    {
++        naked                   ;
++        mov     RAX,FS:8        ;
++        ret                     ;
++    }
++    else
++        static assert(0);
+ }
+ 
+ }
+@@ -1200,11 +1210,20 @@
+ 
+     public static void* getESP()
+     {
++        version (D_InlineAsm_X86)
+         asm
+         {   naked       ;
+             mov EAX,ESP ;
+             ret         ;
+         }
++        else version (D_InlineAsm_X86_64)
++            asm
++            {   naked       ;
++                mov RAX,RSP ;
++                ret         ;
++            }
++        else
++            static assert(0);
+     }
+ }
+ 
+diff -aruw phobos62/std/windows/registry.d phobos63/std/windows/registry.d
+--- phobos62/std/windows/registry.d	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/std/windows/registry.d	2010-08-09 14:33:14.000000000 -0400
+@@ -360,7 +360,15 @@
+ 
+ private uint swap(in uint i)
+ {
+-    version(X86)
++    version (D_InlineAsm_X86)
++    {
++        asm
++        {    naked;
++             bswap EAX ;
++             ret ;
++        }
++    }
++    else version (D_InlineAsm_X86_64)
+     {
+         asm
+         {    naked;
+diff -aruw phobos62/win32.mak phobos63/win32.mak
+--- phobos62/win32.mak	2010-06-09 19:06:32.000000000 -0400
++++ phobos63/win32.mak	2010-08-09 14:33:14.000000000 -0400
+@@ -941,7 +941,10 @@
+ 	del $(DOCS)
+ 
+ detab:
+-	detab $(SRCS)
++	detab $(SRC) \
++	$(SRC_STD) $(SRC_STD_C) $(SRC_TI) $(SRC_INT) $(SRC_STD_WIN) \
++	$(SRC_STDLINUX)
++# $(SRC_ETC) $(SRC_ETC_C) $(SRC_ZLIB) $(SRC_GC)
+ 
+ install:
+ 	$(CP) phobos.lib gcstub.obj $(DIR)\windows\lib

@@ -1,0 +1,318 @@
+diff --git a/d/phobos/Makefile.am b/d/phobos/Makefile.am
+index ef80673..84bfbd3 100644
+--- a/d/phobos/Makefile.am
++++ b/d/phobos/Makefile.am
+@@ -48,35 +48,35 @@ all-local: libgphobos.a
+ SUFFIXES = .d
+ 
+ %.o : %.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS)  \
++	$(GDC) -o $@ $(ALL_DFLAGS)  $(CFLAGS_FOR_BUILD) \
+ 	-I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ 
+ # %.o : %.c
+ # Use .c.o to override Automake
+ .c.o:
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ 
+ # boxer is currently broken
+ std/boxer.t.o: std/boxer.o
+ 	cp $< $@
+ 
+ %.t.o : %.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fno-release -funittest -fversion=Unittest -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fno-release -funittest -fversion=Unittest -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ 
+ internal/gc/gcx.t.o: $(D_PREREQ_SRCS) $(srcdir)/internal/gc/gcx.d
+-	$(GDC) -o $@ $(ALL_DFLAGS) -funittest -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -funittest -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ 
+ %.t.o : %.o
+ 	cp $< $@
+ 
+ unittest: unittest.o libgphobos_t.a libgphobos.a
+-	$(GDC) -o $@ $(CFLAGS) unittest.o -L./ -lgphobos_t $(LIBS)
++	$(GDC) -o $@ $(CFLAGS) $(CFLAGS_FOR_BUILD) unittest.o -L./ -lgphobos_t $(LIBS)
+ 
+ internal/gc/testgc.o: $(config_d_src) $(srcdir)/internal/gc/testgc.d
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fno-release -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $(srcdir)/internal/gc/testgc.d
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fno-release -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $(srcdir)/internal/gc/testgc.d
+ 
+ testgc: internal/gc/testgc.o libgphobos_t.a libgphobos.a
+-	$(GDC) -o $@ $(ALL_DFLAGS) internal/gc/testgc.o -L./ -lgphobos_t $(LIBS)
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) internal/gc/testgc.o -L./ -lgphobos_t $(LIBS)
+ 
+ TI=ti_AC.o ti_Ag.o ti_Aint.o ti_Along.o ti_Ashort.o \
+ 	ti_C.o \
+@@ -138,7 +138,7 @@ D_EXTRA_OBJS+=std/intrinsic.o
+ D_EXTRA_OBJS+=gcc/support.o
+ 
+ gen_config1: config/gen_config1.o
+-	$(CC) $(CFLAGS) -o $@ $^
++	$(CC) $(CFLAGS) $(CFLAGS_FOR_BUILD) -o $@ $^
+ 
+ $(config_d_src): frag-ac stamp-tgtdir
+ 	cp $< $@
+@@ -160,22 +160,22 @@ $(config_unix_d_src): config/unix.x3 $(X3_DEPS) stamp-tgtdir
+ 
+ # because these are in the $(host_alias) subdir, pattern match rules will not work
+ gcc/config/unix.o: $(config_unix_d_src) $(config_d_src) $(config_libc_d_src)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ gcc/config/unix.t.o: gcc/config/unix.o
+ 	cp $< $@
+ 
+ gcc/config/mathfuncs.o: $(config_mathfuncs_d_src) $(config_d_src) $(config_libc_d_src)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ gcc/config/mathfuncs.t.o: gcc/config/mathfuncs.o
+ 	cp $< $@
+ 
+ gcc/cbridge_math.o: gcc/cbridge_math.c
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -fno-strict-aliasing -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -fno-strict-aliasing -c $<
+ 
+ std/stream.o: std/stream.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fdeprecated -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fdeprecated -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ std/stream.t.o: std/stream.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fdeprecated -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fdeprecated -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ 
+ ALL_PHOBOS_OBJS = $(D_EXTRA_OBJS) $(GCC_OBJS) $(MAIN_OBJS) $(ZLIB_OBJS) $(GC_OBJS) $(WEAK_OBJS)
+ 
+diff --git a/d/phobos/Makefile.in b/d/phobos/Makefile.in
+index 3d6a001..4299c50 100644
+--- a/d/phobos/Makefile.in
++++ b/d/phobos/Makefile.in
+@@ -652,38 +652,38 @@ config/x3main.o: config/x3main.c config/x3.h
+ all-local: libgphobos.a
+ 
+ %.o : %.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS)  \
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) \
+ 	-I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ 
+ # %.o : %.c
+ # Use .c.o to override Automake
+ .c.o:
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ 
+ # boxer is currently broken
+ std/boxer.t.o: std/boxer.o
+ 	cp $< $@
+ 
+ %.t.o : %.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fno-release -funittest -fversion=Unittest -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fno-release -funittest -fversion=Unittest -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ 
+ internal/gc/gcx.t.o: $(D_PREREQ_SRCS) $(srcdir)/internal/gc/gcx.d
+-	$(GDC) -o $@ $(ALL_DFLAGS) -funittest -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -funittest -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ 
+ %.t.o : %.o
+ 	cp $< $@
+ 
+ unittest: unittest.o libgphobos_t.a libgphobos.a
+-	$(GDC) -o $@ $(CFLAGS) unittest.o -L./ -lgphobos_t $(LIBS)
++	$(GDC) -o $@ $(CFLAGS) $(CFLAGS_FOR_BUILD) unittest.o -L./ -lgphobos_t $(LIBS)
+ 
+ internal/gc/testgc.o: $(config_d_src) $(srcdir)/internal/gc/testgc.d
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fno-release -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $(srcdir)/internal/gc/testgc.d
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fno-release -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $(srcdir)/internal/gc/testgc.d
+ 
+ testgc: internal/gc/testgc.o libgphobos_t.a libgphobos.a
+-	$(GDC) -o $@ $(ALL_DFLAGS) internal/gc/testgc.o -L./ -lgphobos_t $(LIBS)
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) internal/gc/testgc.o -L./ -lgphobos_t $(LIBS)
+ 
+ gen_config1: config/gen_config1.o
+-	$(CC) $(CFLAGS) -o $@ $^
++	$(CC) $(CFLAGS) $(CFLAGS_FOR_BUILD) -o $@ $^
+ 
+ $(config_d_src): frag-ac stamp-tgtdir
+ 	cp $< $@
+@@ -705,22 +705,22 @@ $(config_unix_d_src): config/unix.x3 $(X3_DEPS) stamp-tgtdir
+ 
+ # because these are in the $(host_alias) subdir, pattern match rules will not work
+ gcc/config/unix.o: $(config_unix_d_src) $(config_d_src) $(config_libc_d_src)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ gcc/config/unix.t.o: gcc/config/unix.o
+ 	cp $< $@
+ 
+ gcc/config/mathfuncs.o: $(config_mathfuncs_d_src) $(config_d_src) $(config_libc_d_src)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ gcc/config/mathfuncs.t.o: gcc/config/mathfuncs.o
+ 	cp $< $@
+ 
+ gcc/cbridge_math.o: gcc/cbridge_math.c
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -fno-strict-aliasing -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -fno-strict-aliasing -c $<
+ 
+ std/stream.o: std/stream.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fdeprecated -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fdeprecated -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ std/stream.t.o: std/stream.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fdeprecated -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fdeprecated -I $(srcdir) -I $(srcdir)/internal/gc -I ./$(host_alias) -c $<
+ 
+ libgphobos.a : $(ALL_PHOBOS_OBJS) $(CMAIN_OBJS)
+ 	$(AR) -r $@ $(ALL_PHOBOS_OBJS) $(CMAIN_OBJS)
+diff --git a/d/phobos2/Makefile.am b/d/phobos2/Makefile.am
+index 0a7a121..9ff1837 100644
+--- a/d/phobos2/Makefile.am
++++ b/d/phobos2/Makefile.am
+@@ -31,25 +31,25 @@ all-local: libgphobos2.a libgdruntime.a
+ SUFFIXES = .d
+ 
+ %.o : %.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ 
+ IMPORT = import
+ $(IMPORT): $(D_PREREQ_SRCS)
+ 	mkdir -p $(IMPORT)
+ # For core objects, generate .di headers
+ $(IMPORT)/%.di: %.d $(D_PREREQ_SRCS) $(IMPORT)
+-	$(GDC) $(ALL_DFLAGS) -fintfc-file=$@ -fsyntax-only $<
++	$(GDC) $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fintfc-file=$@ -fsyntax-only $<
+ 
+ # %.o : %.c
+ # Use .c.o to override Automake
+ .c.o:
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ 
+ .S.o:
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ 
+ %.t.o : %.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fno-release -funittest -fversion=Unittest -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fno-release -funittest -fversion=Unittest -c $<
+ 
+ %.t.o : %.o
+ 	cp $< $@
+@@ -95,12 +95,12 @@ $(config_unix_d_src): config/unix.x3 $(X3_DEPS) stamp-tgtdir
+ 
+ # because these are in the $(host_alias) subdir, pattern match rules will not work
+ gcc/config/unix.o: $(config_unix_d_src) $(config_d_src) $(config_libc_d_src)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ gcc/config/unix.t.o: gcc/config/unix.o
+ 	cp $< $@
+ 
+ gcc/config/mathfuncs.o: $(config_mathfuncs_d_src) $(config_d_src) $(config_libc_d_src)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ gcc/config/mathfuncs.t.o: gcc/config/mathfuncs.o
+ 	cp $< $@
+ 
+@@ -116,7 +116,7 @@ stamp-tgtdir:
+ # GDC Runtime
+ 
+ gcc/cbridge_math.o: gcc/cbridge_math.c
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -fno-strict-aliasing -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -fno-strict-aliasing -c $<
+ 
+ BASE_OBJS=object_.o
+ 
+@@ -238,10 +238,10 @@ std/boxer.t.o: std/boxer.o
+ 
+ # Special-case for std.xml, need to emit templates.
+ std/xml.o : std/xml.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -femit-templates -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -femit-templates -c $<
+ 
+ unittest: unittest.o libgphobos2_t.a libgphobos2.a
+-	$(GDC) -o $@ $(CFLAGS) -fdeprecated unittest.o -L./ -lgdruntime -lgphobos2_t $(LIBS) -ldl
++	$(GDC) -o $@ $(CFLAGS) $(CFLAGS_FOR_BUILD) -fdeprecated unittest.o -L./ -lgdruntime -lgphobos2_t $(LIBS) -ldl
+ 
+ MAIN_OBJS=std/algorithm.o std/array.o std/ascii.o std/base64.o std/bigint.o \
+ 	  std/bind.o std/bitarray.o std/bitmanip.o std/compiler.o \
+@@ -292,7 +292,7 @@ WINDOWS_OBJS=std/c/windows/com.o std/c/windows/stat.o std/c/wcharh.o \
+ D_EXTRA_OBJS=@D_EXTRA_OBJS@
+ 
+ std/stream.t.o: std/stream.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fdeprecated -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fdeprecated -c $<
+ 
+ ALL_PHOBOS_OBJS = $(D_EXTRA_OBJS) $(MAIN_OBJS) $(ZLIB_OBJS)
+ 
+diff --git a/d/phobos2/Makefile.in b/d/phobos2/Makefile.in
+index 05d9e20..d1f0b0d 100644
+--- a/d/phobos2/Makefile.in
++++ b/d/phobos2/Makefile.in
+@@ -741,23 +741,23 @@ uninstall-am: uninstall-info-am
+ all-local: libgphobos2.a libgdruntime.a
+ 
+ %.o : %.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ $(IMPORT): $(D_PREREQ_SRCS)
+ 	mkdir -p $(IMPORT)
+ # For core objects, generate .di headers
+ $(IMPORT)/%.di: %.d $(D_PREREQ_SRCS) $(IMPORT)
+-	$(GDC) $(ALL_DFLAGS) -fintfc-file=$@ -fsyntax-only $<
++	$(GDC) $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fintfc-file=$@ -fsyntax-only $<
+ 
+ # %.o : %.c
+ # Use .c.o to override Automake
+ .c.o:
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ 
+ .S.o:
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ 
+ %.t.o : %.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fno-release -funittest -fversion=Unittest -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fno-release -funittest -fversion=Unittest -c $<
+ 
+ %.t.o : %.o
+ 	cp $< $@
+@@ -788,12 +788,12 @@ $(config_unix_d_src): config/unix.x3 $(X3_DEPS) stamp-tgtdir
+ 
+ # because these are in the $(host_alias) subdir, pattern match rules will not work
+ gcc/config/unix.o: $(config_unix_d_src) $(config_d_src) $(config_libc_d_src)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ gcc/config/unix.t.o: gcc/config/unix.o
+ 	cp $< $@
+ 
+ gcc/config/mathfuncs.o: $(config_mathfuncs_d_src) $(config_d_src) $(config_libc_d_src)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -c $<
+ gcc/config/mathfuncs.t.o: gcc/config/mathfuncs.o
+ 	cp $< $@
+ 
+@@ -808,7 +808,7 @@ stamp-tgtdir:
+ # GDC Runtime
+ 
+ gcc/cbridge_math.o: gcc/cbridge_math.c
+-	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) -fno-strict-aliasing -c $<
++	$(CC) -o $@ $(OUR_CFLAGS) $(CFLAGS) $(CFLAGS_FOR_BUILD) -fno-strict-aliasing -c $<
+ 
+ libgdruntime.a : $(ALL_DRUNTIME_OBJS) $(CMAIN_OBJS) $(subst core/,$(IMPORT)/core/,$(CORE_IMPORTS))
+ 	$(AR) -r $@ $(ALL_DRUNTIME_OBJS) $(CMAIN_OBJS)
+@@ -823,13 +823,13 @@ std/boxer.t.o: std/boxer.o
+ 
+ # Special-case for std.xml, need to emit templates.
+ std/xml.o : std/xml.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -femit-templates -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -femit-templates -c $<
+ 
+ unittest: unittest.o libgphobos2_t.a libgphobos2.a
+-	$(GDC) -o $@ $(CFLAGS) -fdeprecated unittest.o -L./ -lgdruntime -lgphobos2_t $(LIBS) -ldl
++	$(GDC) -o $@ $(CFLAGS) $(CFLAGS_FOR_BUILD) -fdeprecated unittest.o -L./ -lgdruntime -lgphobos2_t $(LIBS) -ldl
+ 
+ std/stream.t.o: std/stream.d $(D_PREREQ_SRCS)
+-	$(GDC) -o $@ $(ALL_DFLAGS) -fdeprecated -c $<
++	$(GDC) -o $@ $(ALL_DFLAGS) $(CFLAGS_FOR_BUILD) -fdeprecated -c $<
+ 
+ libgphobos2.a : libgdruntime.a $(ALL_PHOBOS_OBJS)
+ 	$(AR) -r $@ $(ALL_DRUNTIME_OBJS) $(CMAIN_OBJS) $(ALL_PHOBOS_OBJS)

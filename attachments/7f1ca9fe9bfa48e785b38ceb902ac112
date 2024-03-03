@@ -1,0 +1,72 @@
+# HG changeset patch
+# User Dan Green  <venix1@gmail.com>
+# Date 1274996918 14400
+# Node ID 195efc286c1acb248c9a636beb41b3855a716d8c
+# Parent  baa0d433abd35d336ab3b36e74bba6f41753332e
+Updated Phobos to DMD v1.047.
+
+diff -r baa0d433abd3 -r 195efc286c1a d/phobos/std/moduleinit.d
+--- a/d/phobos/std/moduleinit.d	Thu May 27 17:43:47 2010 -0400
++++ b/d/phobos/std/moduleinit.d	Thu May 27 17:48:38 2010 -0400
+@@ -182,11 +182,11 @@
+     
+     /+version (OSX)
+      {	/* The ModuleInfo references are stored in the special segment
+-+ 	 * __minfodata, which is bracketed by the segments __minfo_beg
+-+ 	 * and __minfo_end. The variables _minfo_beg and _minfo_end
+-+ 	 * are of zero size and are in the two bracketing segments,
+-+ 	 * respectively.
+-+ 	 */ 	size_t length = cast(ModuleInfo*)&_minfo_end - cast(ModuleInfo*)&_minfo_beg;
++ 	 * __minfodata, which is bracketed by the segments __minfo_beg
++ 	 * and __minfo_end. The variables _minfo_beg and _minfo_end
++ 	 * are of zero size and are in the two bracketing segments,
++ 	 * respectively.
++ 	 */ 	size_t length = cast(ModuleInfo*)&_minfo_end - cast(ModuleInfo*)&_minfo_beg;
+  	_moduleinfo_array = (cast(ModuleInfo*)&_minfo_beg)[0 .. length];
+  	debug printf("moduleinfo: ptr = %p, length = %d\n", _moduleinfo_array.ptr, _moduleinfo_array.length);
+  
+@@ -235,8 +235,7 @@
+ 	    m.name.ptr);
+ 	if (m.flags & MIctordone)
+ 	    continue;
+-	debug printf("\tmodule[%d] = '%.*s', m = x%x\n", i,
+-	    cast(int) m.name.length, m.name.ptr, m);
++    debug printf("\tmodule[%d] = '%.*s', m = x%x, m.flags = x%x\n", i, m.name, m, m.flags);
+ 
+ 	if (m.ctor || m.dtor)
+ 	{
+diff -r baa0d433abd3 -r 195efc286c1a d/phobos/std/typeinfo/ti_Ag.d
+--- a/d/phobos/std/typeinfo/ti_Ag.d	Thu May 27 17:43:47 2010 -0400
++++ b/d/phobos/std/typeinfo/ti_Ag.d	Thu May 27 17:48:38 2010 -0400
+@@ -47,8 +47,6 @@
+ 		    break;
+ 	    }
+ 	}
+-
+-	return hash;
+     }
+ 
+     int equals(void *p1, void *p2)
+diff -r baa0d433abd3 -r 195efc286c1a d/phobos/std/typeinfo/ti_Ashort.d
+--- a/d/phobos/std/typeinfo/ti_Ashort.d	Thu May 27 17:43:47 2010 -0400
++++ b/d/phobos/std/typeinfo/ti_Ashort.d	Thu May 27 17:48:38 2010 -0400
+@@ -35,8 +35,6 @@
+ 		    break;
+ 	    }
+ 	}
+-
+-	return hash;
+     }
+ 
+     int equals(void *p1, void *p2)
+diff -r baa0d433abd3 -r 195efc286c1a d/phobos/std/zlib.d
+--- a/d/phobos/std/zlib.d	Thu May 27 17:43:47 2010 -0400
++++ b/d/phobos/std/zlib.d	Thu May 27 17:48:38 2010 -0400
+@@ -196,6 +196,7 @@
+ 		throw new ZlibException(err);
+ 	}
+     }
++    assert(0);
+ }
+ 
+ unittest

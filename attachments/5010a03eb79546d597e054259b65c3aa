@@ -1,0 +1,8 @@
+gdc -O2 -flto lto02.d -o lto02
+lto1: internal compiler error: in lto_balanced_map, at lto/lto-partition.c:571
+Please submit a full bug report,
+with preprocessed source if appropriate.
+See <https://github.com/D-Programming-GDC/GDC/issues/> for instructions.
+lto-wrapper: gdc returned 1 exit status
+/usr/bin/ld: lto-wrapper failed
+collect2: error: ld returned 1 exit status

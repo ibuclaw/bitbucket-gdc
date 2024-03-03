@@ -1,0 +1,92 @@
+# HG changeset patch
+# User Dan Green  <venix1@gmail.com>
+# Date 1275695695 14400
+# Node ID 355a482e2fc932b954831d6eba48333d76f9382c
+# Parent  195efc286c1acb248c9a636beb41b3855a716d8c
+Removes const from values being stored in dt_t via dtval.
+
+diff -r 195efc286c1a -r 355a482e2fc9 d/dmd/statement.c
+--- a/d/dmd/statement.c	Thu May 27 17:48:38 2010 -0400
++++ b/d/dmd/statement.c	Fri Jun 04 19:54:55 2010 -0400
+@@ -3594,7 +3594,7 @@
+ 	    exp = exp->semantic(sc);
+ 	}
+ 
+-#if 1
++#if 0 // DMD v1.047 needs reviewing
+ 	/* Rewrite as:
+ 	 *  auto tmp = exp;
+ 	 *  _d_monitorenter(tmp);
+@@ -3623,7 +3623,7 @@
+ 	return s->semantic(sc);
+ #endif
+     }
+-#if 1
++#if 0 // DMD v1.047 needs reviewing
+     else
+     {	/* Generate our own critical section, then rewrite as:
+ 	 *  __gshared byte[CriticalSection.sizeof] critsec;
+diff -r 195efc286c1a -r 355a482e2fc9 d/dmd/typinf.c
+--- a/d/dmd/typinf.c	Thu May 27 17:48:38 2010 -0400
++++ b/d/dmd/typinf.c	Fri Jun 04 19:54:55 2010 -0400
+@@ -35,7 +35,9 @@
+ 
+ #ifndef TARGET_NET
+ #include "rmem.h"
++#endif
+ #ifndef IN_GCC
++#ifndef TARGET_NET
+ #include "cc.h"
+ #include "global.h"
+ #include "oper.h"
+@@ -44,7 +46,7 @@
+ #include "dt.h"
+ #include "cgcv.h"
+ #include "outbuf.h"
+-#endif
++#endif // TARGET_NET
+ #include "irstate.h"
+ #else
+ #include "symbol.h"
+diff -r 195efc286c1a -r 355a482e2fc9 d/dt.cc
+--- a/d/dt.cc	Thu May 27 17:48:38 2010 -0400
++++ b/d/dt.cc	Fri Jun 04 19:54:55 2010 -0400
+@@ -26,13 +26,13 @@
+ #else
+ integer_t i,
+ #endif
+-void * p)
++const void * p)
+ {
+     dt_t * d = new dt_t;
+     d->dt = t;
+     d->DTnext = 0;
+     d->DTint = i;
+-    d->DTpointer = p;
++    d->DTpointer = (void*)p;
+     return dtcat(pdt, d);
+ }
+ 
+diff -r 195efc286c1a -r 355a482e2fc9 d/dt.h
+--- a/d/dt.h	Thu May 27 17:48:38 2010 -0400
++++ b/d/dt.h	Fri Jun 04 19:54:55 2010 -0400
+@@ -67,16 +67,16 @@
+ #else
+ integer_t i,
+ #endif 
+-void * p);
++const void * p);
+ 
+ extern dt_t** dtcat(dt_t** pdt, dt_t * d);
+     
+ inline dt_t**
+-dtnbytes(dt_t** pdt, size_t count, char * pbytes) {
++dtnbytes(dt_t** pdt, size_t count, const char * pbytes) {
+     return dtval(pdt, DT_nbytes, count, pbytes); }
+ 
+ inline dt_t**
+-dtabytes(dt_t** pdt, TypeType, int, size_t count, char * pbytes) {
++dtabytes(dt_t** pdt, TypeType, int, size_t count, const char * pbytes) {
+     return dtval(pdt, DT_abytes, count, pbytes); }
+ 
+ inline dt_t**

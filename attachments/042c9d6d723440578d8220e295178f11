@@ -1,0 +1,18 @@
+diff -r 0df70ecaf5e5 d/d-codegen.cc
+--- a/d/d-codegen.cc	Sun Jun 06 18:39:39 2010 +0100
++++ b/d/d-codegen.cc	Mon Jun 07 13:22:38 2010 +0100
+@@ -2053,7 +2053,13 @@
+     {
+ 	AssignExp * a_exp = (AssignExp *) e;
+ 	if (a_exp->e1->op == TOKvar && ((VarExp *) a_exp->e1)->var == v)
+-	    return convertForAssignment(a_exp->e2, v->type);
++	{
++    	    // Look for reference initializations
++	    if (v->storage_class & STCref)
++		return convertForAssignment(a_exp->e2->addressOf(NULL), v->type);
++	    else
++    		return convertForAssignment(a_exp->e2, v->type);
++	}
+ 	//else
+ 	    //return e->toElem(this);
+     }

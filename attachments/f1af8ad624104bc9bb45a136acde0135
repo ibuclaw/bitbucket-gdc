@@ -1,0 +1,48 @@
+diff -r 50bbcc38aeee d/phobos/Makefile.am
+--- a/d/phobos/Makefile.am	Fri Oct 08 11:48:20 2010 +0100
++++ b/d/phobos/Makefile.am	Tue Oct 12 14:35:08 2010 -0500
+@@ -33,7 +33,7 @@
+ config_mathfuncs_d_src=$(host_alias)/gcc/config/mathfuncs.d
+ config_unix_d_src     =$(host_alias)/gcc/config/unix.d
+ 
+-X3=CC_FOR_BUILD="$(CC_FOR_BUILD) -I $(srcdir)/config" BUILD_LIBIBERTY=$(BUILD_LIBIBERTY) $(srcdir)/config/x3
++X3=CC_FOR_BUILD="$(CC_FOR_BUILD) $(MULTIFLAGS) -I $(srcdir)/config" BUILD_LIBIBERTY=$(BUILD_LIBIBERTY) $(srcdir)/config/x3
+ X3_GCC_COMMAND=$(CC) $(OUR_CFLAGS)
+ X3_DEPS=config/x3.o config/x3main.o
+ 
+diff -r 50bbcc38aeee d/phobos/Makefile.in
+--- a/d/phobos/Makefile.in	Fri Oct 08 11:48:20 2010 +0100
++++ b/d/phobos/Makefile.in	Tue Oct 12 14:35:08 2010 -0500
+@@ -223,7 +223,7 @@
+ config_fpcls_d_src = $(host_alias)/gcc/config/fpcls.d
+ config_mathfuncs_d_src = $(host_alias)/gcc/config/mathfuncs.d
+ config_unix_d_src = $(host_alias)/gcc/config/unix.d
+-X3 = CC_FOR_BUILD="$(CC_FOR_BUILD) -I $(srcdir)/config" BUILD_LIBIBERTY=$(BUILD_LIBIBERTY) $(srcdir)/config/x3
++X3 = CC_FOR_BUILD="$(CC_FOR_BUILD) $(MULTIFLAGS) -I $(srcdir)/config" BUILD_LIBIBERTY=$(BUILD_LIBIBERTY) $(srcdir)/config/x3
+ X3_GCC_COMMAND = $(CC) $(OUR_CFLAGS)
+ X3_DEPS = config/x3.o config/x3main.o
+ SUFFIXES = .d
+diff -r 50bbcc38aeee d/phobos2/Makefile.am
+--- a/d/phobos2/Makefile.am	Fri Oct 08 11:48:20 2010 +0100
++++ b/d/phobos2/Makefile.am	Tue Oct 12 14:35:08 2010 -0500
+@@ -58,7 +58,7 @@
+ config_mathfuncs_d_src=$(host_alias)/gcc/config/mathfuncs.d
+ config_unix_d_src     =$(host_alias)/gcc/config/unix.d
+ 
+-X3=CC_FOR_BUILD="$(CC_FOR_BUILD) -I $(srcdir)/config" BUILD_LIBIBERTY=$(BUILD_LIBIBERTY) $(srcdir)/config/x3
++X3=CC_FOR_BUILD="$(CC_FOR_BUILD) $(MULTIFLAGS) -I $(srcdir)/config" BUILD_LIBIBERTY=$(BUILD_LIBIBERTY) $(srcdir)/config/x3
+ X3_GCC_COMMAND=$(CC) $(OUR_CFLAGS)
+ X3_DEPS=config/x3.o config/x3main.o
+ 
+diff -r 50bbcc38aeee d/phobos2/Makefile.in
+--- a/d/phobos2/Makefile.in	Fri Oct 08 11:48:20 2010 +0100
++++ b/d/phobos2/Makefile.in	Tue Oct 12 14:35:08 2010 -0500
+@@ -246,7 +246,7 @@
+ config_fpcls_d_src = $(host_alias)/gcc/config/fpcls.d
+ config_mathfuncs_d_src = $(host_alias)/gcc/config/mathfuncs.d
+ config_unix_d_src = $(host_alias)/gcc/config/unix.d
+-X3 = CC_FOR_BUILD="$(CC_FOR_BUILD) -I $(srcdir)/config" BUILD_LIBIBERTY=$(BUILD_LIBIBERTY) $(srcdir)/config/x3
++X3 = CC_FOR_BUILD="$(CC_FOR_BUILD) $(MULTIFLAGS) -I $(srcdir)/config" BUILD_LIBIBERTY=$(BUILD_LIBIBERTY) $(srcdir)/config/x3
+ X3_GCC_COMMAND = $(CC) $(OUR_CFLAGS)
+ X3_DEPS = config/x3.o config/x3main.o
+ BASE_OBJS = compiler/aaA.o compiler/aApply.o compiler/aApplyR.o compiler/adi.o \
